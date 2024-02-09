@@ -1,0 +1,9 @@
+[gd_scene load_steps=2 format=3 uid="uid://tp3t0356ano7"]
+
+[ext_resource type="PackedScene" uid="uid://dydo4wxntjd3p" path="res://cartoon_plane/scene.gltf" id="1"]
+
+[node name="PlaneModel" instance=ExtResource("1")]
+transform = Transform3D(0.01, 0, 0, 0, 0.01, 0, 0, 0, 0.01, 0, 0, 0)
+
+[node name="RootNode (gltf orientation matrix)" parent="." index="0"]
+transform = Transform3D(-1, 8.74228e-08, 3.82137e-15, 0, -4.37114e-08, 1, 8.74228e-08, 1, 4.37114e-08, 0, 0, 0)

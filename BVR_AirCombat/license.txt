@@ -1,0 +1,11 @@
+Model Information:
+* title:	AAI RQ2 Pioneer UAV
+* source:	https://sketchfab.com/3d-models/aai-rq2-pioneer-uav-08171540823f4237879fa1bdbc19ae1e
+* author:	Misja van Laatum (https://sketchfab.com/miezpiez66)
+
+Model License:
+* license type:	CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
+* requirements:	Author must be credited. Commercial use is allowed.
+
+If you use this 3D model in your project be sure to copy paste this credit wherever you share it:
+This work is based on "AAI RQ2 Pioneer UAV" (https://sketchfab.com/3d-models/aai-rq2-pioneer-uav-08171540823f4237879fa1bdbc19ae1e) by Misja van Laatum (https://sketchfab.com/miezpiez66) licensed under CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)

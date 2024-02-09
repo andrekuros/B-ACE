@@ -1,0 +1,29 @@
+[gd_scene load_steps=4 format=3 uid="uid://bprtg0gwnkrf1"]
+
+[ext_resource type="Script" path="res://Goal.gd" id="1"]
+
+[sub_resource type="StandardMaterial3D" id="1"]
+transparency = 1
+albedo_color = Color(0.372549, 0.0823529, 0.803922, 0.705882)
+
+[sub_resource type="SphereShape3D" id="SphereShape3D_irp2h"]
+radius = 24.355
+
+[node name="Goal" type="CSGSphere3D"]
+transform = Transform3D(1, 0, 0, 0, -4.37114e-08, 1, 0, -1, -4.37114e-08, 0, 34, 11)
+layers = 8
+radius = 2.302
+radial_segments = 20
+rings = 10
+material = SubResource("1")
+script = ExtResource("1")
+metadata/id = 0
+
+[node name="Area3D" type="Area3D" parent="."]
+transform = Transform3D(0.1, 0, 0, 0, 0.1, 0, 0, 0, 0.1, 0, 0, 0)
+collision_layer = 8
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Area3D"]
+shape = SubResource("SphereShape3D_irp2h")
+
+[connection signal="body_entered" from="Area3D" to="." method="_on_Area_body_entered"]
