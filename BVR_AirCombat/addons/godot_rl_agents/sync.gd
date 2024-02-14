@@ -1,11 +1,12 @@
 extends Node
 # --fixed-fps 2000 --disable-render-loop
-@export var action_repeat := 8
+@export var action_repeat := 10
 @export var speed_up = 1
 @export var renderize = 1
 @export var num_uavs = 4
 @export var num_targets = 10
 var n_action_steps = 0
+var phy_fps = 20
 
 
 var rng = RandomNumberGenerator.new()
@@ -19,6 +20,7 @@ const MINOR_VERSION := "3"
 const DEFAULT_PORT := "11008"
 const DEFAULT_SEED := "1"
 const DEFAULT_ACTION_REPEAT := "8"
+const DEFAULT_PHYSICS_FPS := "20"
 const DEFAULT_NUM_UAVS := "4"
 const DEFAULT_NUM_TARGETS := "1"
 
@@ -45,7 +47,7 @@ func _ready():
 	get_tree().set_pause(false) 
 		
 func _get_agents():
-	agents = get_tree().get_nodes_in_group("AGENT")		
+	agents = get_tree().get_nodes_in_group("AGENT")
 
 func _set_heuristic(heuristic):
 	for agent in agents:
@@ -160,8 +162,7 @@ func _set_num_uavs():
 	for i in range(num_uavs):
 		
 		var addPlane = null				
-		addPlane = env.fighterObj.instantiate()
-		#addPlane.set_scale(model_scaleVector)	
+		addPlane = env.fighterObj.instantiate()		
 		addPlane.get_node("RenderModel").set_scale(visual_scaleVector)	
 		#addPlane.get_node("Radar").set_scale(invert_scaleVector)		
 		addPlane.add_to_group("AGENT")		
@@ -182,6 +183,8 @@ func _set_num_uavs():
 		addPlane.set_meta('id', i + 2)
 		addPlane.team_id = team_id
 		addPlane.add_to_group("blue" if addPlane.team_id == 1 else "red" )
+		
+		addPlane.phy_fps = phy_fps
 		
 		env.get_node("Fighters").add_child(addPlane)    
 		env.uavs.append(addPlane)
@@ -213,9 +216,12 @@ func _initialize():
 	_set_num_uavs()
 	_get_agents()
 	_set_num_targets()
-	_set_heuristic("AP") 	
+	_set_heuristic("AP")
+	
+	phy_fps = args.get("physics_fps", DEFAULT_PHYSICS_FPS).to_int()    
+	 	
 		
-	Engine.physics_ticks_per_second = _get_speedup() * 20  # Replace with function body.
+	Engine.physics_ticks_per_second = _get_speedup() * phy_fps  # Replace with function body.
 	Engine.time_scale = _get_speedup() * 1.0 
 	prints("physics ticks", Engine.physics_ticks_per_second, Engine.time_scale, _get_speedup(), speed_up)
 	env.debug_text.add_text("Initial Speed " + str(speed_up) + "X" + " - Phy " + str(Engine.physics_ticks_per_second))
@@ -231,6 +237,7 @@ func _initialize():
 		#_set_heuristic("AP")  
 
 	initialized = true  
+	_reset_all_agents()
 
 func _physics_process(delta): 
 	# two modes, human control, agent control
@@ -317,7 +324,8 @@ func handle_message() -> bool:
 		return handle_message()
 	
 	if message["type"] == "action":
-		var action = message["action"]
+		var action = message["action"]		
+		#env.debug_text.add_text("\nlevel_input:" + str(level_input)) 
 		_set_agent_actions(action)		
 		need_to_send_obs = true
 		get_tree().set_pause(false) 
@@ -333,7 +341,6 @@ func _call_method_on_agents(method):
 		returns.append(agent.call(method))
 		
 	return returns
-
 
 func _reset_agents_if_done():
 	for agent in agents:
@@ -374,6 +381,7 @@ func _get_done_from_agents():
 	
 func _set_agent_actions(actions):
 	for i in range(len(actions)):
+		#env.debug_text.add_text("\nAction:" + str(actions[i])) 
 		agents[i].set_action(actions[i])
 	
 func _input(event):	

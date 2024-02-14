@@ -13,8 +13,8 @@
 sky_material = SubResource("ProceduralSkyMaterial_l3jix")
 
 [sub_resource type="Environment" id="Environment_t3cor"]
-background_mode = 2
-background_color = Color(1, 1, 1, 1)
+background_mode = 1
+background_color = Color(0.0235294, 0.0235294, 0.0235294, 1)
 sky = SubResource("Sky_1uxjd")
 ambient_light_color = Color(1, 1, 1, 1)
 ambient_light_energy = 0.21
@@ -58,8 +58,8 @@ environment = SubResource("Environment_t3cor")
 [node name="Columns" type="CSGCombiner3D" parent="."]
 
 [node name="CSGBox3D" type="CSGBox3D" parent="Columns"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 485.507)
-size = Vector3(15000, -10, 15000)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -20, 0)
+size = Vector3(3750, 10, 3750)
 material = SubResource("ORMMaterial3D_g573e")
 
 [node name="GameArea" type="Area3D" parent="."]

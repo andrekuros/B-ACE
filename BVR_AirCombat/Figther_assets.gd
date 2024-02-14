@@ -16,6 +16,8 @@ class SConv:
 	const FT2M = 0.3048 
 	const FT2GDM = 0.3048 / SCALE_FACTOR
 	
+	const GRAVITY_GDM = 9.81 * REAL2GD
+	
 	func _init():
 		pass
 

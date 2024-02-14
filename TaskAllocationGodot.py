@@ -34,7 +34,7 @@ parser.add_argument(
     help="The Godot binary to use, do not include for in editor training",
 )
 
-parser.add_argument("--speedup", default=150, type=int, help="whether to speed up the physics in the env")
+parser.add_argument("--speedup", default=100, type=int, help="whether to speed up the physics in the env")
 parser.add_argument("--show_window", default=False, type=bool, help="whether renderize or not the screen")
 
 args, extras = parser.parse_known_args()
@@ -46,22 +46,28 @@ env = GodotEnv( env_path=args.env_path,
          framerate=None,
          action_repeat=10,
          speedup=args.speedup,
-         convert_action_space=False,         
+         convert_action_space=False        
          )
 
-episodes = 2
+episodes = 1
 
 start_time = time.time()
 
 for e in range(episodes):
     
+    print(e)
     env.reset()
-    for i in range(300):
+    for i in range(1000):
         
         action = env.action_space.sample()
                 
         #print("Action\n", action)
-        action = [np.array([0.0,0.0]) for x in action for _ in range(env.num_envs)]
+        action = [np.array([5, 45 + i, 40000, 0]) for x in action for i in range(env.num_envs)]
+        
+        # hdg_input = action["hdg"]
+	    # level_input = action["level"] * SConv.FT2GDM	
+	    # desiredG_input = action["maxG"]
+	    # shoot_input = action["shoot"]
             
                            
         # Rescale and perform action
@@ -89,3 +95,5 @@ print("Execution time:", execution_time, "seconds")
 
 env.close()
 # %%
+
+ # %%

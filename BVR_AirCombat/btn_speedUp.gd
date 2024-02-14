@@ -1,6 +1,6 @@
 extends Button
 
-var speed_option = [0.5, 1 , 5 ,10 , 50]
+var speed_option = [0.5, 1 , 5 ,10 , 50, 200]
 var speedIdx = 1
 
 # Called when the node enters the scene tree for the first time.
