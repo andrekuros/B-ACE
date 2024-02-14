@@ -4,7 +4,7 @@ extends Node
 @export var speed_up = 1
 @export var renderize = 1
 @export var num_uavs = 4
-@export var num_targets = 10
+@export var num_targets = 1
 var n_action_steps = 0
 var phy_fps = 20
 
@@ -19,7 +19,7 @@ const MAJOR_VERSION := "0"
 const MINOR_VERSION := "3" 
 const DEFAULT_PORT := "11008"
 const DEFAULT_SEED := "1"
-const DEFAULT_ACTION_REPEAT := "8"
+const DEFAULT_ACTION_REPEAT := "10"
 const DEFAULT_PHYSICS_FPS := "20"
 const DEFAULT_NUM_UAVS := "4"
 const DEFAULT_NUM_TARGETS := "1"
@@ -28,7 +28,11 @@ var stream : StreamPeerTCP = null
 var connected = false
 var message_center
 var should_connect = true
+
 var agents
+var enemies
+var fighters
+
 var need_to_send_obs = false
 var args = null
 @onready var start_time = Time.get_ticks_msec()
@@ -46,9 +50,6 @@ func _ready():
 	await get_tree().create_timer(1.0).timeout
 	get_tree().set_pause(false) 
 		
-func _get_agents():
-	agents = get_tree().get_nodes_in_group("AGENT")
-
 func _set_heuristic(heuristic):
 	for agent in agents:
 		agent.set_heuristic(heuristic)
@@ -118,13 +119,7 @@ func connect_to_server():
 
 func _get_args():
 	print("getting command line arguments")
-#	var arguments = {}
-#	for argument in OS.get_cmdline_args():
-#		# Parse valid command-line arguments into a dictionary
-#		if argument.find("=") > -1:
-#			var key_value = argument.split("=")
-#			arguments[key_value[0].lstrip("--")] = key_value[1]
-			
+#	
 	var arguments = {}
 	for argument in OS.get_cmdline_args():
 		print(argument)
@@ -153,43 +148,58 @@ func _get_port():
 func _set_seed():
 	var _seed = args.get("env_seed", DEFAULT_SEED).to_int()	
 
-func _set_num_uavs():	
+func _set_agents():	
+	
 	num_uavs = args.get("num_uavs", DEFAULT_NUM_UAVS).to_int()    
+	
 	const model_scaleVector  = Vector3(1.0/SConv.SCALE_FACTOR, 1.0/SConv.SCALE_FACTOR, 1.0/SConv.SCALE_FACTOR)
 	const invert_scaleVector = Vector3(SConv.SCALE_FACTOR, SConv.SCALE_FACTOR, SConv.SCALE_FACTOR)	
-	const visual_scaleVector = Vector3(3.0,  3.0,  3.0)
+	const visual_scaleVector = Vector3(4.0,  4.0,  4.0)
 	
 	for i in range(num_uavs):
 		
-		var addPlane = null				
-		addPlane = env.fighterObj.instantiate()		
-		addPlane.get_node("RenderModel").set_scale(visual_scaleVector)	
-		#addPlane.get_node("Radar").set_scale(invert_scaleVector)		
-		addPlane.add_to_group("AGENT")		
+		var newFigther = null				
+		newFigther = env.fighterObj.instantiate()		
+		newFigther.get_node("RenderModel").set_scale(visual_scaleVector)
 		
+		newFigther.phy_fps = phy_fps
+		newFigther.action_repeat = action_repeat			
+						
 		var team_id =  i % 2 + 0  # Assigns UAVs alternately to team 1 or 2
 		
-		if team_id == 1:
-			addPlane.init_position = Vector3(i * 5.0 * SConv.NM2GDM, 20000 * SConv.FT2GDM , 30 * SConv.NM2GDM )
-			addPlane.init_rotation = Vector3(0, 0, 0)			
-		else:
-			addPlane.init_position = Vector3(i * 5.0 * SConv.NM2GDM, 20000 * SConv.FT2GDM, -30 * SConv.NM2GDM )
-			addPlane.init_rotation = Vector3(0, 180, 0)
+		if team_id == 1: #Blue TEAM
+			var offset = get_tree().get_nodes_in_group("blue").size()
+			newFigther.init_position = Vector3(offset * 5.0 * SConv.NM2GDM, 20000 * SConv.FT2GDM , 40 * SConv.NM2GDM )
+			newFigther.init_rotation = Vector3(0, 0, 0)
+			newFigther.behaviour = "external"
+			newFigther.add_to_group("AGENT")			
+			newFigther.add_to_group("blue")			
 		
-		
-		addPlane.init_hdg = addPlane.init_rotation.y
-		addPlane.desired_hdg = addPlane.init_hdg
+		else: #Red TEAM
+			var offset = get_tree().get_nodes_in_group("red").size()
+			newFigther.init_position = Vector3(offset * 5.0 * SConv.NM2GDM, 20000 * SConv.FT2GDM, -40 * SConv.NM2GDM )
+			newFigther.init_rotation = Vector3(0, 180, 0)
+			newFigther.behaviour = "baseline1"
+			newFigther.add_to_group("BASELINE")
+			newFigther.add_to_group("red" )
+			num_uavs -= 1
 				
-		addPlane.set_meta('id', i + 2)
-		addPlane.team_id = team_id
-		addPlane.add_to_group("blue" if addPlane.team_id == 1 else "red" )
+		newFigther.add_to_group("FIGTHERS")
+		newFigther.init_hdg = newFigther.init_rotation.y
+		newFigther.hdg_input = newFigther.init_hdg
+				
+		newFigther.set_meta('id', i + 2)
+		newFigther.team_id = team_id
+
 		
-		addPlane.phy_fps = phy_fps
+		env.get_node("Fighters").add_child(newFigther)    
+		env.uavs.append(newFigther)
 		
-		env.get_node("Fighters").add_child(addPlane)    
-		env.uavs.append(addPlane)
-		
-		
+	
+	agents   = get_tree().get_nodes_in_group("AGENT")
+	enemies  = get_tree().get_nodes_in_group("BASELINE")
+	fighters = get_tree().get_nodes_in_group("FIGTHERS")
+				
 func _set_num_targets():
 	num_targets = args.get("num_targets", DEFAULT_NUM_TARGETS).to_int()
 	
@@ -199,8 +209,7 @@ func _set_num_targets():
 		addGoal.set_meta('id', i + 1)
 		env.get_node("Goals").add_child(addGoal)
 		env.goals.append([addGoal,-1])	
-		env.goalsPending.append(len(env.goals)-1)
-	
+		env.goalsPending.append(len(env.goals)-1)	
 	
 func _set_action_repeat():
 	action_repeat = args.get("action_repeat", DEFAULT_ACTION_REPEAT).to_int()
@@ -213,14 +222,13 @@ func _initialize():
 	args = _get_args()	
 	_set_seed()	
 	_set_action_repeat()
-	_set_num_uavs()
-	_get_agents()
+	_set_agents()	
+	 
 	_set_num_targets()
 	_set_heuristic("AP")
 	
 	phy_fps = args.get("physics_fps", DEFAULT_PHYSICS_FPS).to_int()    
-	 	
-		
+	 			
 	Engine.physics_ticks_per_second = _get_speedup() * phy_fps  # Replace with function body.
 	Engine.time_scale = _get_speedup() * 1.0 
 	prints("physics ticks", Engine.physics_ticks_per_second, Engine.time_scale, _get_speedup(), speed_up)
@@ -343,17 +351,18 @@ func _call_method_on_agents(method):
 	return returns
 
 func _reset_agents_if_done():
-	for agent in agents:
-		if agent.get_done(): 
-			agent.set_done_false()
-		agent.reactivate()
+	for uav in fighters:
+		if uav.get_done(): 
+			uav.set_done_false()
+		uav.reactivate()
 
 func _reset_all_agents():
 	if initialized:
-		for agent in agents:
-			agent.needs_reset = true
-			agent.reactivate()
-			agent.reset()   
+		for uav in fighters:
+			uav.needs_reset = true
+			uav.reactivate()
+			uav.reset()  
+			
 
 func _get_obs_from_agents():
 	var obs = []
@@ -390,4 +399,9 @@ func _input(event):
 		just_reset = true
 		env.goalsPending.append(len(env.goals)-1)
 		_reset_all_agents()
-		
+	
+func clamp_array(arr : Array, min:float, max:float):
+	var output : Array = []
+	for a in arr:
+		output.append(clamp(a, min, max))
+	return output	

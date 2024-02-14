@@ -9,21 +9,6 @@ from godot_rl.core.godot_env import GodotEnv
 from godot_rl.core.utils import lod_to_dol
 import time
 
-def encode_escolhas(ids_tarefas):
-    # Cria uma sequência de dígitos binários correspondente aos IDs das tarefas,
-    # adicionando zeros à esquerda para que cada ID tenha 6 dígitos binários
-    escolhas_bin = ''.join(format(id_tarefa, '06b') for id_tarefa in ids_tarefas)
-    # Converte a sequência de dígitos binários para um número inteiro
-    escolhas_int = int(escolhas_bin, 2)
-    return escolhas_int
-
-def decode_escolhas(escolhas_int, num_tarefas):
-    # Converte o número inteiro para uma sequência de dígitos binários com zero à esquerda
-    escolhas_bin = bin(escolhas_int)[2:].zfill(num_tarefas * 6)
-    # Separa a sequência de dígitos binários em grupos de 6 para obter os IDs das tarefas
-    ids_tarefas = [int(escolhas_bin[i:i+6], 2) for i in range(0, len(escolhas_bin), 6)]
-    return ids_tarefas
-
 
 parser = argparse.ArgumentParser(allow_abbrev=False)
 parser.add_argument(
@@ -57,12 +42,14 @@ for e in range(episodes):
     
     print(e)
     env.reset()
-    for i in range(1000):
+    
+    print(env.num_envs)
+    for i in range(100):
         
         action = env.action_space.sample()
                 
         #print("Action\n", action)
-        action = [np.array([5, 45 + i, 40000, 0]) for x in action for i in range(env.num_envs)]
+        action = [np.array([0, 0, 20000, 0]) for x in action for i in range(env.num_envs)]
         
         # hdg_input = action["hdg"]
 	    # level_input = action["level"] * SConv.FT2GDM	
@@ -80,12 +67,12 @@ for e in range(episodes):
         #print("\n",clipped_actions)            
         #action =  np.ndarray([0.5, 0.5])
         obs, reward, done, trunc, info = env.step(action, order_ij=True)
-        #print (done)
+        print (obs)
         
         if False not in done:
            break 
         
-        #print (info)
+        # print (info)
         #print ("\n",action)
         #print(obs)
 

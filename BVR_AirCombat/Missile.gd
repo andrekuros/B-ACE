@@ -3,10 +3,10 @@ extends RigidBody3D
 const SConv = preload("res://Figther_assets.gd").SConv
 
 var target: Node3D
-var speed: float = 2000.0 #* SConv.KNOT2GDM_S
+var speed: float = 750.0 #* SConv.KNOT2GDM_S
 var turn_speed: float = 2.0
 
-var time_of_flight: float = 10.0 
+var time_of_flight: float = 50.0 
 var pitbull = false
 
 var initial_velocity: Vector3
@@ -45,7 +45,7 @@ func _integrate_forces(state: PhysicsDirectBodyState3D) -> void:
 			var target_vector = to_local(target.position)
 			var target_distance = target_vector.length()
 			#print(target_distance)
-			if target_distance < 15 * SConv.NM2GDM:
+			if target_distance < 10 * SConv.NM2GDM and not pitbull:
 				pitbull = true
 				#print("Pitbull")
 

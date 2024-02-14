@@ -8,6 +8,7 @@ const SConv = preload("res://Figther_assets.gd").SConv
 @onready var tasksDoneViewer = env.get_node("CanvasLayer/Control/TasksDone")
 # Assume you have a Missile scene set up with its own script for homing in on targets
 var phy_fps = 20
+var action_repeat = 10
 
 # AIR COMBAT DATA
 var team_id = 1 # Example: 1 or 2 for two different teams
@@ -26,6 +27,7 @@ var model = "Simple"
 var current_speed: float = 550 * SConv.KNOT2GDM_S 
 var throttle: float = 1.0  # Throttle position: 0.0 (idle) to 1.0 (full)
 var bank_angle: float = 0.0  # Current bank angle
+var current_hdg = 0.0
 
 var	hdg_input: float = 0.0 
 var	level_input: float = 20000 * SConv.FT2GDM 
@@ -41,10 +43,7 @@ var max_pitch = deg_to_rad(45.0)
 var min_pitch = deg_to_rad(-15.0)
 var pitch_speed = 1.0
 
-# Constants and variables for flight dynamics
-#var max_turn_speed = 10.0  /  phy_fps   
 var max_g = 9.0
-
 
 var init_position = Vector3.ZERO
 var init_rotation = Vector3.ZERO
@@ -58,7 +57,7 @@ var cur_goal = null
 
 var done = false
 var _heuristic = "AP" #"model" / "AP"
-var behaviour = "external" # baseline1
+var behaviour = "baseline1" # baseline1 / external
 var AP_mode = "FlyHdg" #"GoTo" / "Hold"
 var holdStatus = 0
 var best_goal_distance := 10000.0
@@ -66,7 +65,7 @@ var transform_backup = null
 
 #Simulations config
 var n_steps = 0
-const MAX_STEPS = 200000
+const MAX_STEPS = 5000
 var needs_reset = false
 var reward = 0.0
 var activated = true
@@ -80,9 +79,10 @@ var max_shoot_range_var = 0.1
 var max_shoot_range_adjusted = -1
 
 var tatic_status = "Search" #"MissileSupport / Commit / Evade / Recommit
-var tatic_time = 0
+var tatic_time = 0.0
+var tatic_start = 0.0
+var last_beh_proc = 0.0
 var int_hdg = 0.0
-var desired_hdg = 0.0
 
 var pitch_input  = 0.0
 var turn_input = 0.0
@@ -93,8 +93,7 @@ var data_link_list = []
 var in_flight_missile = null
 
 func is_type(type): return type == "Fighter" 
-func    get_type(): return "Fighter"	
-
+func get_type(): return "Fighter"	
 
 func _ready():
 	transform_backup = transform
@@ -103,7 +102,6 @@ func _ready():
 	team_color = Color.BLUE if team_id == 1 else Color.RED  # Set the desired color.	
 	change_mesh_instance_colors(root_node, team_color)
 	reset()
-	
 	
 func reset():
 	needs_reset = false
@@ -117,7 +115,8 @@ func reset():
 	#rotation = Vector3.ZERO	
 	rotation_degrees = init_rotation#Vector3(0, 0, 0) # Adjust as necessary	
 		
-	desired_hdg = init_rotation.y
+	hdg_input = init_rotation.y
+	current_hdg = init_hdg
 	
 	n_steps = 0
 	found_goal = false
@@ -162,26 +161,34 @@ func set_done_false():
 	
 func get_obs():
 		
-	##var goal_vector = (cur_goal.position - position).normalized() # global frame of reference
-	#var goal_vector = to_local(cur_goal.position)
-	#var goal_distance = goal_vector.length()
-	#goal_vector = goal_vector.normalized()
-	#goal_distance = clamp(goal_distance, 0.0, 50.0)
-	#
-	#var next_goal = env.get_next_goal(cur_goal)
-	#var next_goal_vector = to_local(next_goal.position)
-	#var next_goal_distance = next_goal_vector.length()
-	#next_goal_vector = next_goal_vector.normalized()
-	#next_goal_distance = clamp(next_goal_distance, 0.0, 50.0)  
-
-	var obs = [
-		missiles,
-		len(radar_track_list),
-		activated,
-		needs_reset		
-	]
+	var tracks_info = []
 	
-	return {"obs":obs}
+	var own_info = { "pos_x"     : global_transform.origin.x / 3000, 
+					 "pos_z"     : global_transform.origin.z / 3000,
+					 "altitude"  : global_transform.origin.y / 150.0,
+					 "heading"   : current_hdg / 180.0,
+					 "speed"     : current_speed / max_speed,
+					 "missiles"  : missiles / 4.0,
+					 "in_flight_missile": 1 if in_flight_missile != null else 0,										 
+					}
+	
+	for track in radar_track_list.values():
+		var info
+		if track.activated:		
+			info = { "altitude"   : global_transform.origin.y / 150.0,
+					 "aspect"     : track.radial / 180.0,
+					 "distance"   : track.dist,
+					 "is_hpt"	  : 1 if track.id == HPT else 0
+					}
+		else:
+			info = { "altitude"   : 0.0,
+					 "aspect"     : 0.0,
+					 "distance"   : 0.0,
+					 "is_hpt"	  : 0
+					}
+		tracks_info.append(info)
+	
+	return {"obs": {"own_info": own_info, "tracks_info" : tracks_info}}
 
 func update_reward():
 	reward -= 0.01 # step penalty
@@ -246,11 +253,10 @@ func set_action(action):
 	desiredG_input = action["desiredG_input"]
 	shoot_input = action["shoot_input"][0]
 	
-	env.debug_text.add_text("\nlevel_input:" + str(level_input)) 
-	env.debug_text.add_text("\nhdg_input:" + str(hdg_input)) 
-	env.debug_text.add_text("\ndesiredG_input:" + str(desiredG_input))	
+	#env.debug_text.add_text("\nlevel_input:" + str(level_input)) 
+	#env.debug_text.add_text("\nhdg_input:" + str(hdg_input)) 
+	#env.debug_text.add_text("\ndesiredG_input:" + str(desiredG_input))		
 	
-		
 func process_tracks():	
 	
 	var min_dist = 100000
@@ -273,53 +279,77 @@ func process_tracks():
 			if dist < min_dist:
 				min_dist = dist
 				new_HPT = id
+				
 							
 			#print("own_id: ", get_meta('id'), " t_td", track.id, " track_dist: ", dist, " rad:", radial)
 	if HPT == -1 and new_HPT != null:
 		HPT = new_HPT
 		#print("HPT_set", HPT)
 		
-func process_behavior():
+func process_behavior(delta_s):
 	
-	tatic_time += 1
+	tatic_time += delta_s
+	
+	if tatic_status == "Search":
 		
-	if tatic_status == "MissileSupport": 
+		if HPT != -1:				
+			
+			max_shoot_range_adjusted = max_shoot_range  + randf_range(-max_shoot_range_var * max_shoot_range, max_shoot_range_var * max_shoot_range)			
+			
+			tatic_status = "Engage"        
+			AP_mode = "FlyHdg"				
+			desiredG_input = 3.0
+			tatic_time = 0
+			#print(tatic_status, tatic_time)	
 		
-		if is_instance_valid(in_flight_missile):
-			if in_flight_missile.pitbull or in_flight_missile == null:
-			
-				tatic_status = "Evade"        
-				AP_mode = "FlyHdg"
-				tatic_time = 0		
-				
-				var oposite_hdg = rad_to_deg(global_transform.basis.get_euler().y) + 180				
-				desired_hdg = fmod(oposite_hdg + 180, 360) - 180								
-				#print(tatic_status, tatic_time, " / ", desired_hdg)			
-
-	if tatic_status == "Evade" and tatic_time >= 10:
+					
+	if tatic_status == "Engage":
 		
-		tatic_status = "Search"		
-		AP_mode = "FlyHdg"
-		
-		var oposite_hdg = rad_to_deg(global_transform.basis.get_euler().y) + 180				
-		desired_hdg = fmod(oposite_hdg + 180, 360) - 180		
-				
-		tatic_time = 0		
-		#print(tatic_status, tatic_time, " / ", desired_hdg)
-			
-	if tatic_status == "Search":# and team_id != 0:		
-		if HPT != -1:	
-			
-			if max_shoot_range_adjusted == -1:
-				max_shoot_range_adjusted = max_shoot_range  + randf_range(-max_shoot_range_var * max_shoot_range, max_shoot_range_var * max_shoot_range)
-			
+		if HPT != -1:							
 			#print(radar_track_list[HPT].dist, "Shot: ", max_shoot_range_adjusted)	
+			hdg_input = fmod(radar_track_list[HPT].radial + current_hdg, 360) 
+			#print("Hdg_target: ", hdg_input)
+			
 			if radar_track_list[HPT].dist < max_shoot_range_adjusted:
 				if launch_missile_at_target(radar_track_list[HPT].obj): 
 					tatic_status = "MissileSupport"			
 					tatic_time = 0
 					max_shoot_range_adjusted = -1
 					#print(tatic_status, tatic_time)
+		else:
+			tatic_status = "Search"        
+			AP_mode = "FlyHdg"				
+			tatic_time = 0	
+			#print(tatic_status, tatic_time)
+			
+		
+	if tatic_status == "MissileSupport": 
+		
+		if is_instance_valid(in_flight_missile):			
+			if in_flight_missile.pitbull or in_flight_missile == null:
+			
+				tatic_status = "Evade"        
+				AP_mode = "FlyHdg"				
+				tatic_time = 0		
+								
+				var oposite_hdg = rad_to_deg(global_transform.basis.get_euler().y) + 180				
+				hdg_input = fmod(oposite_hdg + 180, 360) - 180
+				desiredG_input = 6.0								
+				#print(tatic_status, tatic_time, " / ", hdg_input)
+
+	if tatic_status == "Evade" and tatic_time >= 30:
+		
+		tatic_status = "Search"		
+		AP_mode = "FlyHdg"
+		
+		var oposite_hdg = rad_to_deg(global_transform.basis.get_euler().y) + 180				
+		hdg_input = fmod(oposite_hdg + 180, 360) - 180
+		desiredG_input = 3.0		
+				
+		tatic_time = 0		
+		#print(tatic_status, tatic_time, " / ", hdg_input)
+			
+
 
 func remove_track(track_id):
 	
@@ -328,15 +358,17 @@ func remove_track(track_id):
 	if radar_track_list.has(track_id):
 		radar_track_list[track_id].detected_status(false)
 		
-var _process_frame_count = 0
-
 
 func _physics_process(delta: float) -> void:
-			
-	#hdg_input = 0.0
-	#desiredG_input = 5.0	
-	#level_input = 300 * SConv.FT2GDM
+
+	current_hdg = rad_to_deg(global_transform.basis.get_euler().y)
 	
+	process_tracks()
+	
+	if n_steps % action_repeat == 0:
+		if behaviour == "baseline1":			
+			process_behavior(delta * (n_steps - last_beh_proc))
+			last_beh_proc = n_steps
 		
 	var turn_g = clamp(desiredG_input, desiredG_input,  max_g) * SConv.GRAVITY_GDM
 	var turn_speed =  turn_g / velocity.length() 
@@ -361,7 +393,6 @@ func _physics_process(delta: float) -> void:
 	update_reward()
 	
 		
-
 func zero_reward():
 	reward = 0.0  
 	
@@ -380,8 +411,7 @@ func process_behavior_actions():
 				max_shoot_range_adjusted = -1
 				#print(tatic_status, tatic_time)
 		shoot_input = 0
-		
-	
+			
 func process_manouvers_action():
 	#print(_heuristic)
 	if _heuristic == "model":
@@ -392,10 +422,8 @@ func process_manouvers_action():
 		#pitch_input = Input.get_action_strength("pitch_up") - Input.get_action_strength("pitch_down")
 	#
 	if _heuristic == "AP":		
-		#var targetHdg = aspect_to_obj(cur_goal)									
-		#var goal_vector = to_local(cur_goal.position)
-		#var goal_distance = goal_vector.length()
-		#
+		
+		
 		#if AP_mode == "GoTo": 
 														#
 			##print(targetHdg)
@@ -407,8 +435,7 @@ func process_manouvers_action():
 		#
 		if AP_mode == "FlyHdg":
 			#-------- HDG Adjust ----------#
-			# Calculate the heading difference between current and desired
-			var current_hdg = rad_to_deg(global_transform.basis.get_euler().y)						
+			# Calculate the heading difference between current and desired								
 			var hdg_diff = hdg_input - current_hdg			
 			# Normalize the heading difference to the range [-180, 180]
 			hdg_diff = fmod(hdg_diff + 180, 360) - 180
@@ -517,20 +544,16 @@ func launch_missile_at_target(target):
 	if missiles > 0 and target:
 		var new_missile = missile.instantiate()
 		change_mesh_instance_colors(new_missile, team_color)
-		
-		#new_missile.global_transform = global_transform	
-		new_missile.global_position = global_position
-		
+				
+		new_missile.global_position = global_position		
 		new_missile.set_target(target) 
 		new_missile.launch(velocity)			
 		new_missile.shooter = self
 		
-		env.add_child(new_missile)
-		
+		env.add_child(new_missile)		
 		in_flight_missile = new_missile
 								
-		missiles -= 1
-		#print("shot")
+		missiles -= 1		
 		return true
 	else:
 		return false

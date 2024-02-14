@@ -7,6 +7,10 @@ var uavs = Array()
 var cameraGlobal = null
 var cameraUav = null
 var uavCamId = 0
+
+const uav_cam_scaleVector = Vector3(3.0,  3.0,  3.0)
+const global_cam_scaleVector = Vector3(5.0,  5.0,  5.0)
+
 var mouse_sens = 0.1
 var camera_anglev=0
 
@@ -15,14 +19,11 @@ var camera_anglev=0
 
 var fighterObj = preload("res://Fighter.tscn")
 
-
 var time_start = 0
 var time_now = 0
 var rng = RandomNumberGenerator.new()
 var numTasksDone = 0
 
-var numTasks = 10
-var numUav = 1
 
 # Called when the node enters the scene tree for the first time.
 func _ready():
@@ -34,14 +35,10 @@ func _ready():
 	time_start = Time.get_unix_time_from_system()	
 		
 	cameraGlobal = get_node("CameraGlobal")
-	#cameraUav = figtherObj.instantiate().get_node("Camera3D")	
-		
-	print (cameraUav)
-	print (cameraGlobal)	
+	#cameraUav = figtherObj.instantiate().get_node("Camera3D")			
+	
 	cameraGlobal.make_current()
-	#Engine.physics_ticks_per_second = 3.0*60 # Replace with function body.
-	#Engine.time_scale = 1.0
-	#get_tree().set_time_scale(2.0)		
+	
 
 func get_next_goal(current_goal):
 	if current_goal == null:#or goals.is_empty():								
@@ -65,10 +62,15 @@ func _input(event):
 			if cameraGlobal.current:
 				cameraUav =  uavs[uavCamId].get_node("Camera3D")
 				cameraUav.make_current()
-				debug_text.add_text("\nCamera Changed (1)")
+				
+				for uav in uavs:
+					uav.get_node("RenderModel").set_scale(global_cam_scaleVector)
+				
 			else:
-				cameraGlobal.make_current()	
-				debug_text.add_text("\nCamera Changed (2)")
+				cameraGlobal.make_current()									
+
+				for uav in uavs:
+					uav.get_node("RenderModel").set_scale(uav_cam_scaleVector)
 	
 	
 	if event is InputEventMouseMotion:
