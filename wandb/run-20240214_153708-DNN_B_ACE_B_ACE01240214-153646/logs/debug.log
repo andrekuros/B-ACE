@@ -29,3 +29,5 @@ config: {'discount_factor': 0.98, 'estimation_step': 20, 'target_update_freq': 1
 2024-02-14 15:37:09,476 INFO    MainThread:27308 [wandb_run.py:_redirect():2178] Redirects installed.
 2024-02-14 15:37:09,477 INFO    MainThread:27308 [wandb_init.py:init():841] run started, returning control to user process
 2024-02-14 15:37:09,477 INFO    MainThread:27308 [wandb_run.py:_tensorboard_callback():1498] tensorboard callback: ./Logs\dqn_sisl\DNN_B_ACE_B_ACE01240214-153646, True
+2024-02-14 15:37:10,708 INFO    MainThread:27308 [jupyter.py:save_ipynb():373] not saving jupyter notebook
+2024-02-14 15:37:10,709 INFO    MainThread:27308 [wandb_init.py:_pause_backend():435] pausing backend
