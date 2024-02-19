@@ -101,6 +101,7 @@ class CollectorMA(Collector):
                         result = self.policy(self.data, last_state)
                 else:
                     result = self.policy(self.data, last_state)
+                print("COLLECTOR_MA (result):", result)
                 # update state / act / policy into self.data
                 policy = result.get("policy", Batch())
                 assert isinstance(policy, Batch)
@@ -117,6 +118,7 @@ class CollectorMA(Collector):
             
             # Step in the environment
             # step in env
+            print("CollectorMA:" , action_remap)
             obs_next, rew, terminated, truncated, info = self.env.step(
                 action_remap,  # type: ignore
                 ready_env_ids

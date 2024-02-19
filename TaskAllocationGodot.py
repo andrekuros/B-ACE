@@ -43,8 +43,8 @@ for e in range(episodes):
     print(e)
     env.reset()
     
-    print(env.num_envs)
-    for i in range(100):
+    #print(env.num_envs)
+    for i in range(1000):
         
         action = env.action_space.sample()
                 

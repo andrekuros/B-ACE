@@ -3,10 +3,10 @@ extends RigidBody3D
 const SConv = preload("res://Figther_assets.gd").SConv
 
 var target: Node3D
-var speed: float = 750.0 #* SConv.KNOT2GDM_S
+var speed: float = 150.0 #* SConv.KNOT2GDM_S
 var turn_speed: float = 2.0
 
-var time_of_flight: float = 50.0 
+var time_of_flight: float = 35.0 
 var pitbull = false
 
 var initial_velocity: Vector3
@@ -58,6 +58,9 @@ func _integrate_forces(state: PhysicsDirectBodyState3D) -> void:
 func set_target(new_target: Node3D) -> void:
 	target = new_target
 
+func lost_support():
+	queue_free()
+	
 
 func _on_area_3d_area_entered(area):
 	
@@ -69,6 +72,8 @@ func _on_area_3d_area_entered(area):
 		#print("missile: Hit " , own_id, " -> ",id)
 		#body.remove_from_group("AGENT")
 		body.kill()
+		
+		shooter.kill_reward += 5.0
 		#body.visible = false
 		
 		queue_free() # Remove the missile from the scene

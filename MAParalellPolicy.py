@@ -6,8 +6,33 @@ import torch
 from tianshou.data import Batch, ReplayBuffer
 from tianshou.policy import BasePolicy
 from tianshou.env.pettingzoo_env_parallel import PettingZooParallelEnv
+
+from tianshou.policy import PGPolicy
+
 import numpy as np
 import torch
+
+# def _new_forward_PG(
+#     self,
+#     batch: Batch,
+#     state: Optional[Union[dict, Batch, np.ndarray]] = None,
+#     **kwargs: Any,
+# ) -> Batch:
+   
+#     logits, hidden = self.actor(batch.obs, state=state, info=batch.info)
+#     if isinstance(logits, tuple):
+#         dist = self.dist_fn(*logits)
+#     else:
+#         dist = self.dist_fn(logits)
+#     if self._deterministic_eval and not self.training:
+#         if self.action_type == "discrete":
+#             act = logits.argmax(-1)
+#         elif self.action_type == "continuous":
+#             act = logits
+#     else:
+#         act = dist.sample()
+#     return Batch(logits=logits, act=act, state=hidden, dist=dist)
+
 
 class MAParalellPolicy(BasePolicy):
     def __init__(self, policies: List[BasePolicy], env: PettingZooParallelEnv, device = None, **kwargs):
@@ -17,6 +42,11 @@ class MAParalellPolicy(BasePolicy):
         self.policies = {agent: policy for agent, policy in zip(env.agents, policies)}
         self.device = device if device is not None else "cpu"
 
+        
+        # for policy in policies:
+        #     if isinstance(policy, PGPolicy):                
+        #         policy.forward = _new_forward_PG 
+
 
     def forward(self, batch: Batch, state: Optional[Union[dict, Batch]] = None, **kwargs):
         action_dict = {}
@@ -24,11 +54,12 @@ class MAParalellPolicy(BasePolicy):
         
         for agent_id, policy in self.policies.items():
             agent_data = Batch({key: value[agent_id] if agent_id in value else Batch() for key, value in batch.items()})
-                                    
-            action = policy(agent_data).act
-            action_dict[agent_id] = action
-        
-        return Batch(act=action_dict)
+                                 
+            action_dict[agent_id] = policy(agent_data, state)  # doesn't map to the target action range
+            # act = policy.map_action(act, agent_data)
+            
+        print("MAPPARL: " , action_dict)
+        return action_dict#Batch(action_dict, state=state)
     
     # def _compute_joint_next_q_values(self, sample_size: int, buffers: Dict[str, ReplayBuffer]) -> torch.Tensor:
     #     # Compute joint Q-values for the next state for all agents

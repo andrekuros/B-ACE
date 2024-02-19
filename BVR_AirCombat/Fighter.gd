@@ -65,16 +65,22 @@ var transform_backup = null
 
 #Simulations config
 var n_steps = 0
-const MAX_STEPS = 5000
+const MAX_STEPS = 10 * 60 * 20
 var needs_reset = false
+
 var reward = 0.0
+var kill_reward = 0.0
+var killed_reward = 0.0
+var shot_reward = 0.0
+var miss_reward = 0.0
+
 var activated = true
 
 var material2 = null
 var team_color = null
 
 #Heuristic Behavior Params
-var max_shoot_range = 40.0 * SConv.NM2GDM
+var max_shoot_range = 35.0 * SConv.NM2GDM
 var max_shoot_range_var = 0.1
 var max_shoot_range_adjusted = -1
 
@@ -163,35 +169,66 @@ func get_obs():
 		
 	var tracks_info = []
 	
-	var own_info = { "pos_x"     : global_transform.origin.x / 3000, 
-					 "pos_z"     : global_transform.origin.z / 3000,
-					 "altitude"  : global_transform.origin.y / 150.0,
-					 "heading"   : current_hdg / 180.0,
-					 "speed"     : current_speed / max_speed,
-					 "missiles"  : missiles / 4.0,
-					 "in_flight_missile": 1 if in_flight_missile != null else 0,										 
-					}
+	#var own_info = { "pos_x"     : global_transform.origin.x / 3000, 
+					 #"pos_z"     : global_transform.origin.z / 3000,
+					 #"altitude"  : global_transform.origin.y / 150.0,
+					 #"heading"   : current_hdg / 180.0,
+					 #"speed"     : current_speed / max_speed,
+					 #"missiles"  : missiles / 4.0,
+					 #"in_flight_missile": 1 if in_flight_missile != null else 0,										 
+					#}
+	
+	
+	var own_info = [ global_transform.origin.x / 3000,
+					 global_transform.origin.z / 3000,
+					 global_transform.origin.y / 150.0,
+					 current_hdg / 180.0,
+					 current_speed / max_speed,
+					 missiles / 4.0,
+					 1 if is_instance_valid(in_flight_missile) else 0
+					]
 	
 	for track in radar_track_list.values():
 		var info
 		if track.activated:		
-			info = { "altitude"   : global_transform.origin.y / 150.0,
-					 "aspect"     : track.radial / 180.0,
-					 "distance"   : track.dist,
-					 "is_hpt"	  : 1 if track.id == HPT else 0
-					}
+			#info = { "altitude"   : global_transform.origin.y / 150.0,
+					 #"aspect"     : track.radial / 180.0,
+					 #"distance"   : track.dist,
+					 #"is_hpt"	  : 1 if track.id == HPT else 0
+					#}
+			info = [ global_transform.origin.y / 150.0,
+					 track.radial / 180.0,
+					 track.dist,
+					 1 if track.id == HPT else 0
+					]
 		else:
-			info = { "altitude"   : 0.0,
-					 "aspect"     : 0.0,
-					 "distance"   : 0.0,
-					 "is_hpt"	  : 0
-					}
-		tracks_info.append(info)
+			#info = { "altitude"   : 0.0,
+					 #"aspect"     : 0.0,
+					 #"distance"   : 0.0,
+					 #"is_hpt"	  : 0
+					#}
+			info = [ 0.0, 0.0 , 0.0, 0.0 ]
+		tracks_info.append_array(info)
 	
-	return {"obs": {"own_info": own_info, "tracks_info" : tracks_info}}
+	for track in range(2 - len(tracks_info)):
+		tracks_info.append_array([ 0.0, 0.0 , 0.0, 0.0 ])
+	
+	var obs = own_info + tracks_info
+	#return {"obs": {"own_info": own_info, "tracks_info" : tracks_info}}
+	return {"observation": obs}
 
 func update_reward():
+	
+	reward += kill_reward
+	reward += shot_reward
+	reward += miss_reward 
+	
 	reward -= 0.01 # step penalty
+	
+	kill_reward = 0.0
+	shot_reward = 0.0
+	miss_reward = 0.0
+	
 	#reward += shaping_reward()
 
 func get_reward():
@@ -213,10 +250,10 @@ func set_heuristic(heuristic):
 func get_obs_space():
 	# typs of obs space: box, discrete, repeated
 	return {
-		"obs": {
-			"size": [len(get_obs()["obs"])],
+		"observation": {
+			"size": [len(get_obs()["observation"])],
 			"space": "box"
-	}
+		}
 	}   
 
 func get_action_space():
@@ -234,8 +271,8 @@ func get_action_space():
 			"action_type": "continuous"
 		} ,
 		"shoot_input" : {
-			"size": 2,
-			"action_type": "discrete"
+			"size": 1,
+			"action_type": "continuous"
 		}         		
 		
 		#"flyTo" : {		
@@ -251,11 +288,12 @@ func set_action(action):
 	hdg_input = action["hdg_input"]	
 	level_input = action["level_input"] * SConv.FT2GDM	
 	desiredG_input = action["desiredG_input"]
-	shoot_input = action["shoot_input"][0]
+	shoot_input = action["shoot_input"]
 	
-	#env.debug_text.add_text("\nlevel_input:" + str(level_input)) 
-	#env.debug_text.add_text("\nhdg_input:" + str(hdg_input)) 
-	#env.debug_text.add_text("\ndesiredG_input:" + str(desiredG_input))		
+	env.debug_text.add_text("\nlevel_input:" + str(level_input)) 
+	env.debug_text.add_text("\nhdg_input:" + str(hdg_input)) 
+	env.debug_text.add_text("\ndesiredG_input:" + str(desiredG_input))
+	env.debug_text.add_text("\nhoot_input:" + str(shoot_input))			
 	
 func process_tracks():	
 	
@@ -336,6 +374,12 @@ func process_behavior(delta_s):
 				hdg_input = fmod(oposite_hdg + 180, 360) - 180
 				desiredG_input = 6.0								
 				#print(tatic_status, tatic_time, " / ", hdg_input)
+		else:
+			tatic_status = "Search"        
+			AP_mode = "FlyHdg"				
+			tatic_time = 0	
+			#print(tatic_status, tatic_time)
+			
 
 	if tatic_status == "Evade" and tatic_time >= 30:
 		
@@ -350,11 +394,16 @@ func process_behavior(delta_s):
 		#print(tatic_status, tatic_time, " / ", hdg_input)
 			
 
-
 func remove_track(track_id):
 	
 	if HPT == track_id:
 		HPT = -1
+		if is_instance_valid(in_flight_missile):			
+			if not in_flight_missile.pitbull and in_flight_missile != null:
+				in_flight_missile.lost_support()
+				in_flight_missile = null
+				miss_reward -= 1.0
+				
 	if radar_track_list.has(track_id):
 		radar_track_list[track_id].detected_status(false)
 		
@@ -370,6 +419,13 @@ func _physics_process(delta: float) -> void:
 			process_behavior(delta * (n_steps - last_beh_proc))
 			last_beh_proc = n_steps
 		
+	if  behaviour == "external"  and shoot_input > 0:
+		if launch_missile_at_target(radar_track_list[HPT].obj): 						
+			shoot_input = -1.0
+						
+					
+					
+	
 	var turn_g = clamp(desiredG_input, desiredG_input,  max_g) * SConv.GRAVITY_GDM
 	var turn_speed =  turn_g / velocity.length() 
 	
@@ -390,6 +446,10 @@ func _physics_process(delta: float) -> void:
 	move_and_slide()
 	
 	n_steps += 1
+	
+	if n_steps >= MAX_STEPS:
+		done = true
+	
 	update_reward()
 	
 		
@@ -485,11 +545,10 @@ func goal_reached(goal):
 			
 			tasksDoneViewer.text = str(len(env.goalsPending)) + " / " + str(len(env.goals))
 			
-			if len(env.goalsPending) == 0:
-				done = true
-				tasksDoneViewer.text = "ALL DONE"
-								
-				
+			#if len(env.goalsPending) == 0:
+				#done = true
+				#tasksDoneViewer.text = "ALL DONE"
+												
 		#print("Next Target")
 		cur_goal = null#env.get_next_goal(cur_goal)
 		if len(env.goals) > 1:
@@ -515,11 +574,11 @@ func goal_reached(goal):
 			AP_mode = "Hold"
 			#print("Mode == Hold")
 	
-func exited_game_area():
-	done = true
-	reward -= 10.0
-	exited_arena = true
-	reset()
+#func exited_game_area():
+	#done = true
+	#reward -= 10.0
+	#exited_arena = true
+	#reset()
 
 #Kur Functions
 func aspect_to_obj(obj):
@@ -554,6 +613,7 @@ func launch_missile_at_target(target):
 		in_flight_missile = new_missile
 								
 		missiles -= 1		
+		shot_reward += 0.1
 		return true
 	else:
 		return false
@@ -566,6 +626,8 @@ func kill():
 	input_ray_pickable = false	
 	visible = false
 	activated = false
+	done = true	
+	reward += -5.0
 		
 func reactivate():
 		# Enabling processing

@@ -1,0 +1,53 @@
+{
+    "os": "Windows-10-10.0.22621-SP0",
+    "python": "3.11.6",
+    "heartbeatAt": "2024-02-17T05:18:00.559171",
+    "startedAt": "2024-02-17T05:17:58.500182",
+    "docker": null,
+    "cuda": null,
+    "args": [],
+    "state": "running",
+    "program": "d:\\GoDot\\godot_rl_envs-1\\BenchMARL_Training.py",
+    "codePathLocal": "BenchMARL_Training.py",
+    "codePath": "BenchMARL_Training.py",
+    "git": {
+        "remote": "https://github.com/andrekuros/godot_rl_envs.git",
+        "commit": "b841825034a8d359728d9c1701c476ddba9fb62d"
+    },
+    "email": "ANDREKUROS@GMAIL.COM",
+    "root": "D:/GoDot/godot_rl_envs-1",
+    "host": "ThinkPadKur",
+    "username": "andre",
+    "executable": "D:\\Python311\\python.exe",
+    "cpu_count": 6,
+    "cpu_count_logical": 12,
+    "cpu_freq": {
+        "current": 1200.0,
+        "min": 0.0,
+        "max": 3601.0
+    },
+    "cpu_freq_per_core": [
+        {
+            "current": 1200.0,
+            "min": 0.0,
+            "max": 3601.0
+        }
+    ],
+    "disk": {
+        "/": {
+            "total": 206.47167587280273,
+            "used": 54.90140914916992
+        }
+    },
+    "gpu": "NVIDIA GeForce RTX 2070 SUPER",
+    "gpu_count": 1,
+    "gpu_devices": [
+        {
+            "name": "NVIDIA GeForce RTX 2070 SUPER",
+            "memory_total": 8589934592
+        }
+    ],
+    "memory": {
+        "total": 23.916156768798828
+    }
+}

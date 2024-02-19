@@ -1,0 +1,43 @@
+Failure # 1 (occurred at 2024-02-15_13-49-41)
+The actor died because of an error raised in its creation task, [36mray::PPO.__init__()[39m (pid=26071, ip=172.23.148.251, actor_id=b3fee9da8ff42d8190ad9d8401000000, repr=PPO)
+  File "/home/kuros/.local/lib/python3.10/site-packages/ray/rllib/evaluation/worker_set.py", line 229, in _setup
+    self.add_workers(
+  File "/home/kuros/.local/lib/python3.10/site-packages/ray/rllib/evaluation/worker_set.py", line 616, in add_workers
+    raise result.get()
+  File "/home/kuros/.local/lib/python3.10/site-packages/ray/rllib/utils/actor_manager.py", line 487, in __fetch_result
+    result = ray.get(r)
+ray.exceptions.RayActorError: The actor died because of an error raised in its creation task, [36mray::RolloutWorker.__init__()[39m (pid=26169, ip=172.23.148.251, actor_id=4f1d6bdacf72d949b74773a801000000, repr=<ray.rllib.evaluation.rollout_worker.RolloutWorker object at 0x7f4de6e5d0f0>)
+  File "/home/kuros/.local/lib/python3.10/site-packages/ray/rllib/evaluation/rollout_worker.py", line 535, in __init__
+    self._update_policy_map(policy_dict=self.policy_dict)
+  File "/home/kuros/.local/lib/python3.10/site-packages/ray/rllib/evaluation/rollout_worker.py", line 1746, in _update_policy_map
+    self._build_policy_map(
+  File "/home/kuros/.local/lib/python3.10/site-packages/ray/rllib/evaluation/rollout_worker.py", line 1857, in _build_policy_map
+    new_policy = create_policy_for_framework(
+  File "/home/kuros/.local/lib/python3.10/site-packages/ray/rllib/utils/policy.py", line 141, in create_policy_for_framework
+    return policy_class(observation_space, action_space, merged_config)
+  File "/home/kuros/.local/lib/python3.10/site-packages/ray/rllib/algorithms/ppo/ppo_torch_policy.py", line 49, in __init__
+    TorchPolicyV2.__init__(
+  File "/home/kuros/.local/lib/python3.10/site-packages/ray/rllib/policy/torch_policy_v2.py", line 96, in __init__
+    model, dist_class = self._init_model_and_dist_class()
+  File "/home/kuros/.local/lib/python3.10/site-packages/ray/rllib/policy/torch_policy_v2.py", line 527, in _init_model_and_dist_class
+    model = ModelCatalog.get_model_v2(
+  File "/home/kuros/.local/lib/python3.10/site-packages/ray/rllib/models/catalog.py", line 721, in get_model_v2
+    return wrapper(
+  File "/home/kuros/.local/lib/python3.10/site-packages/ray/rllib/models/torch/visionnet.py", line 32, in __init__
+    model_config["conv_filters"] = get_filter_config(obs_space.shape)
+  File "/home/kuros/.local/lib/python3.10/site-packages/ray/rllib/models/utils.py", line 226, in get_filter_config
+    raise ValueError(
+ValueError: No default configuration for obs shape [7, 7, 3], you must specify `conv_filters` manually as a model option. Default configurations are only available for inputs of the following shapes: [42, 42, K], [84, 84, K], [64, 64, K], [10, 10, K], [240, 320, K], and [480, 640, K]. You may alternatively want to use a custom model or preprocessor.
+
+During handling of the above exception, another exception occurred:
+
+[36mray::PPO.__init__()[39m (pid=26071, ip=172.23.148.251, actor_id=b3fee9da8ff42d8190ad9d8401000000, repr=PPO)
+  File "/home/kuros/.local/lib/python3.10/site-packages/ray/rllib/algorithms/algorithm.py", line 516, in __init__
+    super().__init__(
+  File "/home/kuros/.local/lib/python3.10/site-packages/ray/tune/trainable/trainable.py", line 161, in __init__
+    self.setup(copy.deepcopy(self.config))
+  File "/home/kuros/.local/lib/python3.10/site-packages/ray/rllib/algorithms/algorithm.py", line 638, in setup
+    self.workers = WorkerSet(
+  File "/home/kuros/.local/lib/python3.10/site-packages/ray/rllib/evaluation/worker_set.py", line 181, in __init__
+    raise e.args[0].args[2]
+ValueError: No default configuration for obs shape [7, 7, 3], you must specify `conv_filters` manually as a model option. Default configurations are only available for inputs of the following shapes: [42, 42, K], [84, 84, K], [64, 64, K], [10, 10, K], [240, 320, K], and [480, 640, K]. You may alternatively want to use a custom model or preprocessor.

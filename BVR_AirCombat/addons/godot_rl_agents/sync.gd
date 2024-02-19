@@ -169,7 +169,7 @@ func _set_agents():
 		
 		if team_id == 1: #Blue TEAM
 			var offset = get_tree().get_nodes_in_group("blue").size()
-			newFigther.init_position = Vector3(offset * 5.0 * SConv.NM2GDM, 20000 * SConv.FT2GDM , 40 * SConv.NM2GDM )
+			newFigther.init_position = Vector3(offset * 10.0 * SConv.NM2GDM, 20000 * SConv.FT2GDM , 30 * SConv.NM2GDM )
 			newFigther.init_rotation = Vector3(0, 0, 0)
 			newFigther.behaviour = "external"
 			newFigther.add_to_group("AGENT")			
@@ -177,7 +177,7 @@ func _set_agents():
 		
 		else: #Red TEAM
 			var offset = get_tree().get_nodes_in_group("red").size()
-			newFigther.init_position = Vector3(offset * 5.0 * SConv.NM2GDM, 20000 * SConv.FT2GDM, -40 * SConv.NM2GDM )
+			newFigther.init_position = Vector3(offset * 10.0 * SConv.NM2GDM, 20000 * SConv.FT2GDM, -30 * SConv.NM2GDM )
 			newFigther.init_rotation = Vector3(0, 180, 0)
 			newFigther.behaviour = "baseline1"
 			newFigther.add_to_group("BASELINE")
@@ -265,7 +265,7 @@ func _physics_process(delta):
 		
 			var reply = {
 				"type": "reset",
-				"obs": obs
+				"observation": obs
 			}
 			_send_dict_as_json_message(reply)
 			# this should go straight to getting the action and setting it checked the agent, no need to perform one phyics tick
@@ -282,15 +282,15 @@ func _physics_process(delta):
 			
 			var reply = {
 				"type": "step",
-				"obs": obs,
+				"observation": obs,
 				"reward": reward,
 				"done": done
 			}
 			_send_dict_as_json_message(reply)
 		
 		var handled = handle_message()
-	#else:
-		#_reset_agents_if_done()
+	else:
+		_reset_agents_if_done()
 
 func handle_message() -> bool:
 	# get json message: reset, step, close
@@ -351,10 +351,10 @@ func _call_method_on_agents(method):
 	return returns
 
 func _reset_agents_if_done():
-	for uav in fighters:
-		if uav.get_done(): 
-			uav.set_done_false()
-		uav.reactivate()
+	
+	var dones  = _get_done_from_agents()	
+	if are_all_true(dones):	
+		_reset_all_agents()
 
 func _reset_all_agents():
 	if initialized:
@@ -380,12 +380,20 @@ func _get_reward_from_agents():
 func _get_done_from_agents():
 	var dones = []
 	
+	var win_done = true
+	for enemy in enemies:
+		if not enemy.done:
+			win_done = false			
+			break 
+
 	for agent in agents:
-		var done = agent.get_done()
+		if win_done:
+			dones.append(win_done)
+			print("WinbdOnwe")
+		else: 
+			dones.append(agent.get_done())		
 		#if done: 
 		#	agent.set_done_false()
-		dones.append(done)
-	
 	return dones    
 	
 func _set_agent_actions(actions):
@@ -405,3 +413,9 @@ func clamp_array(arr : Array, min:float, max:float):
 	for a in arr:
 		output.append(clamp(a, min, max))
 	return output	
+
+func are_all_true(array):
+	for value in array:
+		if not value:
+			return false
+	return true
