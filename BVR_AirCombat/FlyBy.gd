@@ -61,14 +61,13 @@ func _input(event):
 		if event.pressed and event.keycode == KEY_C:
 			if cameraGlobal.current:
 				cameraUav =  uavs[uavCamId].get_node("Camera3D")
-				cameraUav.make_current()
+				cameraUav.make_current()				
 				
 				for uav in uavs:
 					uav.get_node("RenderModel").set_scale(global_cam_scaleVector)
 				
 			else:
-				cameraGlobal.make_current()									
-
+				cameraGlobal.make_current()													
 				for uav in uavs:
 					uav.get_node("RenderModel").set_scale(uav_cam_scaleVector)
 	

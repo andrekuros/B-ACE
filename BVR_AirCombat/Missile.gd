@@ -73,7 +73,7 @@ func _on_area_3d_area_entered(area):
 		#body.remove_from_group("AGENT")
 		body.kill()
 		
-		shooter.kill_reward += 5.0
+		shooter.kill_reward += 20.0
 		#body.visible = false
 		
 		queue_free() # Remove the missile from the scene

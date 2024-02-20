@@ -6,6 +6,8 @@ const SConv = preload("res://Figther_assets.gd").SConv
 
 @onready var env = get_tree().root.get_node("FlyBy")
 @onready var tasksDoneViewer = env.get_node("CanvasLayer/Control/TasksDone")
+@onready var actionsPanel = env.get_node("CanvasLayer/Control/ActionPanel")
+
 # Assume you have a Missile scene set up with its own script for homing in on targets
 var phy_fps = 20
 var action_repeat = 10
@@ -39,7 +41,7 @@ var wing_area = 50
 var max_speed = 650 * SConv.KNOT2GDM_S  # Example max speed value
 var min_speed = 250 * SConv.KNOT2GDM_S # Example min speed value
 
-var max_pitch = deg_to_rad(45.0)
+var max_pitch = deg_to_rad(35.0)
 var min_pitch = deg_to_rad(-15.0)
 var pitch_speed = 1.0
 
@@ -142,7 +144,7 @@ func reset():
 	activated = true
 
 	tatic_status = "Search" #"MissileSupport / Commit / Evade / Recommit
-	tatic_time = 0
+	tatic_time = 0.0	
 	
 	radar_track_list = {}
 	HPT = -1
@@ -187,34 +189,27 @@ func get_obs():
 					 missiles / 4.0,
 					 1 if is_instance_valid(in_flight_missile) else 0
 					]
-	
+		
 	for track in radar_track_list.values():
+		
 		var info
-		if track.activated:		
-			#info = { "altitude"   : global_transform.origin.y / 150.0,
-					 #"aspect"     : track.radial / 180.0,
-					 #"distance"   : track.dist,
-					 #"is_hpt"	  : 1 if track.id == HPT else 0
-					#}
-			info = [ global_transform.origin.y / 150.0,
+		if track.activated:					
+			info.append_array([ global_transform.origin.y / 150.0,
 					 track.radial / 180.0,
 					 track.dist,
 					 1 if track.id == HPT else 0
-					]
-		else:
-			#info = { "altitude"   : 0.0,
-					 #"aspect"     : 0.0,
-					 #"distance"   : 0.0,
-					 #"is_hpt"	  : 0
-					#}
-			info = [ 0.0, 0.0 , 0.0, 0.0 ]
+					])
+		else:			
+			info.append_array([ 0.0, 0.0 , 0.0, 0.0 ])
 		tracks_info.append_array(info)
 	
+	#print("bef:",  tracks_info, len(own_info))
 	for track in range(2 - len(tracks_info)):
 		tracks_info.append_array([ 0.0, 0.0 , 0.0, 0.0 ])
+	#print( tracks_info, len(own_info))
 	
 	var obs = own_info + tracks_info
-	#return {"obs": {"own_info": own_info, "tracks_info" : tracks_info}}
+	#return {"obs": {"own_info": own_info, "tracks_info" : tracks_info}}	
 	return {"observation": obs}
 
 func update_reward():
@@ -223,7 +218,7 @@ func update_reward():
 	reward += shot_reward
 	reward += miss_reward 
 	
-	reward -= 0.01 # step penalty
+	#reward -= 0.01 # step penalty
 	
 	kill_reward = 0.0
 	shot_reward = 0.0
@@ -258,22 +253,28 @@ func get_obs_space():
 
 func get_action_space():
 	return {
-		"desiredG_input" : {
-			"size": 1,
+		#"desiredG_input" : {
+			#"size": 1,
+			#"action_type": "continuous"
+		#},    
+		#"hdg_input" : {
+			#"size" : 1,
+			#"action_type" : "continuous"						
+		#},    
+		#"level_input" : {
+			#"size": 1,
+			#"action_type": "continuous"
+		#} ,
+		#"shoot_input" : {
+			#"size": 1,
+			#"action_type": "continuous"
+		#}   
+		#
+		
+		"input" : {
+			"size": 4,
 			"action_type": "continuous"
-		},    
-		"hdg_input" : {
-			"size" : 1,
-			"action_type" : "continuous"						
-		},    
-		"level_input" : {
-			"size": 1,
-			"action_type": "continuous"
-		} ,
-		"shoot_input" : {
-			"size": 1,
-			"action_type": "continuous"
-		}         		
+		}           		
 		
 		#"flyTo" : {		
 			#"action_type": "discrete",						
@@ -283,17 +284,26 @@ func get_action_space():
 	}
 
 func set_action(action):
+		
+	##env.debug_text.add_text("\nAction:" + str(action)) 
+	#hdg_input = action["hdg_input"] * 180.0		
+	#level_input = (action["level_input"] * 22500.0 + 27500.0) * SConv.FT2GDM  	
+	#desiredG_input = (action["desiredG_input"] * (max_g  - 1.0) + (max_g + 1.0))/2.0	
+	#shoot_input = 0 if action["shoot_input"] <= 0 else 1
+		
+	hdg_input = action["input"][0] * 180.0		
+	level_input = (action["input"][1] * 22500.0 + 27500.0) * SConv.FT2GDM  	
+	desiredG_input = (action["input"][2] * (max_g  - 1.0) + (max_g + 1.0))/2.0	
+	shoot_input = 0 if action["input"][3] <= 0 else 1
 	
-	#env.debug_text.add_text("\nAction:" + str(action)) 
-	hdg_input = action["hdg_input"]	
-	level_input = action["level_input"] * SConv.FT2GDM	
-	desiredG_input = action["desiredG_input"]
-	shoot_input = action["shoot_input"]
-	
-	env.debug_text.add_text("\nlevel_input:" + str(level_input)) 
-	env.debug_text.add_text("\nhdg_input:" + str(hdg_input)) 
-	env.debug_text.add_text("\ndesiredG_input:" + str(desiredG_input))
-	env.debug_text.add_text("\nhoot_input:" + str(shoot_input))			
+	if RenderingServer.render_loop_enabled: 
+		if env.camera_global() == get_viewport().get_camera() or get_meta("id") == 0:			
+			#env.debug_text.add_text("\nlevel_input:" + str(level_input)) 
+			#env.debug_text.add_text("\nhdg_input:" + str(hdg_input)) 
+			#env.debug_text.add_text("\ndesiredG_input:" + str(desiredG_input))
+			#env.debug_text.add_text("\nShoot_input:" + str(shoot_input))
+			
+			actionsPanel.update_uav_data(action["input"], max_g)			
 	
 func process_tracks():	
 	
@@ -325,22 +335,37 @@ func process_tracks():
 		#print("HPT_set", HPT)
 		
 func process_behavior(delta_s):
+		
+	tatic_time += delta_s	
 	
-	tatic_time += delta_s
-	
-	if tatic_status == "Search":
+	if tatic_status == "Search" or tatic_status == "Return":
 		
 		if HPT != -1:				
 			
-			max_shoot_range_adjusted = max_shoot_range  + randf_range(-max_shoot_range_var * max_shoot_range, max_shoot_range_var * max_shoot_range)			
+			#Define new shotdistance with randominess
+			max_shoot_range_adjusted = max_shoot_range  + randf_range(-max_shoot_range_var * max_shoot_range, max_shoot_range_var * max_shoot_range)						
 			
 			tatic_status = "Engage"        
 			AP_mode = "FlyHdg"				
 			desiredG_input = 3.0
-			tatic_time = 0
-			#print(tatic_status, tatic_time)	
-		
-					
+			tatic_time = 0.0
+			
+		elif tatic_status == "Search":
+			#Go back if achieved the midle of the arena
+			if 	position.z >= 0:
+				var oposite_hdg = rad_to_deg(global_transform.basis.get_euler().y) + 180.0				
+				hdg_input = fmod(oposite_hdg + 180.0, 360.0) - 180.0
+				desiredG_input = 3.0	
+				tatic_status == "Return"							
+				tatic_time = 0.0
+			
+		elif tatic_status == "Return" and tatic_time >= 80.0:			
+			hdg_input = init_hdg
+			desiredG_input = 3.0	
+			tatic_status == "Search"							
+			tatic_time = 0.0
+			
+
 	if tatic_status == "Engage":
 		
 		if HPT != -1:							
@@ -351,13 +376,13 @@ func process_behavior(delta_s):
 			if radar_track_list[HPT].dist < max_shoot_range_adjusted:
 				if launch_missile_at_target(radar_track_list[HPT].obj): 
 					tatic_status = "MissileSupport"			
-					tatic_time = 0
+					tatic_time = 0.0
 					max_shoot_range_adjusted = -1
 					#print(tatic_status, tatic_time)
 		else:
 			tatic_status = "Search"        
 			AP_mode = "FlyHdg"				
-			tatic_time = 0	
+			tatic_time = 0.0	
 			#print(tatic_status, tatic_time)
 			
 		
@@ -368,20 +393,20 @@ func process_behavior(delta_s):
 			
 				tatic_status = "Evade"        
 				AP_mode = "FlyHdg"				
-				tatic_time = 0		
+				tatic_time = 0.0		
 								
-				var oposite_hdg = rad_to_deg(global_transform.basis.get_euler().y) + 180				
-				hdg_input = fmod(oposite_hdg + 180, 360) - 180
+				var oposite_hdg = rad_to_deg(global_transform.basis.get_euler().y) + 180.0				
+				hdg_input = fmod(oposite_hdg + 180.0, 360.0) - 180.0
 				desiredG_input = 6.0								
 				#print(tatic_status, tatic_time, " / ", hdg_input)
 		else:
 			tatic_status = "Search"        
 			AP_mode = "FlyHdg"				
-			tatic_time = 0	
+			tatic_time = 0.0	
 			#print(tatic_status, tatic_time)
 			
 
-	if tatic_status == "Evade" and tatic_time >= 30:
+	if tatic_status == "Evade" and tatic_time >= 50.0:
 		
 		tatic_status = "Search"		
 		AP_mode = "FlyHdg"
@@ -390,10 +415,9 @@ func process_behavior(delta_s):
 		hdg_input = fmod(oposite_hdg + 180, 360) - 180
 		desiredG_input = 3.0		
 				
-		tatic_time = 0		
+		tatic_time = 0.0		
 		#print(tatic_status, tatic_time, " / ", hdg_input)
 			
-
 func remove_track(track_id):
 	
 	if HPT == track_id:
@@ -407,7 +431,6 @@ func remove_track(track_id):
 	if radar_track_list.has(track_id):
 		radar_track_list[track_id].detected_status(false)
 		
-
 func _physics_process(delta: float) -> void:
 
 	current_hdg = rad_to_deg(global_transform.basis.get_euler().y)
@@ -421,10 +444,7 @@ func _physics_process(delta: float) -> void:
 		
 	if  behaviour == "external"  and shoot_input > 0:
 		if launch_missile_at_target(radar_track_list[HPT].obj): 						
-			shoot_input = -1.0
-						
-					
-					
+			shoot_input = -1.0			
 	
 	var turn_g = clamp(desiredG_input, desiredG_input,  max_g) * SConv.GRAVITY_GDM
 	var turn_speed =  turn_g / velocity.length() 
@@ -603,13 +623,14 @@ func launch_missile_at_target(target):
 	if missiles > 0 and target:
 		var new_missile = missile.instantiate()
 		change_mesh_instance_colors(new_missile, team_color)
-				
-		new_missile.global_position = global_position		
+		
+		env.add_child(new_missile)							
 		new_missile.set_target(target) 
 		new_missile.launch(velocity)			
-		new_missile.shooter = self
-		
-		env.add_child(new_missile)		
+		new_missile.shooter = self				
+		new_missile.add_to_group("Missile")
+		new_missile.global_position = global_position
+			
 		in_flight_missile = new_missile
 								
 		missiles -= 1		
@@ -627,7 +648,7 @@ func kill():
 	visible = false
 	activated = false
 	done = true	
-	reward += -5.0
+	reward += -20.0
 		
 func reactivate():
 		# Enabling processing

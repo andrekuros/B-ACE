@@ -1,6 +1,6 @@
 extends Node
 # --fixed-fps 2000 --disable-render-loop
-@export var action_repeat := 10
+@export var action_repeat := 20
 @export var speed_up = 1
 @export var renderize = 1
 @export var num_uavs = 4
@@ -19,7 +19,7 @@ const MAJOR_VERSION := "0"
 const MINOR_VERSION := "3" 
 const DEFAULT_PORT := "11008"
 const DEFAULT_SEED := "1"
-const DEFAULT_ACTION_REPEAT := "10"
+const DEFAULT_ACTION_REPEAT := "20"
 const DEFAULT_PHYSICS_FPS := "20"
 const DEFAULT_NUM_UAVS := "4"
 const DEFAULT_NUM_TARGETS := "1"
@@ -118,11 +118,11 @@ func connect_to_server():
 	return stream.get_status() == 2
 
 func _get_args():
-	print("getting command line arguments")
+	#print("getting command line arguments")
 #	
 	var arguments = {}
 	for argument in OS.get_cmdline_args():
-		print(argument)
+		#print(argument)
 		if argument.find("=") > -1:
 			var key_value = argument.split("=")
 			arguments[key_value[0].lstrip("--")] = key_value[1]
@@ -134,12 +134,12 @@ func _get_args():
 	return arguments   
 
 func _get_speedup():
-	print("SpeedUp: " , args, " Val: ", str(speed_up))
+	#print("SpeedUp: " , args, " Val: ", str(speed_up))
 	env.canvas.btn_speed_up.set_text(str(speed_up) + "X")
 	return args.get("speedup", str(speed_up)).to_int()
 
 func _get_renderize():	
-	print("Renderize: " , args, " Val: ", str(renderize))
+	#print("Renderize: " , args, " Val: ", str(renderize))
 	return args.get("renderize", str(renderize)).to_int() == 1
 	
 func _get_port():    
@@ -188,7 +188,7 @@ func _set_agents():
 		newFigther.init_hdg = newFigther.init_rotation.y
 		newFigther.hdg_input = newFigther.init_hdg
 				
-		newFigther.set_meta('id', i + 2)
+		newFigther.set_meta('id', i)
 		newFigther.team_id = team_id
 
 		
@@ -303,7 +303,7 @@ func handle_message() -> bool:
 		return true
 		
 	if message["type"] == "reset":
-		print("resetting all agents")
+		#print("resetting all agents")
 		_reset_all_agents()
 		just_reset = true
 		env.goalsPending.append(len(env.goals)-1)
@@ -327,13 +327,12 @@ func handle_message() -> bool:
 			"type": "call",
 			"returns": returns
 		}
-		print("calling method from Python")
+		#print("calling method from Python")
 		_send_dict_as_json_message(reply)   
 		return handle_message()
 	
 	if message["type"] == "action":
-		var action = message["action"]		
-		#env.debug_text.add_text("\nlevel_input:" + str(level_input)) 
+		var action = message["action"]				
 		_set_agent_actions(action)		
 		need_to_send_obs = true
 		get_tree().set_pause(false) 
@@ -354,7 +353,7 @@ func _reset_agents_if_done():
 	
 	var dones  = _get_done_from_agents()	
 	if are_all_true(dones):	
-		_reset_all_agents()
+		_reset_all_agents()		
 
 func _reset_all_agents():
 	if initialized:
@@ -362,6 +361,9 @@ func _reset_all_agents():
 			uav.needs_reset = true
 			uav.reactivate()
 			uav.reset()  
+	var missiles = get_tree().get_nodes_in_group("Missile")
+	for missile in missiles:
+		missile.queue_free()
 			
 
 func _get_obs_from_agents():
@@ -399,6 +401,7 @@ func _get_done_from_agents():
 func _set_agent_actions(actions):
 	for i in range(len(actions)):
 		#env.debug_text.add_text("\nAction:" + str(actions[i])) 
+		#print(i, actions[i])
 		agents[i].set_action(actions[i])
 	
 func _input(event):	

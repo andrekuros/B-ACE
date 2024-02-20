@@ -8,7 +8,7 @@ from benchmarl.environments.godotrl import b_ace
 
 from benchmarl.experiment import Experiment, ExperimentConfig
 from benchmarl.models.mlp import MlpConfig
-from benchmarl.algorithms import IqlConfig, QmixConfig, VdnConfig, VdnConfig, MappoConfig, MaddpgConfig
+from benchmarl.algorithms import IppoConfig, IqlConfig, QmixConfig, VdnConfig, VdnConfig, MappoConfig, MaddpgConfig, MappoConfig
 
 if __name__ == "__main__":
     
@@ -17,7 +17,7 @@ if __name__ == "__main__":
 
     experiment_config.sampling_device = 'cpu'
     experiment_config.train_device = 'cpu'
-    experiment_config.prefer_continuous_actions = False
+    experiment_config.prefer_continuous_actions = True
     experiment_config.evaluation_interval = 18000
 
     experiment_config.checkpoint_interval = 180000
@@ -25,7 +25,7 @@ if __name__ == "__main__":
     # experiment_config.exploration_eps_init = 1.0
     # experiment_config.exploration_eps_end = 1.0
 
-    experiment_config.evaluation_episodes = 50
+    experiment_config.evaluation_episodes = 10
     # experiment_config.loggers = []
     
     experiment_config.on_policy_n_envs_per_worker = 1
@@ -43,7 +43,7 @@ if __name__ == "__main__":
     # Loads from "benchmarl/conf/algorithm/mappo.yaml"
     # algorithm_config = MappoConfig.get_from_yaml()
 
-    algorithm_config = MaddpgConfig.get_from_yaml()
+    algorithm_config = MappoConfig.get_from_yaml()
 
     # Loads from "benchmarl/conf/model/layers/mlp.yaml"
     model_config = MlpConfig.get_from_yaml()

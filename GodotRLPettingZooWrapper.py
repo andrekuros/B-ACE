@@ -74,12 +74,13 @@ class GodotRLPettingZooWrapper(GodotEnv, ParallelEnv):
     
     def step(self, actions):
         # Assuming the environment's step function can handle a dictionary of actions for each agent
-               
-        
-        godot_actions = [action for agent, action in actions.items()]
+                       
+       
+        godot_actions = [np.array([action]) for agent, action in actions.items()]
+                
         obs, reward, dones, truncs, info = super().step(godot_actions, order_ij=True)
-
-         # Assuming 'obs' is a list of dictionaries with 'obs' keys among others
+        
+        # Assuming 'obs' is a list of dictionaries with 'obs' keys among others
         for i, agent in enumerate(self.possible_agents):
             # Convert observations, rewards, etc., to tensors
             # .to('cuda') moves the tensor to GPU if you're using CUDA; remove it if not using GPU
@@ -96,6 +97,7 @@ class GodotRLPettingZooWrapper(GodotEnv, ParallelEnv):
         #      if done:
         #          self.agents.remove(agent)
 
+        # print(self.rewards, dones)
         # print(self.observations)
         return self.observations, self.rewards, self.terminations, self.truncations, self.info 
     

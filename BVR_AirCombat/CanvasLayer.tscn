@@ -1,14 +1,17 @@
-[gd_scene load_steps=2 format=3 uid="uid://c88ncuvk838mf"]
+[gd_scene load_steps=3 format=3 uid="uid://c88ncuvk838mf"]
 
 [ext_resource type="Script" path="res://btn_speedUp.gd" id="1_agkej"]
+[ext_resource type="Script" path="res://Actions_Panel.gd" id="2_pumjp"]
 
 [node name="CanvasLayer" type="CanvasLayer"]
 
 [node name="Control" type="Control" parent="."]
 layout_mode = 3
 anchors_preset = 0
-offset_right = 40.0
-offset_bottom = 40.0
+offset_left = 1.0
+offset_top = 2.0
+offset_right = 1150.0
+offset_bottom = 649.0
 
 [node name="RichTextLabel" type="RichTextLabel" parent="Control"]
 layout_mode = 1
@@ -36,5 +39,44 @@ offset_top = 9.0
 offset_right = 1143.0
 offset_bottom = 50.0
 scroll_following = true
+
+[node name="ActionPanel" type="Panel" parent="Control"]
+layout_mode = 1
+anchors_preset = 3
+anchor_left = 1.0
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -157.0
+offset_top = -136.0
+grow_horizontal = 0
+grow_vertical = 0
+script = ExtResource("2_pumjp")
+
+[node name="VBox" type="VBoxContainer" parent="Control/ActionPanel"]
+layout_mode = 0
+offset_right = 157.0
+offset_bottom = 133.0
+alignment = 1
+
+[node name="LevelInputLabel" type="Label" parent="Control/ActionPanel/VBox"]
+layout_mode = 2
+text = "No Action"
+horizontal_alignment = 1
+
+[node name="HdgInputLabel" type="Label" parent="Control/ActionPanel/VBox"]
+layout_mode = 2
+text = "No Action"
+horizontal_alignment = 1
+
+[node name="DesiredGInputLabel" type="Label" parent="Control/ActionPanel/VBox"]
+layout_mode = 2
+text = "No Action"
+horizontal_alignment = 1
+
+[node name="ShootInputLabel" type="Label" parent="Control/ActionPanel/VBox"]
+layout_mode = 2
+text = "No Action"
+horizontal_alignment = 1
 
 [connection signal="button_down" from="Control/btn_speedUp" to="Control/btn_speedUp" method="_on_button_down"]
