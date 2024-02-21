@@ -8,10 +8,15 @@ extends Node
 var n_action_steps = 0
 var phy_fps = 20
 
+# Variables to keep track of physics updates and time
+var physics_updates = 0
+var elapsed_time = 0.0
+
 
 var rng = RandomNumberGenerator.new()
 
 @onready var env = get_tree().root.get_node("FlyBy")
+@onready var fps_show = env.get_node("CanvasLayer/Control/FPS_Show")
 
 const SConv = preload("res://Figther_assets.gd").SConv
 
@@ -33,6 +38,8 @@ var agents
 var enemies
 var fighters
 
+var enemies_target
+
 var need_to_send_obs = false
 var args = null
 @onready var start_time = Time.get_ticks_msec()
@@ -49,6 +56,9 @@ func _ready():
 	_initialize()
 	await get_tree().create_timer(1.0).timeout
 	get_tree().set_pause(false) 
+	
+	physics_updates = 0
+	elapsed_time = 0.0
 		
 func _set_heuristic(heuristic):
 	for agent in agents:
@@ -173,7 +183,7 @@ func _set_agents():
 			newFigther.init_rotation = Vector3(0, 0, 0)
 			newFigther.behaviour = "external"
 			newFigther.add_to_group("AGENT")			
-			newFigther.add_to_group("blue")			
+			newFigther.add_to_group("blue")						
 		
 		else: #Red TEAM
 			var offset = get_tree().get_nodes_in_group("red").size()
@@ -187,10 +197,10 @@ func _set_agents():
 		newFigther.add_to_group("FIGTHERS")
 		newFigther.init_hdg = newFigther.init_rotation.y
 		newFigther.hdg_input = newFigther.init_hdg
+		newFigther.target_position = enemies_target
 				
 		newFigther.set_meta('id', i)
 		newFigther.team_id = team_id
-
 		
 		env.get_node("Fighters").add_child(newFigther)    
 		env.uavs.append(newFigther)
@@ -219,6 +229,8 @@ func disconnect_from_server():
 
 func _initialize():		
 	
+	enemies_target = Vector3(0.0, 20000.0 * SConv.FT2GDM, 20 * SConv.NM2GDM)
+	
 	args = _get_args()	
 	_set_seed()	
 	_set_action_repeat()
@@ -226,11 +238,12 @@ func _initialize():
 	 
 	_set_num_targets()
 	_set_heuristic("AP")
-	
+			
 	phy_fps = args.get("physics_fps", DEFAULT_PHYSICS_FPS).to_int()    
 	 			
 	Engine.physics_ticks_per_second = _get_speedup() * phy_fps  # Replace with function body.
 	Engine.time_scale = _get_speedup() * 1.0 
+	#Engine.max_fps = 200
 	prints("physics ticks", Engine.physics_ticks_per_second, Engine.time_scale, _get_speedup(), speed_up)
 	env.debug_text.add_text("Initial Speed " + str(speed_up) + "X" + " - Phy " + str(Engine.physics_ticks_per_second))
 	
@@ -248,12 +261,32 @@ func _initialize():
 	_reset_all_agents()
 
 func _physics_process(delta): 
+	
+	# Increment the physics update count
+	physics_updates += 1    
+	elapsed_time += delta
+			
+	var current_time = Time.get_ticks_msec()
+	
+	if current_time - elapsed_time >= 1000:
+		fps_show.text = str(physics_updates / 20)
+		physics_updates = 0
+		elapsed_time = current_time
+		
+	## Update the Label every second
+	#if elapsed_time >= 10.0:
+		#fps_show.text = str(physics_updates)        
+		#physics_updates = 0
+		#elapsed_time = 0
 	# two modes, human control, agent control
 	# pause tree, send obs, get actions, set actions, unpause tree
 	if n_action_steps % action_repeat != 0:
 		n_action_steps += 1
+						
 		return
 
+	#fps_show.text = str(Engine.get_frames_per_second())
+	
 	n_action_steps += 1
 	
 	if connected:
@@ -289,7 +322,24 @@ func _physics_process(delta):
 			_send_dict_as_json_message(reply)
 		
 		var handled = handle_message()
-	else:
+	else:		
+		var enemy_goal_reward = 0
+		for enemy in enemies:
+			if enemy.activated:				
+				var dist_to_go = distance2D_to_pos(enemy.position, enemies_target)
+				enemy_goal_reward += 10.0 / dist_to_go
+				if dist_to_go < 3.0:
+					enemy_goal_reward = -30.0
+					for agent in agents:
+						agent.done = true					
+					for e in enemies:
+						e.done = true
+					break	
+						   
+		
+		for agent in agents:
+			agent.reward += enemy_goal_reward  			
+		#print(n_action_steps, _get_reward_from_agents())
 		_reset_agents_if_done()
 
 func handle_message() -> bool:
@@ -391,7 +441,7 @@ func _get_done_from_agents():
 	for agent in agents:
 		if win_done:
 			dones.append(win_done)
-			print("WinbdOnwe")
+			#print("WinbdOnwe")
 		else: 
 			dones.append(agent.get_done())		
 		#if done: 
@@ -416,6 +466,17 @@ func clamp_array(arr : Array, min:float, max:float):
 	for a in arr:
 		output.append(clamp(a, min, max))
 	return output	
+
+func distance2D_to_pos(A, B):	
+
+	# Create new vectors that ignore the Y component
+	var A_flat = Vector3(A.x, 0, A.z)
+	var B_flat = Vector3(B.x, 0, B.z)
+
+	# Calculate the distance between the modified vectors
+	return A_flat.distance_to(B_flat)
+
+	
 
 func are_all_true(array):
 	for value in array:

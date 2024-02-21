@@ -7,12 +7,11 @@ var speedIdx = 1
 func _ready():
 	pass # Replace with function body.
 
-
 func _on_button_down():
 	
 	speedIdx = speedIdx + 1
 	if speedIdx >= len(speed_option):
-		speedIdx = 0
+		speedIdx = 0	
 	
 	Engine.physics_ticks_per_second = speed_option[speedIdx] * 20  # Replace with function body.
 	Engine.time_scale = speed_option[speedIdx]

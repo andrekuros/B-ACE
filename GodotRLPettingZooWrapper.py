@@ -9,7 +9,7 @@ class GodotRLPettingZooWrapper(GodotEnv, ParallelEnv):
     metadata = {'render.modes': [], 'name': "godot_rl_multi_agent"}
 
     def __init__(self, num_agents = 2, **kwargs):
-        
+                
         super().__init__( **kwargs)
 
         # self.num_agents = num_agents

@@ -10,7 +10,7 @@ const SConv = preload("res://Figther_assets.gd").SConv
 
 # Assume you have a Missile scene set up with its own script for homing in on targets
 var phy_fps = 20
-var action_repeat = 10
+var action_repeat = 20
 
 # AIR COMBAT DATA
 var team_id = 1 # Example: 1 or 2 for two different teams
@@ -21,7 +21,7 @@ var radar_fov = 45 # degrees
 var radar_near_range = 10.0 * SConv.NM2GDM # minimum distance to detect
 var radar_far_range = 60.0 * SConv.NM2GDM # maximum distance to detect
 
-var missiles = 4 # Adjust the number of missiles as needed
+var missiles = 6 # Adjust the number of missiles as needed
 
 var model = "Simple" 
 
@@ -43,7 +43,7 @@ var min_speed = 250 * SConv.KNOT2GDM_S # Example min speed value
 
 var max_pitch = deg_to_rad(35.0)
 var min_pitch = deg_to_rad(-15.0)
-var pitch_speed = 1.0
+var pitch_speed = 0.5
 
 var max_g = 9.0
 
@@ -52,6 +52,8 @@ var init_rotation = Vector3.ZERO
 var init_layer = collision_layer
 var init_mask = collision_mask 
 var init_hdg = 0
+
+var target_position = Vector3.ZERO
 
 var found_goal = false
 var exited_arena = false
@@ -63,7 +65,10 @@ var behaviour = "baseline1" # baseline1 / external
 var AP_mode = "FlyHdg" #"GoTo" / "Hold"
 var holdStatus = 0
 var best_goal_distance := 10000.0
+var goal_position = Vector3.ZERO
+
 var transform_backup = null
+
 
 #Simulations config
 var n_steps = 0
@@ -181,12 +186,12 @@ func get_obs():
 					#}
 	
 	
-	var own_info = [ global_transform.origin.x / 3000,
-					 global_transform.origin.z / 3000,
+	var own_info = [ global_transform.origin.x / 3000.0,
+					 global_transform.origin.z / 3000.0,
 					 global_transform.origin.y / 150.0,
 					 current_hdg / 180.0,
 					 current_speed / max_speed,
-					 missiles / 4.0,
+					 missiles / 6.0,
 					 1 if is_instance_valid(in_flight_missile) else 0
 					]
 		
@@ -320,7 +325,7 @@ func process_tracks():
 				track.detected = false						
 				continue
 			
-			var radial = aspect_to_obj(track.obj)
+			var radial = aspect_to_obj(track.obj.position)
 			var dist = to_local(track.obj.position).length()			
 			track.update_dist_radial(dist, radial)			
 			
@@ -351,19 +356,28 @@ func process_behavior(delta_s):
 			tatic_time = 0.0
 			
 		elif tatic_status == "Search":
-			#Go back if achieved the midle of the arena
-			if 	position.z >= 0:
-				var oposite_hdg = rad_to_deg(global_transform.basis.get_euler().y) + 180.0				
-				hdg_input = fmod(oposite_hdg + 180.0, 360.0) - 180.0
+			#Aproach the target
+			#if 	position.z >= 0:
+				#var oposite_hdg =  rad_to_deg(global_transform.basis.get_euler().y) + 180.0				
+				#hdg_input = fmod(oposite_hdg + 180.0, 360.0) - 180.0
+				#desiredG_input = 3.0	
+				#tatic_status == "Return"							
+				#tatic_time = 0.0
+			
+			if 	position.z >= 0:				
 				desiredG_input = 3.0	
-				tatic_status == "Return"							
+				tatic_status = "Strike"							
 				tatic_time = 0.0
+				#print(tatic_status)
 			
 		elif tatic_status == "Return" and tatic_time >= 80.0:			
 			hdg_input = init_hdg
 			desiredG_input = 3.0	
 			tatic_status == "Search"							
 			tatic_time = 0.0
+		
+	if tatic_status == "Strike":						
+		hdg_input = fmod(aspect_to_obj(target_position) + current_hdg, 360) 
 			
 
 	if tatic_status == "Engage":
@@ -379,9 +393,16 @@ func process_behavior(delta_s):
 					tatic_time = 0.0
 					max_shoot_range_adjusted = -1
 					#print(tatic_status, tatic_time)
+			
+			if 	position.z >= 185:				
+				desiredG_input = 3.0	
+				tatic_status = "Strike"							
+				tatic_time = 0.0
+				print(tatic_status)
 		else:
 			tatic_status = "Search"        
-			AP_mode = "FlyHdg"				
+			AP_mode = "FlyHdg"
+			hdg_input = init_hdg				
 			tatic_time = 0.0	
 			#print(tatic_status, tatic_time)
 			
@@ -552,48 +573,7 @@ func process_manouvers_action():
 					#turn_input = 0
 				#else:
 					#holdStatus = 0	
-				
-func goal_reached(goal):
-	
-	if goal == cur_goal:
-		reward += 100.0
-				
-		if goal.get_meta('id') != 0:
-			env.goalsPending.remove_at(env.goalsPending.find(goal.get_meta('id')))
-			#goal.visible = false		
-			goal.material = goal.material2
-			
-			tasksDoneViewer.text = str(len(env.goalsPending)) + " / " + str(len(env.goals))
-			
-			#if len(env.goalsPending) == 0:
-				#done = true
-				#tasksDoneViewer.text = "ALL DONE"
-												
-		#print("Next Target")
-		cur_goal = null#env.get_next_goal(cur_goal)
-		if len(env.goals) > 1:
-			
-			var auxGoals = env.goalsPending.duplicate()
-			
-			while cur_goal == null and len(auxGoals) > 0: 
-				
-				var randIndex = env.rng.randi_range(0,len(auxGoals)-1)
-				var index_nextGoal = auxGoals[randIndex]
-				auxGoals.remove_at(randIndex)
-				#print(index_nextGoal)
-				if env.goals[index_nextGoal][1] == -1:
-					cur_goal = env.goals[index_nextGoal][0]
-					env.goals[index_nextGoal][1] = get_meta('id')
-					break	
-			if len(auxGoals) == 0:
-				cur_goal = env.goals[0][0]
-				AP_mode = "Hold"
-				#print("Mode == Hold")					
-		else:
-			cur_goal = env.goals[0][0]
-			AP_mode = "Hold"
-			#print("Mode == Hold")
-	
+
 #func exited_game_area():
 	#done = true
 	#reward -= 10.0
@@ -601,12 +581,12 @@ func goal_reached(goal):
 	#reset()
 
 #Kur Functions
-func aspect_to_obj(obj):
+func aspect_to_obj(obj_position):
 		#var hdg  = (vec1 - vec2).normalized()	
 	#var rad = Vector2($PlaneModel.global_position.x, $PlaneModel.global_position.z).angle_to(Vector2(obj.global_position.x, obj.global_position.z))	
 	#var hdg = $PlaneModel.global_transform.basis.get_euler().y
 	var hdgO = 0;
-	var goal_vector = to_local(obj.position)
+	var goal_vector = to_local(obj_position)
 	
 	if goal_vector.x != 0:
 		hdgO  = Vector2(goal_vector.x, goal_vector.z).angle_to(Vector2.UP)	
@@ -659,6 +639,8 @@ func reactivate():
 	input_ray_pickable = true	
 	visible = true
 	activated = true
+	reward = 0.0
+	missiles = 6
 	
 
 

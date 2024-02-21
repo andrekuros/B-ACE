@@ -22,7 +22,7 @@ func _on_radar_area_entered(area):
 	
 	if track_obj.is_type("Fighter") and track_obj.team_color != figther.team_color: 				
 			
-		var radial = figther.aspect_to_obj(track_obj)
+		var radial = figther.aspect_to_obj(track_obj.position)
 		var dist = figther.to_local(track_obj.position).length()			
 			
 		if not figther.radar_track_list.has(track_id):		
@@ -33,8 +33,6 @@ func _on_radar_area_entered(area):
 			var track = figther.radar_track_list[track_id]
 			track.update_dist_radial(dist, radial)
 			track.detected_status(true)
-							
-			
 		
 		#fighter.launch_missile_at_target(body)
 	

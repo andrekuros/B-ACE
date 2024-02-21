@@ -79,4 +79,14 @@ layout_mode = 2
 text = "No Action"
 horizontal_alignment = 1
 
+[node name="FPS_Show" type="Label" parent="Control"]
+layout_mode = 0
+offset_left = 1109.0
+offset_top = 1.0
+offset_right = 1149.0
+offset_bottom = 24.0
+text = "-1"
+horizontal_alignment = 1
+vertical_alignment = 1
+
 [connection signal="button_down" from="Control/btn_speedUp" to="Control/btn_speedUp" method="_on_button_down"]

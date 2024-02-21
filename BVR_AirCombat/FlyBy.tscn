@@ -81,8 +81,13 @@ size = 1000.0
 
 [node name="Goals" type="Node" parent="."]
 
-[node name="Goal" parent="Goals" instance=ExtResource("3")]
+[node name="Arena_Center" parent="Goals" instance=ExtResource("3")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 50, 0.482964)
+radius = 0.908
+material = SubResource("StandardMaterial3D_oeuwc")
+
+[node name="Enemy_Target" parent="Goals" instance=ExtResource("3")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 100, 375)
 radius = 0.908
 material = SubResource("StandardMaterial3D_oeuwc")
 
