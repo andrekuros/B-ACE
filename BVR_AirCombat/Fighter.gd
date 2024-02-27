@@ -398,7 +398,7 @@ func process_behavior(delta_s):
 				desiredG_input = 3.0	
 				tatic_status = "Strike"							
 				tatic_time = 0.0
-				print(tatic_status)
+				#print(tatic_status)
 		else:
 			tatic_status = "Search"        
 			AP_mode = "FlyHdg"
