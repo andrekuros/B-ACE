@@ -8,6 +8,8 @@ extends Node
 var n_action_steps = 0
 var phy_fps = 20
 
+var debug = true
+
 # Variables to keep track of physics updates and time
 var physics_updates = 0
 var elapsed_time = 0.0
@@ -17,6 +19,7 @@ var rng = RandomNumberGenerator.new()
 
 @onready var env = get_tree().root.get_node("FlyBy")
 @onready var fps_show = env.get_node("CanvasLayer/Control/FPS_Show")
+@onready var debug_window = env.get_node("DebugWindow")
 
 const SConv = preload("res://Figther_assets.gd").SConv
 
@@ -238,14 +241,14 @@ func _initialize():
 	 
 	_set_num_targets()
 	_set_heuristic("AP")
-			
+	
 	phy_fps = args.get("physics_fps", DEFAULT_PHYSICS_FPS).to_int()    
 	 			
 	Engine.physics_ticks_per_second = _get_speedup() * phy_fps  # Replace with function body.
 	Engine.time_scale = _get_speedup() * 1.0 
 	#Engine.max_fps = 200
 	prints("physics ticks", Engine.physics_ticks_per_second, Engine.time_scale, _get_speedup(), speed_up)
-	env.debug_text.add_text("Initial Speed " + str(speed_up) + "X" + " - Phy " + str(Engine.physics_ticks_per_second))
+	#env.debug_text.add_text("Initial Speed " + str(speed_up) + "X" + " - Phy " + str(Engine.physics_ticks_per_second))
 	
 	RenderingServer.render_loop_enabled = _get_renderize()
 	
@@ -256,9 +259,13 @@ func _initialize():
 		_send_env_info()
 	#else:
 		#_set_heuristic("AP")  
-
+	
+	
 	initialized = true  
 	_reset_all_agents()
+	if debug:
+		
+		initialize_debug()	
 
 func _physics_process(delta): 
 	
@@ -289,6 +296,30 @@ func _physics_process(delta):
 	
 	n_action_steps += 1
 	
+	#Global Rewards	
+	var enemy_goal_reward = 0
+	for enemy in enemies:
+		if enemy.activated:				
+			var dist_to_go = distance2D_to_pos(enemy.position, enemies_target)
+			enemy_goal_reward += -10.0 / dist_to_go
+			if dist_to_go < 3.0:
+				enemy_goal_reward = -30.0
+				for agent in agents:
+					agent.done = true					
+				for e in enemies:
+					e.done = true
+				break	
+					   
+	var agents_killed = true	
+	for agent in agents:
+		if not agent.done:
+			agents_killed = false
+		agent.reward += enemy_goal_reward  	
+	if agents_killed:
+		for agent in agents:
+			agent.reward += -100.0
+			
+
 	if connected:
 		get_tree().set_pause(true) 
 		
@@ -322,25 +353,20 @@ func _physics_process(delta):
 			_send_dict_as_json_message(reply)
 		
 		var handled = handle_message()
-	else:		
-		var enemy_goal_reward = 0
-		for enemy in enemies:
-			if enemy.activated:				
-				var dist_to_go = distance2D_to_pos(enemy.position, enemies_target)
-				enemy_goal_reward += 10.0 / dist_to_go
-				if dist_to_go < 3.0:
-					enemy_goal_reward = -30.0
-					for agent in agents:
-						agent.done = true					
-					for e in enemies:
-						e.done = true
-					break	
-						   
-		
-		for agent in agents:
-			agent.reward += enemy_goal_reward  			
+	else:						
 		#print(n_action_steps, _get_reward_from_agents())
 		_reset_agents_if_done()
+	if debug:
+		
+		var agent_idx = debug_window.selected_agent
+		
+		var obs = agents[agent_idx].get_obs()
+		debug_window.update_obs( obs['observation'] )
+				
+		var actions_values = agents[agent_idx].get_current_inputs()
+		debug_window.update_actions( actions_values )
+
+		
 
 func handle_message() -> bool:
 	# get json message: reset, step, close
@@ -420,6 +446,7 @@ func _get_obs_from_agents():
 	var obs = []
 	for agent in agents:
 		obs.append(agent.get_obs())
+	
 	return obs
 	
 func _get_reward_from_agents():
@@ -476,7 +503,19 @@ func distance2D_to_pos(A, B):
 	# Calculate the distance between the modified vectors
 	return A_flat.distance_to(B_flat)
 
+func initialize_debug():
 	
+	var obs = fighters[0].get_obs(true)
+	var actions_labels = ['hdg', 'level', 'g', 'fire']
+	var actions_values = [-1, -1, -1, -1]
+	
+	debug_window.initialize( 	obs["labels"],
+								obs["observation"],
+								actions_labels,
+								actions_values )
+	debug_window.visible = true
+	
+	debug_window.selected_agent_control.create_agent_buttons(len(agents))
 
 func are_all_true(array):
 	for value in array:

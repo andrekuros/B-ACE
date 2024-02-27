@@ -37,6 +37,11 @@ var	speed_input: float = 650 * SConv.KNOT2GDM_S
 var	desiredG_input: float = 0.0 
 var	shoot_input: int = 0
 
+var last_hdg_input = hdg_input
+var last_level_input = level_input
+var last_desiredG_input = desiredG_input
+var last_fire_input = shoot_input
+
 var wing_area = 50
 var max_speed = 650 * SConv.KNOT2GDM_S  # Example max speed value
 var min_speed = 250 * SConv.KNOT2GDM_S # Example min speed value
@@ -129,6 +134,7 @@ func reset():
 	rotation_degrees = init_rotation#Vector3(0, 0, 0) # Adjust as necessary	
 		
 	hdg_input = init_rotation.y
+	last_hdg_input = hdg_input
 	current_hdg = init_hdg
 	
 	n_steps = 0
@@ -137,7 +143,7 @@ func reset():
 	done = false
 	best_goal_distance = to_local(cur_goal.position).length()
 	
-	missiles = 4
+	missiles = 6
 	radar_track_list = {}	
 		
 	AP_mode = "FlyHdg" #"GoTo" / "Hold"
@@ -172,36 +178,30 @@ func get_done():
 func set_done_false():
 	done = false
 	
-func get_obs():
+func get_obs(with_labels = false):
 		
 	var tracks_info = []
-	
-	#var own_info = { "pos_x"     : global_transform.origin.x / 3000, 
-					 #"pos_z"     : global_transform.origin.z / 3000,
-					 #"altitude"  : global_transform.origin.y / 150.0,
-					 #"heading"   : current_hdg / 180.0,
-					 #"speed"     : current_speed / max_speed,
-					 #"missiles"  : missiles / 4.0,
-					 #"in_flight_missile": 1 if in_flight_missile != null else 0,										 
-					#}
-	
-	
+		
 	var own_info = [ global_transform.origin.x / 3000.0,
 					 global_transform.origin.z / 3000.0,
 					 global_transform.origin.y / 150.0,
 					 current_hdg / 180.0,
 					 current_speed / max_speed,
 					 missiles / 6.0,
-					 1 if is_instance_valid(in_flight_missile) else 0
+					 1 if is_instance_valid(in_flight_missile) else 0,
+					 last_desiredG_input,
+					 last_hdg_input,
+					 last_level_input,
+					 last_fire_input,										
 					]
-		
+	
 	for track in radar_track_list.values():
-		
-		var info
-		if track.activated:					
+				
+		var info = []
+		if track.detected:					
 			info.append_array([ global_transform.origin.y / 150.0,
 					 track.radial / 180.0,
-					 track.dist,
+					 track.dist / 3000.0,
 					 1 if track.id == HPT else 0
 					])
 		else:			
@@ -213,9 +213,18 @@ func get_obs():
 		tracks_info.append_array([ 0.0, 0.0 , 0.0, 0.0 ])
 	#print( tracks_info, len(own_info))
 	
-	var obs = own_info + tracks_info
+	var obs = own_info + tracks_info	
 	#return {"obs": {"own_info": own_info, "tracks_info" : tracks_info}}	
-	return {"observation": obs}
+	if not with_labels:
+		return {"observation": obs}
+	else:
+		var labels_own = ['pos_x', 'pos_z', 'alt', 'hdg', 'speed', 'missiles', 'fly_mis', 
+					  'last_g', 'last_hdg', 'last_level', ' last_fire_input' ]
+		var labels_t1 = ['t1_alt', 't1_rad', 't1_dist', 't1_hpt']
+		var labels_t2 = ['t2_alt', 't2_rad', 't2_dist', 't2_hpt']		
+		var labels = labels_own + labels_t1 + labels_t2		
+		
+		return {"observation": obs, "labels": labels}
 
 func update_reward():
 	
@@ -295,20 +304,30 @@ func set_action(action):
 	#level_input = (action["level_input"] * 22500.0 + 27500.0) * SConv.FT2GDM  	
 	#desiredG_input = (action["desiredG_input"] * (max_g  - 1.0) + (max_g + 1.0))/2.0	
 	#shoot_input = 0 if action["shoot_input"] <= 0 else 1
-		
-	hdg_input = action["input"][0] * 180.0		
-	level_input = (action["input"][1] * 22500.0 + 27500.0) * SConv.FT2GDM  	
-	desiredG_input = (action["input"][2] * (max_g  - 1.0) + (max_g + 1.0))/2.0	
-	shoot_input = 0 if action["input"][3] <= 0 else 1
 	
-	if RenderingServer.render_loop_enabled: 
-		if env.camera_global() == get_viewport().get_camera() or get_meta("id") == 0:			
-			#env.debug_text.add_text("\nlevel_input:" + str(level_input)) 
-			#env.debug_text.add_text("\nhdg_input:" + str(hdg_input)) 
-			#env.debug_text.add_text("\ndesiredG_input:" + str(desiredG_input))
-			#env.debug_text.add_text("\nShoot_input:" + str(shoot_input))
-			
-			actionsPanel.update_uav_data(action["input"], max_g)			
+	last_hdg_input = action["input"][0]
+	last_level_input = action["input"][1]
+	last_desiredG_input = action["input"][2]
+	last_fire_input = action["input"][3]
+		
+	hdg_input = last_hdg_input * 180.0		
+	level_input = (last_level_input * 22500.0 + 27500.0) * SConv.FT2GDM  	
+	desiredG_input = (last_desiredG_input * (max_g  - 1.0) + (max_g + 1.0))/2.0	
+	shoot_input = 0 if last_fire_input <= 0 else 1
+	
+	
+	
+	#if RenderingServer.render_loop_enabled: 
+		#if env.camera_global() == get_viewport().get_camera() or get_meta("id") == 0:			
+			##env.debug_text.add_text("\nlevel_input:" + str(level_input)) 
+			##env.debug_text.add_text("\nhdg_input:" + str(hdg_input)) 
+			##env.debug_text.add_text("\ndesiredG_input:" + str(desiredG_input))
+			##env.debug_text.add_text("\nShoot_input:" + str(shoot_input))
+			#
+			#actionsPanel.update_uav_data(action["input"], max_g)			
+
+func get_current_inputs():
+	return [hdg_input, level_input, desiredG_input, shoot_input]
 	
 func process_tracks():	
 	
@@ -373,7 +392,7 @@ func process_behavior(delta_s):
 		elif tatic_status == "Return" and tatic_time >= 80.0:			
 			hdg_input = init_hdg
 			desiredG_input = 3.0	
-			tatic_status == "Search"							
+			tatic_status = "Search"							
 			tatic_time = 0.0
 		
 	if tatic_status == "Strike":						

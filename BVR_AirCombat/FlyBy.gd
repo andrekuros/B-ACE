@@ -14,8 +14,8 @@ const global_cam_scaleVector = Vector3(5.0,  5.0,  5.0)
 var mouse_sens = 0.1
 var camera_anglev=0
 
-@onready var debug_text = get_node("CanvasLayer/Control/RichTextLabel")
 @onready var canvas = get_node("CanvasLayer")
+
 
 var fighterObj = preload("res://Fighter.tscn")
 
@@ -39,7 +39,7 @@ func _ready():
 	
 	cameraGlobal.make_current()
 	
-
+	
 func get_next_goal(current_goal):
 	if current_goal == null:#or goals.is_empty():								
 		return goals[0][0]
@@ -88,7 +88,7 @@ func _input(event):
 		if uavCamId + 1 < len(uavs): 
 			uavCamId = uavCamId + 1			
 			cameraUav =  uavs[uavCamId].get_node("Camera3D")
-			debug_text.add_text("\n" + uavs[uavCamId]._heuristic + " - " + uavs[uavCamId].AP_mode)
+			#debug_text.add_text("\n" + uavs[uavCamId]._heuristic + " - " + uavs[uavCamId].AP_mode)
 			cameraUav.make_current()
 		else:
 			cameraUav = uavs[0].get_node("Camera3D")

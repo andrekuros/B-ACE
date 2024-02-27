@@ -1,9 +1,10 @@
-[gd_scene load_steps=13 format=3 uid="uid://duev7xgoc7kvq"]
+[gd_scene load_steps=14 format=3 uid="uid://duev7xgoc7kvq"]
 
 [ext_resource type="Script" path="res://addons/godot_rl_agents/sync.gd" id="1"]
 [ext_resource type="Script" path="res://FlyBy.gd" id="1_lysss"]
 [ext_resource type="Script" path="res://GameArea.gd" id="2"]
 [ext_resource type="PackedScene" uid="uid://bprtg0gwnkrf1" path="res://Goal.tscn" id="3"]
+[ext_resource type="PackedScene" uid="uid://damfq04ajowss" path="res://debug_window.tscn" id="7_4u1q7"]
 [ext_resource type="Script" path="res://CanvasLayer.gd" id="7_22rhh"]
 [ext_resource type="PackedScene" uid="uid://c88ncuvk838mf" path="res://CanvasLayer.tscn" id="7_rtt1q"]
 
@@ -27,16 +28,12 @@ adjustment_contrast = 1.22
 
 [sub_resource type="ORMMaterial3D" id="ORMMaterial3D_g573e"]
 albedo_color = Color(0.278431, 0.278431, 0.278431, 1)
+distance_fade_mode = 1
 
 [sub_resource type="BoxShape3D" id="4"]
 size = Vector3(2000, 500, 2000)
 
-[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_oeuwc"]
-transparency = 1
-vertex_color_use_as_albedo = true
-albedo_color = Color(0, 0.462745, 0.462745, 0.466667)
-proximity_fade_enabled = true
-proximity_fade_distance = 3.0
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_a5iso"]
 
 [node name="FlyBy" type="Node3D"]
 script = ExtResource("1_lysss")
@@ -58,7 +55,7 @@ environment = SubResource("Environment_t3cor")
 [node name="Columns" type="CSGCombiner3D" parent="."]
 
 [node name="CSGBox3D" type="CSGBox3D" parent="Columns"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -20, 0)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -10.1139, 0)
 size = Vector3(3750, 10, 3750)
 material = SubResource("ORMMaterial3D_g573e")
 
@@ -81,20 +78,17 @@ size = 1000.0
 
 [node name="Goals" type="Node" parent="."]
 
-[node name="Arena_Center" parent="Goals" instance=ExtResource("3")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 50, 0.482964)
-radius = 0.908
-material = SubResource("StandardMaterial3D_oeuwc")
-
 [node name="Enemy_Target" parent="Goals" instance=ExtResource("3")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 100, 375)
-radius = 0.908
-material = SubResource("StandardMaterial3D_oeuwc")
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 10, 375)
+radius = 12.198
+material = SubResource("StandardMaterial3D_a5iso")
 
 [node name="CanvasLayer" parent="." instance=ExtResource("7_rtt1q")]
 follow_viewport_enabled = true
 script = ExtResource("7_22rhh")
 
 [node name="Fighters" type="Node" parent="."]
+
+[node name="DebugWindow" parent="." instance=ExtResource("7_4u1q7")]
 
 [connection signal="body_exited" from="GameArea" to="GameArea" method="_on_GameArea_body_exited"]

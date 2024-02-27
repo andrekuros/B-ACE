@@ -1,0 +1,37 @@
+; Engine configuration file.
+; It's best edited using the editor UI and not directly,
+; since the parameters that go here are not all obvious.
+;
+; Format:
+;   [section] ; section goes between []
+;   param=value ; assign values to parameters
+
+config_version=5
+
+[DebugGUI]
+
+Settings/enableGraphs=true
+Settings/enableLogs=true
+Settings/backgroundColor=Color(0, 0, 0, 0.7)
+Settings/scrubberColor=Color(1, 1, 0, 0.7)
+Settings/graphWidth=300
+Settings/graphHeight=100
+Settings/temporaryLogLifetime=5.0
+
+[application]
+
+config/name="DebugGUIGraph"
+run/main_scene="res://addons/DebugGUI/Examples/DebugGUIExamples.tscn"
+config/features=PackedStringArray("4.2", "Mobile")
+
+[autoload]
+
+DebugGUI="*res://addons/DebugGUI/DebugGUI.cs"
+
+[dotnet]
+
+project/assembly_name="DebugGUIGraph"
+
+[editor_plugins]
+
+enabled=PackedStringArray()
