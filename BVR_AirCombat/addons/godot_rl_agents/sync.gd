@@ -232,7 +232,7 @@ func disconnect_from_server():
 
 func _initialize():		
 	
-	enemies_target = Vector3(0.0, 20000.0 * SConv.FT2GDM, 20 * SConv.NM2GDM)
+	enemies_target = Vector3(0.0, 20000.0 * SConv.FT2GDM, 30 * SConv.NM2GDM)
 	
 	args = _get_args()	
 	_set_seed()	
@@ -317,7 +317,7 @@ func _physics_process(delta):
 		agent.reward += enemy_goal_reward  	
 	if agents_killed:
 		for agent in agents:
-			agent.reward += -100.0
+			agent.reward += -60.0
 			
 
 	if connected:
@@ -381,8 +381,7 @@ func handle_message() -> bool:
 	if message["type"] == "reset":
 		#print("resetting all agents")
 		_reset_all_agents()
-		just_reset = true
-		env.goalsPending.append(len(env.goals)-1)
+		just_reset = true		
 		get_tree().set_pause(false) 
 		
 		#print("resetting forcing draw")
@@ -445,8 +444,14 @@ func _reset_all_agents():
 func _get_obs_from_agents():
 	var obs = []
 	for agent in agents:
-		obs.append(agent.get_obs())
-	
+		if !agent.done:
+			obs.append(agent.get_obs())
+		else:
+			var zero_obs = []
+			for i in range(len(agent.get_obs()["observation"])):
+				zero_obs.append(0)
+			obs.append({"observation": zero_obs})
+		
 	return obs
 	
 func _get_reward_from_agents():

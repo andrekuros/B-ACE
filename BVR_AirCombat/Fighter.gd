@@ -6,8 +6,9 @@ const SConv = preload("res://Figther_assets.gd").SConv
 
 @onready var env = get_tree().root.get_node("FlyBy")
 @onready var tasksDoneViewer = env.get_node("CanvasLayer/Control/TasksDone")
-@onready var actionsPanel = env.get_node("CanvasLayer/Control/ActionPanel")
+#@onready var actionsPanel = env.get_node("CanvasLayer/Control/ActionPanel")
 
+var alliesList = []
 # Assume you have a Missile scene set up with its own script for homing in on targets
 var phy_fps = 20
 var action_repeat = 20
@@ -77,7 +78,7 @@ var transform_backup = null
 
 #Simulations config
 var n_steps = 0
-const MAX_STEPS = 10 * 60 * 20
+const MAX_STEPS = 15 * 60 * 20
 var needs_reset = false
 
 var reward = 0.0
@@ -90,6 +91,7 @@ var activated = true
 
 var material2 = null
 var team_color = null
+var color_group = null
 
 #Heuristic Behavior Params
 var max_shoot_range = 35.0 * SConv.NM2GDM
@@ -117,7 +119,9 @@ func _ready():
 	transform_backup = transform
 	
 	var root_node = $RenderModel/Sketchfab_model  # Adjust the path to your model's root node.	
-	team_color = Color.BLUE if team_id == 1 else Color.RED  # Set the desired color.	
+	team_color = Color.BLUE if team_id == 1 else Color.RED  # Set the desired color.			
+	color_group = "blue" if team_id == 1 else "red"
+		
 	change_mesh_instance_colors(root_node, team_color)
 	reset()
 	
@@ -162,6 +166,11 @@ func reset():
 	data_link_list = {}
 	in_flight_missile = null
 	
+	alliesList = []
+	for agent in env.get_tree().get_nodes_in_group(color_group):
+		if agent.get_meta("id") != get_meta("id"):
+			alliesList.append(agent)  	
+	
 	$Radar/CollisionPolygon3D.disabled = true    
 	await(0.01)
 	$Radar/CollisionPolygon3D.disabled = false    
@@ -181,7 +190,7 @@ func set_done_false():
 func get_obs(with_labels = false):
 		
 	var tracks_info = []
-		
+	
 	var own_info = [ global_transform.origin.x / 3000.0,
 					 global_transform.origin.z / 3000.0,
 					 global_transform.origin.y / 150.0,
@@ -194,35 +203,50 @@ func get_obs(with_labels = false):
 					 last_level_input,
 					 last_fire_input,										
 					]
+	var allied_info = [ 0.0, 0.0 , 0.0, 0.0, 0.0, 0.0, 0 ]
+	if len(alliesList) > 0:
+		var allied = alliesList[0]
+		if allied.activated:
+			allied_info = [  allied.global_transform.origin.x / 3000.0,
+								 allied.global_transform.origin.z / 3000.0,
+								 allied.global_transform.origin.y / 150.0,
+								 allied.current_hdg / 180.0,
+								 allied.current_speed / max_speed,
+								 allied.missiles / 6.0,
+								 1 if is_instance_valid(allied.in_flight_missile) else 0,
+			]
+	
+		
 	
 	for track in radar_track_list.values():
 				
-		var info = []
+		var info 
 		if track.detected:					
-			info.append_array([ global_transform.origin.y / 150.0,
+			info = [ global_transform.origin.y / 150.0,
 					 track.radial / 180.0,
 					 track.dist / 3000.0,
 					 1 if track.id == HPT else 0
-					])
+					]
 		else:			
-			info.append_array([ 0.0, 0.0 , 0.0, 0.0 ])
+			info = [ 0.0, 0.0 , 0.0, 0.0 ]
 		tracks_info.append_array(info)
 	
 	#print("bef:",  tracks_info, len(own_info))
-	for track in range(2 - len(tracks_info)):
+	for track in range(2 - len(tracks_info)/4):
 		tracks_info.append_array([ 0.0, 0.0 , 0.0, 0.0 ])
 	#print( tracks_info, len(own_info))
 	
-	var obs = own_info + tracks_info	
+	var obs = own_info + allied_info + tracks_info	
 	#return {"obs": {"own_info": own_info, "tracks_info" : tracks_info}}	
 	if not with_labels:
 		return {"observation": obs}
 	else:
 		var labels_own = ['pos_x', 'pos_z', 'alt', 'hdg', 'speed', 'missiles', 'fly_mis', 
 					  'last_g', 'last_hdg', 'last_level', ' last_fire_input' ]
+		var labels_allied = ['pos_x', 'pos_z', 'alt', 'hdg', 'speed', 'missiles', 'fly_mis']
 		var labels_t1 = ['t1_alt', 't1_rad', 't1_dist', 't1_hpt']
 		var labels_t2 = ['t2_alt', 't2_rad', 't2_dist', 't2_hpt']		
-		var labels = labels_own + labels_t1 + labels_t2		
+		var labels = labels_own + labels_allied + labels_t1 + labels_t2		
 		
 		return {"observation": obs, "labels": labels}
 
@@ -466,7 +490,7 @@ func remove_track(track_id):
 			if not in_flight_missile.pitbull and in_flight_missile != null:
 				in_flight_missile.lost_support()
 				in_flight_missile = null
-				miss_reward -= 1.0
+				miss_reward -= 2.0
 				
 	if radar_track_list.has(track_id):
 		radar_track_list[track_id].detected_status(false)
@@ -630,10 +654,16 @@ func launch_missile_at_target(target):
 		new_missile.add_to_group("Missile")
 		new_missile.global_position = global_position
 			
+		if is_instance_valid(in_flight_missile):			
+			if not in_flight_missile.pitbull and in_flight_missile != null:
+				in_flight_missile.lost_support()
+				in_flight_missile = null
+				miss_reward += -2.0
+		
 		in_flight_missile = new_missile
 								
 		missiles -= 1		
-		shot_reward += 0.1
+		shot_reward += -0.5
 		return true
 	else:
 		return false

@@ -37,7 +37,7 @@ env = wenv()
 # 
 
 print(env.group_map)
-print(env.observation_spec)
+# print(env.observation_spec)
 result = env.reset()
 
 # #%%%

@@ -19,7 +19,7 @@ class DNN_B_ACE_CRITIC(Net):
                            
                                                 
         self.scene_encoder = nn.Sequential(
-            nn.Linear(15, 64),
+            nn.Linear(19, 64),
             nn.ReLU(),
             nn.Linear(64, 128),
             nn.ReLU(), 

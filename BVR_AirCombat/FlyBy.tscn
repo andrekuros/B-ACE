@@ -55,7 +55,7 @@ environment = SubResource("Environment_t3cor")
 [node name="Columns" type="CSGCombiner3D" parent="."]
 
 [node name="CSGBox3D" type="CSGBox3D" parent="Columns"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -10.1139, 0)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -170.99, 0)
 size = Vector3(3750, 10, 3750)
 material = SubResource("ORMMaterial3D_g573e")
 
@@ -79,7 +79,7 @@ size = 1000.0
 [node name="Goals" type="Node" parent="."]
 
 [node name="Enemy_Target" parent="Goals" instance=ExtResource("3")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 10, 375)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 10, 555)
 radius = 12.198
 material = SubResource("StandardMaterial3D_a5iso")
 

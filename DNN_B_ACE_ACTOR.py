@@ -60,7 +60,7 @@ class DNN_B_ACE_ACTOR(Net):
                 max_action = 1.0            
             self.device = device
             self.output_dim = int(np.prod(action_shape))
-            input_dim = 15
+            input_dim = 19
             self.mu = nn.Sequential(
                         nn.Linear(input_dim, 64),
                         nn.ReLU(),
