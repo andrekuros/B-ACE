@@ -42,6 +42,7 @@ if __name__ == "__main__":
     # experiment_config.evaluation = True  # Enable evaluation mode
     # experiment_config.restore_file = "mappo_b_ace_mlp__a5dbb727_24_02_26-23_09_37/checkpoints/checkpoint_2142000.pt"
     # experiment_config.loggers = []
+    experiment_config.save_folder = "/Results"
     
     task = b_ace.B_ACE.b_ace.get_from_yaml()
         
