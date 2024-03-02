@@ -1,11 +1,16 @@
 extends CharacterBody3D
 
 const missile = preload("res://missile.tscn")
-const Track = preload("res://Figther_assets.gd").Track
-const SConv = preload("res://Figther_assets.gd").SConv
+const Track   = preload("res://Figther_assets.gd").Track
+const SConv   = preload("res://Figther_assets.gd").SConv
+const RewardsControl = preload("res://Figther_assets.gd").RewardsControl
+
+var ownRewards = RewardsControl.new(self)
+
 
 @onready var env = get_tree().root.get_node("FlyBy")
 @onready var tasksDoneViewer = env.get_node("CanvasLayer/Control/TasksDone")
+@onready var sync = get_tree().root.get_node("FlyBy/Sync")
 #@onready var actionsPanel = env.get_node("CanvasLayer/Control/ActionPanel")
 
 var alliesList = []
@@ -58,6 +63,7 @@ var init_rotation = Vector3.ZERO
 var init_layer = collision_layer
 var init_mask = collision_mask 
 var init_hdg = 0
+var dist2go = 100000.0
 
 var target_position = Vector3.ZERO
 
@@ -81,13 +87,8 @@ var n_steps = 0
 const MAX_STEPS = 15 * 60 * 20
 var needs_reset = false
 
-var reward = 0.0
-var kill_reward = 0.0
-var killed_reward = 0.0
-var shot_reward = 0.0
-var miss_reward = 0.0
-
 var activated = true
+var killed = false
 
 var material2 = null
 var team_color = null
@@ -118,9 +119,10 @@ func get_type(): return "Fighter"
 func _ready():
 	transform_backup = transform
 	
-	var root_node = $RenderModel/Sketchfab_model  # Adjust the path to your model's root node.	
+	var root_node = $RenderModel  # Adjust the path to your model's root node.	
 	team_color = Color.BLUE if team_id == 1 else Color.RED  # Set the desired color.			
 	color_group = "blue" if team_id == 1 else "red"
+	
 		
 	change_mesh_instance_colors(root_node, team_color)
 	reset()
@@ -153,10 +155,12 @@ func reset():
 	AP_mode = "FlyHdg" #"GoTo" / "Hold"
 	holdStatus = 0
 	best_goal_distance = 10000.0	
-
-	#Simulations config
-	reward = 0.0
+	dist2go = 100000.0
+	
+	ownRewards.get_total_rewards_and_reset()
+	
 	activated = true
+	killed = false
 
 	tatic_status = "Search" #"MissileSupport / Commit / Evade / Recommit
 	tatic_time = 0.0	
@@ -194,6 +198,9 @@ func get_obs(with_labels = false):
 	var own_info = [ global_transform.origin.x / 3000.0,
 					 global_transform.origin.z / 3000.0,
 					 global_transform.origin.y / 150.0,
+					 dist2go / 3000.0,
+					 #fmod(aspect_to_obj(target_position) + current_hdg, 360),
+					 get_relative_radial(current_hdg, get_hdg_2d(position, target_position)) / 180.0,
 					 current_hdg / 180.0,
 					 current_speed / max_speed,
 					 missiles / 6.0,
@@ -203,37 +210,39 @@ func get_obs(with_labels = false):
 					 last_level_input,
 					 last_fire_input,										
 					]
-	var allied_info = [ 0.0, 0.0 , 0.0, 0.0, 0.0, 0.0, 0 ]
+	var allied_info = [ 0.0, 0.0 , 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0 ]
 	if len(alliesList) > 0:
 		var allied = alliesList[0]
 		if allied.activated:
 			allied_info = [  allied.global_transform.origin.x / 3000.0,
-								 allied.global_transform.origin.z / 3000.0,
-								 allied.global_transform.origin.y / 150.0,
-								 allied.current_hdg / 180.0,
-								 allied.current_speed / max_speed,
-								 allied.missiles / 6.0,
-								 1 if is_instance_valid(allied.in_flight_missile) else 0,
-			]
-	
-		
+							 allied.global_transform.origin.z / 3000.0,
+							 allied.global_transform.origin.y / 150.0,
+							 allied.dist2go / 3000.0,							 
+							 get_relative_radial(allied.current_hdg, get_hdg_2d(allied.position, allied.target_position)) / 180.0, 
+							#fmod(aspect_to_obj(allied.target_position) + allied.current_hdg, 360),
+							 allied.current_hdg / 180.0,
+							 allied.current_speed / max_speed,
+							 allied.missiles / 6.0,							 
+							 1 if is_instance_valid(allied.in_flight_missile) else 0,
+			]			
 	
 	for track in radar_track_list.values():
 				
 		var info 
 		if track.detected:					
 			info = [ global_transform.origin.y / 150.0,
-					 track.radial / 180.0,
+					 get_desired_heading(current_hdg, track.radial) / 180.0,
 					 track.dist / 3000.0,
+					 track.obj.dist2go / 3000.0,
 					 1 if track.id == HPT else 0
 					]
 		else:			
-			info = [ 0.0, 0.0 , 0.0, 0.0 ]
+			info = [ 0.0, 0.0 , 0.0, 0.0, 0.0 ]
 		tracks_info.append_array(info)
 	
 	#print("bef:",  tracks_info, len(own_info))
-	for track in range(2 - len(tracks_info)/4):
-		tracks_info.append_array([ 0.0, 0.0 , 0.0, 0.0 ])
+	for track in range(2 - len(tracks_info)/5):
+		tracks_info.append_array([ 0.0, 0.0 , 0.0, 0.0, 0.0 ])
 	#print( tracks_info, len(own_info))
 	
 	var obs = own_info + allied_info + tracks_info	
@@ -241,47 +250,23 @@ func get_obs(with_labels = false):
 	if not with_labels:
 		return {"observation": obs}
 	else:
-		var labels_own = ['pos_x', 'pos_z', 'alt', 'hdg', 'speed', 'missiles', 'fly_mis', 
+		var labels_own = ['pos_x', 'pos_z', 'alt', 'dist2go' ,'radial2go', 'hdg', 'speed', 'missiles', 'fly_mis', 
 					  'last_g', 'last_hdg', 'last_level', ' last_fire_input' ]
-		var labels_allied = ['pos_x', 'pos_z', 'alt', 'hdg', 'speed', 'missiles', 'fly_mis']
-		var labels_t1 = ['t1_alt', 't1_rad', 't1_dist', 't1_hpt']
-		var labels_t2 = ['t2_alt', 't2_rad', 't2_dist', 't2_hpt']		
+		var labels_allied = ['pos_x', 'pos_z', 'alt', 'dist2go', 'radial2go', 'hdg', 'speed', 'missiles', 'fly_mis']
+		var labels_t1 = ['t1_alt', 't1_rad', 't1_dist', 'dist2go', 't1_hpt']
+		var labels_t2 = ['t2_alt', 't2_rad', 't2_dist', 'dist2go', 't2_hpt']		
 		var labels = labels_own + labels_allied + labels_t1 + labels_t2		
 		
 		return {"observation": obs, "labels": labels}
 
-func update_reward():
+func get_reward():	
+	return ownRewards.get_total_rewards_and_reset()
 	
-	reward += kill_reward
-	reward += shot_reward
-	reward += miss_reward 
-	
-	#reward -= 0.01 # step penalty
-	
-	kill_reward = 0.0
-	shot_reward = 0.0
-	miss_reward = 0.0
-	
-	#reward += shaping_reward()
-
-func get_reward():
-	return reward
-	
-#func shaping_reward():
-	#var s_reward = 0.0
-	#var goal_distance = to_local(cur_goal.position).length()
-	#if goal_distance < best_goal_distance:
-		#s_reward += best_goal_distance - goal_distance
-		#best_goal_distance = goal_distance
-		#
-	#s_reward /= 1.0
-	#return s_reward 
-
 func set_heuristic(heuristic):
 	self._heuristic = heuristic
 
 func get_obs_space():
-	# typs of obs space: box, discrete, repeated
+	# typs of obs space: box, discrete, repeated	
 	return {
 		"observation": {
 			"size": [len(get_obs()["observation"])],
@@ -329,7 +314,7 @@ func set_action(action):
 	#desiredG_input = (action["desiredG_input"] * (max_g  - 1.0) + (max_g + 1.0))/2.0	
 	#shoot_input = 0 if action["shoot_input"] <= 0 else 1
 	
-	last_hdg_input = action["input"][0]
+	last_hdg_input = get_desired_heading(current_hdg, action["input"][0])
 	last_level_input = action["input"][1]
 	last_desiredG_input = action["input"][2]
 	last_fire_input = action["input"][3]
@@ -339,16 +324,6 @@ func set_action(action):
 	desiredG_input = (last_desiredG_input * (max_g  - 1.0) + (max_g + 1.0))/2.0	
 	shoot_input = 0 if last_fire_input <= 0 else 1
 	
-	
-	
-	#if RenderingServer.render_loop_enabled: 
-		#if env.camera_global() == get_viewport().get_camera() or get_meta("id") == 0:			
-			##env.debug_text.add_text("\nlevel_input:" + str(level_input)) 
-			##env.debug_text.add_text("\nhdg_input:" + str(hdg_input)) 
-			##env.debug_text.add_text("\ndesiredG_input:" + str(desiredG_input))
-			##env.debug_text.add_text("\nShoot_input:" + str(shoot_input))
-			#
-			#actionsPanel.update_uav_data(action["input"], max_g)			
 
 func get_current_inputs():
 	return [hdg_input, level_input, desiredG_input, shoot_input]
@@ -368,11 +343,12 @@ func process_tracks():
 				track.detected = false						
 				continue
 			
-			var radial = aspect_to_obj(track.obj.position)
+			#var radial = fmod(aspect_to_obj(track.obj.position) + current_hdg, 360)
+			var radial = get_hdg_2d(position, track.obj.position)
 			var dist = to_local(track.obj.position).length()			
 			track.update_dist_radial(dist, radial)			
 			
-			if dist < min_dist:
+			if dist < min_dist: # and track.obj.get_meta('id') == 1:
 				min_dist = dist
 				new_HPT = id
 				
@@ -420,14 +396,18 @@ func process_behavior(delta_s):
 			tatic_time = 0.0
 		
 	if tatic_status == "Strike":						
-		hdg_input = fmod(aspect_to_obj(target_position) + current_hdg, 360) 
+		#hdg_input = fmod(aspect_to_obj(target_position) + current_hdg, 360) 
+		hdg_input = get_hdg_2d(position, target_position )
+		#print(hdg_input)
+		
 			
 
 	if tatic_status == "Engage":
 		
 		if HPT != -1:							
 			#print(radar_track_list[HPT].dist, "Shot: ", max_shoot_range_adjusted)	
-			hdg_input = fmod(radar_track_list[HPT].radial + current_hdg, 360) 
+			hdg_input = radar_track_list[HPT].radial
+			
 			#print("Hdg_target: ", hdg_input)
 			
 			if radar_track_list[HPT].dist < max_shoot_range_adjusted:
@@ -459,8 +439,8 @@ func process_behavior(delta_s):
 				AP_mode = "FlyHdg"				
 				tatic_time = 0.0		
 								
-				var oposite_hdg = rad_to_deg(global_transform.basis.get_euler().y) + 180.0				
-				hdg_input = fmod(oposite_hdg + 180.0, 360.0) - 180.0
+				#var oposite_hdg = rad_to_deg(global_transform.basis.get_euler().y) + 180.0				
+				hdg_input = clamp_hdg(current_hdg + 180)#fmod(oposite_hdg + 180.0, 360.0) - 180.0
 				desiredG_input = 6.0								
 				#print(tatic_status, tatic_time, " / ", hdg_input)
 		else:
@@ -475,8 +455,8 @@ func process_behavior(delta_s):
 		tatic_status = "Search"		
 		AP_mode = "FlyHdg"
 		
-		var oposite_hdg = rad_to_deg(global_transform.basis.get_euler().y) + 180				
-		hdg_input = fmod(oposite_hdg + 180, 360) - 180
+		hdg_input = clamp_hdg(current_hdg + 180)				
+		#hdg_input = fmod(oposite_hdg + 180, 360) - 180
 		desiredG_input = 3.0		
 				
 		tatic_time = 0.0		
@@ -490,7 +470,7 @@ func remove_track(track_id):
 			if not in_flight_missile.pitbull and in_flight_missile != null:
 				in_flight_missile.lost_support()
 				in_flight_missile = null
-				miss_reward -= 2.0
+				ownRewards.add_missile_miss_rew()
 				
 	if radar_track_list.has(track_id):
 		radar_track_list[track_id].detected_status(false)
@@ -503,6 +483,7 @@ func _physics_process(delta: float) -> void:
 	
 	if n_steps % action_repeat == 0:
 		if behaviour == "baseline1":			
+			#if get_meta("id") == 2:
 			process_behavior(delta * (n_steps - last_beh_proc))
 			last_beh_proc = n_steps
 		
@@ -531,15 +512,8 @@ func _physics_process(delta: float) -> void:
 	
 	n_steps += 1
 	
-	if n_steps >= MAX_STEPS:
-		done = true
-	
-	update_reward()
-	
+			
 		
-func zero_reward():
-	reward = 0.0  
-	
 func process_behavior_actions():
 	
 	if shoot_input == 1:
@@ -580,10 +554,8 @@ func process_manouvers_action():
 		if AP_mode == "FlyHdg":
 			#-------- HDG Adjust ----------#
 			# Calculate the heading difference between current and desired								
-			var hdg_diff = hdg_input - current_hdg			
-			# Normalize the heading difference to the range [-180, 180]
-			hdg_diff = fmod(hdg_diff + 180, 360) - 180
-
+			var hdg_diff = clamp_hdg(hdg_input - current_hdg)	
+			
 			# Adjust turn sensitivity based on the heading difference magnitude					
 			var adjusted_turn_input = hdg_diff / 5  
 			turn_input = clamp(adjusted_turn_input, -1.0, 1.0)
@@ -639,6 +611,29 @@ func aspect_to_obj(obj_position):
 	return 0.0
 	#print(rad_to_deg(rad))#rad_to_deg($PlaneModel.global_transform.basis.get_euler().y))
 	#print(rad * 57.8, " ||||| " ,hdg * 57.8, "  --- ", rad_to_deg(rad - hdg))
+
+func get_hdg_2d(from_pos, to_pos) -> float:
+	var direction_vector = to_pos - from_pos
+	var angle_radians = atan2( -direction_vector.x , -direction_vector.z,)			
+	return clamp_hdg(rad_to_deg(angle_radians))
+
+
+func get_relative_radial(object_heading_deg: float, target_direction_deg: float) -> float:
+	var relative_direction = target_direction_deg - object_heading_deg	
+	
+	return clamp_hdg(relative_direction)
+	
+func get_desired_heading(current_hdg_deg: float, desired_relative_radial_deg: float) -> float:
+	var desired_hdg = current_hdg_deg + desired_relative_radial_deg	
+	return clamp_hdg(desired_hdg)
+
+func clamp_hdg(hdg):
+	if hdg > 180.0:
+		return hdg - 360.0
+	elif hdg < -180.0:
+		return hdg + 360.0
+	else:
+		return hdg
 									
 
 func launch_missile_at_target(target):
@@ -650,7 +645,7 @@ func launch_missile_at_target(target):
 		env.add_child(new_missile)							
 		new_missile.set_target(target) 
 		new_missile.launch(velocity)			
-		new_missile.shooter = self				
+		new_missile.set_shooter(self)				
 		new_missile.add_to_group("Missile")
 		new_missile.global_position = global_position
 			
@@ -658,26 +653,37 @@ func launch_missile_at_target(target):
 			if not in_flight_missile.pitbull and in_flight_missile != null:
 				in_flight_missile.lost_support()
 				in_flight_missile = null
-				miss_reward += -2.0
+				ownRewards.add_missile_miss_rew()
 		
 		in_flight_missile = new_missile
 								
 		missiles -= 1		
-		shot_reward += -0.5
+		ownRewards.add_missile_fire_rew()
 		return true
 	else:
 		return false
 
-func kill():
-	set_process(false)
-	set_physics_process(false)	
-	collision_layer = 0
-	collision_mask = 0
-	input_ray_pickable = false	
-	visible = false
-	activated = false
-	done = true	
-	reward += -20.0
+func own_kill():
+	if activated == true:
+		set_process(false)
+		set_physics_process(false)	
+		collision_layer = 0
+		collision_mask = 0
+		input_ray_pickable = false	
+		visible = false
+		activated = false
+		killed = true	
+		done = true	
+		ownRewards.add_hit_own_rew()
+		
+		if is_in_group("AGENT"):
+			sync.agents_alive_control -= 1
+		elif is_in_group("ENEMY"):
+			sync.enemies_alive_control -= 1
+		else:
+			print("Figther::Warning::Agent in unknown Group -> ", get_groups())
+	
+
 		
 func reactivate():
 		# Enabling processing
@@ -688,27 +694,10 @@ func reactivate():
 	input_ray_pickable = true	
 	visible = true
 	activated = true
-	reward = 0.0
+	killed = true
+	ownRewards.get_total_rewards_and_reset()
 	missiles = 6
 	
-
-
-
-#func update_transform(delta: float) -> void:
-	## Apply bank (roll)
-	#rotation_degrees.z = bank_angle
-#
-	## Apply pitch
-	#rotation_degrees.x += pitch_input * turn_speed * delta
-#
-	## Forward movement
-	#var forward_dir = transform.basis.z.normalized()
-	#linear_velocity = forward_dir * current_speed
-#
-	## Update global position based on velocity
-	#global_translate(linear_velocity * delta)
-
-
 # Recursively traverses the node tree to find MeshInstance nodes and changes their material color.
 func change_mesh_instance_colors(node: Node, new_color: Color) -> void:
 	# Iterate through all children of the current node.

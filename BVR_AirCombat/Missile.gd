@@ -14,9 +14,8 @@ var n_steps = 0
 
 var shooter = null
 
-
 func is_type(type): return type == "Missile" 
-func    get_type(): return "Missile"		
+func get_type(): return "Missile"		
 
 
 func _ready():
@@ -30,7 +29,7 @@ func _ready():
 # Function to be called when launching the missile, passing the launcher's velocity
 func launch(launcher_velocity: Vector3):
 	initial_velocity = launcher_velocity
-	# Add the missile to the scene, set its global position, etc.
+	
 
 func _integrate_forces(state: PhysicsDirectBodyState3D) -> void:	
 	if target:
@@ -58,6 +57,9 @@ func _integrate_forces(state: PhysicsDirectBodyState3D) -> void:
 func set_target(new_target: Node3D) -> void:
 	target = new_target
 
+func set_shooter(_shooter: Node3D) -> void:
+	shooter = _shooter
+
 func lost_support():
 	queue_free()
 	
@@ -66,20 +68,14 @@ func _on_area_3d_area_entered(area):
 	
 	var body = area.get_parent()	
 	if body.is_type("Fighter") and body != shooter: 	
-		# Implement what happens when the missile hits a target
-		var id = body.get_meta("id")
-		var own_id = shooter.get_meta("id")		
-		#print("missile: Hit " , own_id, " -> ",id)
-		#body.remove_from_group("AGENT")
-		body.kill()
-		
-		shooter.kill_reward += 30.0
-		#body.visible = false
-		
-		queue_free() # Remove the missile from the scene
-	#else:
-		#print("notTarget")
-
+		# Implement what happens when the missile hits a target				
+		if body.activated:
+			body.own_kill()		
+			#Reward of hitting enemy
+			shooter.ownRewards.add_hit_enemy_rew()
+			# Remove the missile from the scene
+		queue_free() 
+	
 
 func _on_timer_timeout():
 	#print("missile: MISS ")

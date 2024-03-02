@@ -62,10 +62,7 @@ func update_actions(actions):
 		var value_label = hbox.get_child(1) as Label  # Assuming second child is the value label
 		value_label.text = str(actions[i])
 		i += 1
-
-	 
-
-
+		
 func queue_free_children(container: Control):
 	# Utility function to clear VBoxContainer children
 	for child in container.get_children():

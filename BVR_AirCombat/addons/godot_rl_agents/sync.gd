@@ -5,6 +5,8 @@ extends Node
 @export var renderize = 1
 @export var num_uavs = 4
 @export var num_targets = 1
+
+const MAX_STEPS = 15 * 60 * 20  
 var n_action_steps = 0
 var phy_fps = 20
 
@@ -20,6 +22,9 @@ var rng = RandomNumberGenerator.new()
 @onready var env = get_tree().root.get_node("FlyBy")
 @onready var fps_show = env.get_node("CanvasLayer/Control/FPS_Show")
 @onready var debug_window = env.get_node("DebugWindow")
+
+const RewardsControl = preload("res://Figther_assets.gd").RewardsControl
+var refRewards = RewardsControl.new(self)
 
 const SConv = preload("res://Figther_assets.gd").SConv
 
@@ -41,6 +46,9 @@ var agents
 var enemies
 var fighters
 
+var agents_alive_control
+var enemies_alive_control
+
 var enemies_target
 
 var need_to_send_obs = false
@@ -48,6 +56,7 @@ var args = null
 @onready var start_time = Time.get_ticks_msec()
 var initialized = false
 var just_reset = false
+var stop_simulation = false
 
 # Called when the node enters the scene tree for the first time.
 
@@ -62,7 +71,24 @@ func _ready():
 	
 	physics_updates = 0
 	elapsed_time = 0.0
+
+
+func _reset_simulation():
 		
+	_reset_all_uavs()
+	_reset_components()	
+	
+	physics_updates = 0
+	elapsed_time = 0.0
+	
+	agents_alive_control = len(agents)
+	enemies_alive_control = len(enemies)
+	
+	stop_simulation = false
+	n_action_steps = 0
+	
+	
+
 func _set_heuristic(heuristic):
 	for agent in agents:
 		agent.set_heuristic(heuristic)
@@ -194,6 +220,7 @@ func _set_agents():
 			newFigther.init_rotation = Vector3(0, 180, 0)
 			newFigther.behaviour = "baseline1"
 			newFigther.add_to_group("BASELINE")
+			newFigther.add_to_group("ENEMY")
 			newFigther.add_to_group("red" )
 			num_uavs -= 1
 				
@@ -232,18 +259,16 @@ func disconnect_from_server():
 
 func _initialize():		
 	
-	enemies_target = Vector3(0.0, 20000.0 * SConv.FT2GDM, 30 * SConv.NM2GDM)
+	enemies_target = Vector3(0.0, 20000.0 * SConv.FT2GDM, 30.0 * SConv.NM2GDM)
 	
 	args = _get_args()	
 	_set_seed()	
 	_set_action_repeat()
-	_set_agents()	
-	 
+	_set_agents()	 
 	_set_num_targets()
 	_set_heuristic("AP")
 	
-	phy_fps = args.get("physics_fps", DEFAULT_PHYSICS_FPS).to_int()    
-	 			
+	phy_fps = args.get("physics_fps", DEFAULT_PHYSICS_FPS).to_int()
 	Engine.physics_ticks_per_second = _get_speedup() * phy_fps  # Replace with function body.
 	Engine.time_scale = _get_speedup() * 1.0 
 	#Engine.max_fps = 200
@@ -259,12 +284,12 @@ func _initialize():
 		_send_env_info()
 	#else:
 		#_set_heuristic("AP")  
+
+	initialized = true 	
 	
+	_reset_simulation()
 	
-	initialized = true  
-	_reset_all_agents()
-	if debug:
-		
+	if debug:		
 		initialize_debug()	
 
 func _physics_process(delta): 
@@ -273,52 +298,78 @@ func _physics_process(delta):
 	physics_updates += 1    
 	elapsed_time += delta
 			
-	var current_time = Time.get_ticks_msec()
-	
+	var current_time = Time.get_ticks_msec()	
 	if current_time - elapsed_time >= 1000:
 		fps_show.text = str(physics_updates / 20)
 		physics_updates = 0
 		elapsed_time = current_time
-		
-	## Update the Label every second
-	#if elapsed_time >= 10.0:
-		#fps_show.text = str(physics_updates)        
-		#physics_updates = 0
-		#elapsed_time = 0
-	# two modes, human control, agent control
-	# pause tree, send obs, get actions, set actions, unpause tree
-	if n_action_steps % action_repeat != 0:
-		n_action_steps += 1
-						
-		return
 
-	#fps_show.text = str(Engine.get_frames_per_second())
+	if agents_alive_control == 0:		
+		stop_simulation = true
+		for agent in agents:			
+			agent.ownRewards.add_final_episode_reward("Team_Killed")
+			agents_alive_control = -1		
+		#print("Sync::INFO::TeamKilled" )
+		for enemy in enemies:
+			enemy.done = true
 	
+	if enemies_alive_control == 0:		
+		stop_simulation = true
+		for agent in agents:
+			agent.done = true
+			agent.ownRewards.add_final_episode_reward("Enemies_Killed")	
+			enemies_alive_control = -1
+			
+	if n_action_steps % action_repeat != 0 and not stop_simulation:
+		n_action_steps += 1						
+		return
+			
+	#Reach This part only every ActionRepeat Steps
 	n_action_steps += 1
 	
-	#Global Rewards	
-	var enemy_goal_reward = 0
-	for enemy in enemies:
-		if enemy.activated:				
-			var dist_to_go = distance2D_to_pos(enemy.position, enemies_target)
-			enemy_goal_reward += -10.0 / dist_to_go
-			if dist_to_go < 3.0:
-				enemy_goal_reward = -30.0
-				for agent in agents:
-					agent.done = true					
-				for e in enemies:
-					e.done = true
-				break	
-					   
-	var agents_killed = true	
-	for agent in agents:
-		if not agent.done:
-			agents_killed = false
-		agent.reward += enemy_goal_reward  	
-	if agents_killed:
-		for agent in agents:
-			agent.reward += -60.0
+	if n_action_steps >= MAX_STEPS:
+		for enemy in enemies:
+			enemy.done = true 
 			
+		for agent in agents:
+			agent.done = true 
+			agent.ownRewards.add_final_episode_reward("Max_Cycles")
+		
+		
+	#PROCCESS Global Rewards
+	#Enmies Rewards are actually penaulties due to the proximity to the 
+	#Enemies targets and also finish the episode in case the target is achieved	
+	var enemy_goal_reward = 0.0
+	var enemy_on_target = false
+	
+	#Calculate Penaulties for enemy distance to target	
+	for enemy in enemies:		
+		if enemy.activated and not enemy.get_done():				
+			var dist_to_go = distance2D_to_pos(enemy.position, enemies_target)
+			enemy.dist2go = dist_to_go
+			enemy_goal_reward += -1.0 / dist_to_go						
+			if dist_to_go < 3.0: #300 meters
+				enemy_on_target = true 
+
+	if enemy_on_target:
+		for agent in agents:
+			agent.done = true
+			agent.ownRewards.add_final_episode_reward("Enemy_Achieved_Target")
+		for enemy in enemies:
+			enemy.done = true
+			
+	#Calculate Penaulties for own distance to defense target	
+	var own_goal_reward = 0.0
+	for agent in agents:
+		if agent.activated and not agent.get_done():				
+			var dist_to_pos = distance2D_to_pos(agent.position, enemies_target)
+			agent.dist2go = dist_to_pos
+			if dist_to_pos > 185.2 * 2: #20NM
+				own_goal_reward -= dist_to_pos / 185200
+							
+			#Add the calculated rews
+			agent.ownRewards.add_mission_rew(enemy_goal_reward)
+			agent.ownRewards.add_mission_rew(own_goal_reward)
 
 	if connected:
 		get_tree().set_pause(true) 
@@ -354,8 +405,9 @@ func _physics_process(delta):
 		
 		var handled = handle_message()
 	else:						
-		#print(n_action_steps, _get_reward_from_agents())
+		#print(n_action_steps, _get_reward_from_agents())		
 		_reset_agents_if_done()
+	
 	if debug:
 		
 		var agent_idx = debug_window.selected_agent
@@ -364,9 +416,7 @@ func _physics_process(delta):
 		debug_window.update_obs( obs['observation'] )
 				
 		var actions_values = agents[agent_idx].get_current_inputs()
-		debug_window.update_actions( actions_values )
-
-		
+		debug_window.update_actions( actions_values )		
 
 func handle_message() -> bool:
 	# get json message: reset, step, close
@@ -380,7 +430,8 @@ func handle_message() -> bool:
 		
 	if message["type"] == "reset":
 		#print("resetting all agents")
-		_reset_all_agents()
+		_reset_simulation()
+		
 		just_reset = true		
 		get_tree().set_pause(false) 
 		
@@ -424,23 +475,29 @@ func _call_method_on_agents(method):
 		
 	return returns
 
+
 func _reset_agents_if_done():
 	
-	var dones  = _get_done_from_agents()	
-	if are_all_true(dones):	
-		_reset_all_agents()		
+	var donesAgents  = _check_all_done_agents()
+	var donesEnemies = _check_all_done_enemies()		
+	
+	if donesAgents and donesEnemies:
+		#print(_get_reward_from_agents())	
+		_reset_simulation()		
 
-func _reset_all_agents():
+func _reset_components():
+	var missiles = get_tree().get_nodes_in_group("Missile")
+	for missile in missiles:
+		missile.queue_free()
+		
+	
+func _reset_all_uavs():
 	if initialized:
 		for uav in fighters:
 			uav.needs_reset = true
 			uav.reactivate()
 			uav.reset()  
-	var missiles = get_tree().get_nodes_in_group("Missile")
-	for missile in missiles:
-		missile.queue_free()
-			
-
+	
 func _get_obs_from_agents():
 	var obs = []
 	for agent in agents:
@@ -457,28 +514,32 @@ func _get_obs_from_agents():
 func _get_reward_from_agents():
 	var rewards = [] 
 	for agent in agents:
-		rewards.append(agent.get_reward())
-		agent.zero_reward()
+		rewards.append(agent.get_reward())		
 	return rewards    
 	
 func _get_done_from_agents():
 	var dones = []
-	
-	var win_done = true
-	for enemy in enemies:
-		if not enemy.done:
-			win_done = false			
-			break 
-
 	for agent in agents:
-		if win_done:
-			dones.append(win_done)
-			#print("WinbdOnwe")
-		else: 
-			dones.append(agent.get_done())		
-		#if done: 
-		#	agent.set_done_false()
-	return dones    
+		dones.append(agent.get_done())		
+	return dones
+
+func _check_all_done_agents():	
+	for agent in agents:
+		if not agent.get_done():
+			return false					
+	return true
+
+func _get_done_from_enemies():
+	var dones = []
+	for enemy in enemies:
+		dones.append(enemy.get_done())		
+	return dones 
+
+func _check_all_done_enemies():	
+	for enemy in enemies:
+		if not enemy.get_done():
+			return false					
+	return true      
 	
 func _set_agent_actions(actions):
 	for i in range(len(actions)):
@@ -491,7 +552,7 @@ func _input(event):
 	if Input.is_action_just_pressed("r_key"):
 		just_reset = true
 		env.goalsPending.append(len(env.goals)-1)
-		_reset_all_agents()
+		_reset_all_uavs()
 	
 func clamp_array(arr : Array, min:float, max:float):
 	var output : Array = []
