@@ -59,7 +59,7 @@ if __name__ == "__main__":
 
     model_config.layers = [256,512,256]
 
-    for i in range (2):
+    for i in range (1):
         experiment = Experiment(
             task=task,
             algorithm_config=algorithm_config,

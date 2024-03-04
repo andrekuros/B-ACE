@@ -47,6 +47,7 @@ class RewardsControl:
 	var mission = 0.0
 	var missile_fire = 0.0
 	var missile_miss = 0.0
+	var detect_loss = 0.0
 	var hit_enemy = 0.0
 	var hit_own = 0.0
 	var final_reward = 0.0
@@ -54,6 +55,7 @@ class RewardsControl:
 	var mission_factor
 	var missile_fire_factor
 	var missile_miss_factor
+	var detect_loss_factor
 	var hit_enemy_factor
 	var hit_own_factor
 	var situation_factor
@@ -70,6 +72,7 @@ class RewardsControl:
 				_mission_factor = 1.0,
 			 	_missile_fire_factor = 0.2,
 				_missile_miss_factor = -0.5,
+				_detect_loss_factor = -0.1,
 				_hit_enemy_factor = 3.0,
 				_hit_own_factor = -5.0,
 				_situation_factor = 0.1, 
@@ -82,6 +85,7 @@ class RewardsControl:
 		mission_factor = _mission_factor
 		missile_fire_factor = _missile_fire_factor
 		missile_miss_factor = _missile_miss_factor
+		detect_loss_factor = _detect_loss_factor
 		hit_enemy_factor = _hit_enemy_factor
 		hit_own_factor = _hit_own_factor
 		situation_factor = _situation_factor 
@@ -103,9 +107,12 @@ class RewardsControl:
 		missile_miss += missile_miss_factor
 		#print("Figther::Info::missile_miss Rewards -> ", missile_miss )
 	
+	func add_detect_loss_rew():
+		detect_loss += detect_loss_factor
+		#print("Figther::", Owner.get_meta("id" ), "::Info::hit_enemy Rewards -> ", hit_enemy )
+		
 	func add_hit_enemy_rew():
 		hit_enemy += hit_enemy_factor
-		#print("Figther::", Owner.get_meta("id" ), "::Info::hit_enemy Rewards -> ", hit_enemy )
 	
 	func add_hit_own_rew():
 		hit_own += hit_own_factor
@@ -113,12 +120,13 @@ class RewardsControl:
 		
 	func get_total_rewards_and_reset():
 		var total_rewards = mission + missile_fire + missile_miss + \
-							hit_enemy + hit_own + final_reward
+							detect_loss + hit_enemy + hit_own + final_reward
 		#print("Figther::Info::Total Rewards -> ", total_rewards )
 		# Reset the values
 		mission = 0.0
 		missile_fire = 0.0
 		missile_miss = 0.0
+		detect_loss = 0.0
 		hit_enemy = 0.0
 		hit_own = 0.0
 		final_reward = 0.0

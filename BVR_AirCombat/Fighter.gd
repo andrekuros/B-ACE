@@ -228,21 +228,22 @@ func get_obs(with_labels = false):
 	
 	for track in radar_track_list.values():
 				
-		var info 
-		if track.detected:					
-			info = [ global_transform.origin.y / 150.0,
+		#var info 
+		#if track.detected:					
+		var info = [ global_transform.origin.y / 150.0,
 					 get_desired_heading(current_hdg, track.radial) / 180.0,
 					 track.dist / 3000.0,
 					 track.obj.dist2go / 3000.0,
-					 1 if track.id == HPT else 0
-					]
-		else:			
-			info = [ 0.0, 0.0 , 0.0, 0.0, 0.0 ]
+					 1 if track.id == HPT else 0,
+					 1 if track.detected else 0
+				]
+		#else:			
+		#	info = [ 0.0, 0.0 , 0.0, 0.0, 0.0 ]
 		tracks_info.append_array(info)
 	
 	#print("bef:",  tracks_info, len(own_info))
 	for track in range(2 - len(tracks_info)/5):
-		tracks_info.append_array([ 0.0, 0.0 , 0.0, 0.0, 0.0 ])
+		tracks_info.append_array([ 0.0, 0.0 , 0.0, 0.0, 0.0 , 0.0 ])
 	#print( tracks_info, len(own_info))
 	
 	var obs = own_info + allied_info + tracks_info	
@@ -252,9 +253,9 @@ func get_obs(with_labels = false):
 	else:
 		var labels_own = ['pos_x', 'pos_z', 'alt', 'dist2go' ,'radial2go', 'hdg', 'speed', 'missiles', 'fly_mis', 
 					  'last_g', 'last_hdg', 'last_level', ' last_fire_input' ]
-		var labels_allied = ['pos_x', 'pos_z', 'alt', 'dist2go', 'radial2go', 'hdg', 'speed', 'missiles', 'fly_mis']
-		var labels_t1 = ['t1_alt', 't1_rad', 't1_dist', 'dist2go', 't1_hpt']
-		var labels_t2 = ['t2_alt', 't2_rad', 't2_dist', 'dist2go', 't2_hpt']		
+		var labels_allied = ['DL_pos_x', 'DL_pos_z', 'DL_alt', 'DL_dist2go', 'DL_radial2go', 'DL_hdg', 'DL_speed', 'DL_missiles', 'DL_fly_mis']
+		var labels_t1 = ['t1_alt', 't1_rad', 't1_dist', 'dist2go', 't1_hpt', 't1_active']
+		var labels_t2 = ['t2_alt', 't2_rad', 't2_dist', 'dist2go', 't2_hpt', 't2_active']		
 		var labels = labels_own + labels_allied + labels_t1 + labels_t2		
 		
 		return {"observation": obs, "labels": labels}
@@ -314,7 +315,7 @@ func set_action(action):
 	#desiredG_input = (action["desiredG_input"] * (max_g  - 1.0) + (max_g + 1.0))/2.0	
 	#shoot_input = 0 if action["shoot_input"] <= 0 else 1
 	
-	last_hdg_input = get_desired_heading(current_hdg, action["input"][0])
+	last_hdg_input = get_desired_heading(current_hdg, action["input"][0] * 180.0)
 	last_level_input = action["input"][1]
 	last_desiredG_input = action["input"][2]
 	last_fire_input = action["input"][3]
@@ -474,6 +475,7 @@ func remove_track(track_id):
 				
 	if radar_track_list.has(track_id):
 		radar_track_list[track_id].detected_status(false)
+		ownRewards.add_detect_loss_rew()
 		
 func _physics_process(delta: float) -> void:
 
