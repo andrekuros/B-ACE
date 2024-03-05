@@ -37,11 +37,17 @@ var throttle: float = 1.0  # Throttle position: 0.0 (idle) to 1.0 (full)
 var bank_angle: float = 0.0  # Current bank angle
 var current_hdg = 0.0
 
+@export var actions_type = "Low_Level_Discrete"# "Low_Level_Discrete" 
+
 var	hdg_input: float = 0.0 
 var	level_input: float = 20000 * SConv.FT2GDM 
 var	speed_input: float = 650 * SConv.KNOT2GDM_S
 var	desiredG_input: float = 0.0 
 var	shoot_input: int = 0
+
+var g_conv = [6.0, 3.0, 1.0, 3.0, 6.0]
+var turn_conv = [-45.0, -20.0, 0.0, 20.0, 45.0]
+var level_conv = [10, 45, 80, 115, 150]
 
 var last_hdg_input = hdg_input
 var last_level_input = level_input
@@ -49,7 +55,7 @@ var last_desiredG_input = desiredG_input
 var last_fire_input = shoot_input
 
 var wing_area = 50
-var max_speed = 650 * SConv.KNOT2GDM_S  # Example max speed value
+var max_speed = 650 * SConv.KNOT2GDM_S # Example max speed value
 var min_speed = 250 * SConv.KNOT2GDM_S # Example min speed value
 
 var max_pitch = deg_to_rad(35.0)
@@ -276,55 +282,63 @@ func get_obs_space():
 	}   
 
 func get_action_space():
-	return {
-		#"desiredG_input" : {
-			#"size": 1,
-			#"action_type": "continuous"
-		#},    
-		#"hdg_input" : {
-			#"size" : 1,
-			#"action_type" : "continuous"						
-		#},    
-		#"level_input" : {
-			#"size": 1,
-			#"action_type": "continuous"
-		#} ,
-		#"shoot_input" : {
-			#"size": 1,
-			#"action_type": "continuous"
-		#}   
-		#
+	if actions_type == "Low_Level_Continuous":
+	
+		return {				
+			"input" : {
+				"size": 4,
+				"action_type": "continuous"
+			} 
+		} 
+	elif actions_type == "Low_Level_Discrete":         		
 		
-		"input" : {
-			"size": 4,
-			"action_type": "continuous"
-		}           		
+		return {									
+					"fire_input" : {
+					"size": 1,
+					"action_type": "discrete"
+				},					
+					"level_input" : {
+					"size": 5,
+					"action_type": "discrete"
+				},
+					"turn_input" : {
+					"size": 5,
+					"action_type": "discrete"
+				},
+				
+		} 
+	else:
+		print("Fighter::Error::Unknown Action Type -> ", actions_type)
+		return {}			
 		
-		#"flyTo" : {		
-			#"action_type": "discrete",						
-			#"size": 100												
-		#}				
-		
-	}
+	
 
 func set_action(action):
-		
-	##env.debug_text.add_text("\nAction:" + str(action)) 
-	#hdg_input = action["hdg_input"] * 180.0		
-	#level_input = (action["level_input"] * 22500.0 + 27500.0) * SConv.FT2GDM  	
-	#desiredG_input = (action["desiredG_input"] * (max_g  - 1.0) + (max_g + 1.0))/2.0	
-	#shoot_input = 0 if action["shoot_input"] <= 0 else 1
+			
+	if actions_type == "Low_Level_Continuous":
 	
-	last_hdg_input = get_desired_heading(current_hdg, action["input"][0] * 180.0)
-	last_level_input = action["input"][1]
-	last_desiredG_input = action["input"][2]
-	last_fire_input = action["input"][3]
-		
-	hdg_input = last_hdg_input * 180.0		
-	level_input = (last_level_input * 22500.0 + 27500.0) * SConv.FT2GDM  	
-	desiredG_input = (last_desiredG_input * (max_g  - 1.0) + (max_g + 1.0))/2.0	
-	shoot_input = 0 if last_fire_input <= 0 else 1
+		last_hdg_input = action["input"][0]
+		last_level_input = action["input"][1]
+		last_desiredG_input = action["input"][2]
+		last_fire_input = action["input"][3]
+			
+		hdg_input = get_desired_heading(current_hdg, last_hdg_input * 180.0)		
+		level_input = (last_level_input * 22500.0 + 27500.0) * SConv.FT2GDM  	
+		desiredG_input = (last_desiredG_input * (max_g  - 1.0) + (max_g + 1.0))/2.0	
+		shoot_input = 0 if last_fire_input <= 0 else 1
 	
+	elif actions_type == "Low_Level_Discrete":  
+			
+		last_hdg_input 		= action["turn_input"] 
+		last_desiredG_input = g_conv[action["turn_input"]] 
+		last_level_input 	= action["level_input"] 
+		last_fire_input 	= action["fire_input"] 
+			
+		hdg_input = get_desired_heading(current_hdg, turn_conv[last_hdg_input])		
+		level_input = level_conv[last_level_input]
+		desiredG_input = last_desiredG_input
+		shoot_input = last_fire_input   
+
 
 func get_current_inputs():
 	return [hdg_input, level_input, desiredG_input, shoot_input]

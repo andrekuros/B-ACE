@@ -5,6 +5,7 @@ extends Node
 @export var renderize = 1
 @export var num_uavs = 4
 @export var num_targets = 1
+@export var action_type = "Low_Level_Discrete"#"Low_Level_Continuous" #"Low_Level_Discrete"
 
 const MAX_STEPS = 15 * 60 * 20  
 var n_action_steps = 0

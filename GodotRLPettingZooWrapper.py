@@ -8,19 +8,23 @@ import torch
 class GodotRLPettingZooWrapper(GodotEnv, ParallelEnv):
     metadata = {'render.modes': [], 'name': "godot_rl_multi_agent"}
 
-    def __init__(self, num_agents = 2, **kwargs):
+    def __init__(self, num_agents = 2, actions_type = "Low_Level_Discrete", **kwargs):
                 
         super().__init__( **kwargs)
 
         # self.num_agents = num_agents
         self.agents = [f'agent_{i}' for i in range(num_agents)]  # Initialize agents
         self.possible_agents = self.agents[:]
+
+        self.actions_type = actions_type
         
         self.agent_idx = [ {agent : i} for i, agent in enumerate(self.possible_agents)]
                 
         # Initialize observation and action spaces for each agent
         self.observation_spaces = {agent: self._observation_space['observation'] for agent in self.agents}
         self.action_spaces = {agent: self.action_space for agent in self.agents}
+
+        print(self.action_spaces)
         
         # self.observation_space = self._observation_space
         # self.action_space = self._action_space
@@ -74,10 +78,14 @@ class GodotRLPettingZooWrapper(GodotEnv, ParallelEnv):
     
     def step(self, actions):
         # Assuming the environment's step function can handle a dictionary of actions for each agent
-                       
-       
-        godot_actions = [np.array([action]) for agent, action in actions.items()]
-                
+                                       
+        if self.actions_type == "Low_Level_Continuous":
+            godot_actions = [np.array([action]) for agent, action in actions.items()]        
+        elif self.actions_type == "Low_Level_Discrete": 
+            godot_actions = [ self.decode_action(action) for agent, action in actions.items()]
+        else:
+            print("GododtPZWrapper::Error:: Unknow Actions Type -> ", self.actions_type)
+                                
         obs, reward, dones, truncs, info = super().step(godot_actions, order_ij=True)
         
         # Assuming 'obs' is a list of dictionaries with 'obs' keys among others
@@ -112,5 +120,12 @@ class GodotRLPettingZooWrapper(GodotEnv, ParallelEnv):
             self.info,
         )
                 
+    def decode_action(self, encoded_action):
+        # Decode back to the original action tuple        
+        turn_input = encoded_action % 5
+        level_input = (encoded_action // 5.0) % 5
+        fire_input = (encoded_action // 25.0) % 2
+        return np.array([fire_input, level_input, turn_input])
+
 
     

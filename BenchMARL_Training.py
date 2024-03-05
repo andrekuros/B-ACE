@@ -18,7 +18,7 @@ if __name__ == "__main__":
 
     experiment_config.sampling_device = 'cpu'
     experiment_config.train_device = 'cuda'
-    experiment_config.prefer_continuous_actions = True
+    experiment_config.prefer_continuous_actions = False
     
     experiment_config.evaluation_interval = 18000
     experiment_config.checkpoint_interval = 18000
@@ -44,14 +44,14 @@ if __name__ == "__main__":
     # experiment_config.restore_file = "mappo_b_ace_mlp__a5dbb727_24_02_26-23_09_37/checkpoints/checkpoint_2142000.pt"
     # experiment_config.loggers = []
     experiment_config.save_folder = "/Results"
-    experiment_config.lr = 0.0003
+    # experiment_config.lr = 0.0003
     
     task = b_ace.B_ACE.b_ace.get_from_yaml()
         
-    algorithm_config = IppoConfig.get_from_yaml()
+    algorithm_config = MappoConfig.get_from_yaml()
 
     # Loads from "benchmarl/conf/model/layers/mlp.yaml"
-    model_config = GnnConfig.get_from_yaml()
+    # model_config = GnnConfig.get_from_yaml()
     model_config = MlpConfig.get_from_yaml()
     critic_model_config = MlpConfig.get_from_yaml()
 
@@ -60,6 +60,7 @@ if __name__ == "__main__":
     model_config.layers = [256,512,256]
 
     for i in range (1):
+
         experiment = Experiment(
             task=task,
             algorithm_config=algorithm_config,
