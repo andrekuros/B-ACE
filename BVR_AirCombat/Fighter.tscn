@@ -1,9 +1,12 @@
-[gd_scene load_steps=9 format=3 uid="uid://3xxv82w5v8bo"]
+[gd_scene load_steps=12 format=3 uid="uid://3xxv82w5v8bo"]
 
 [ext_resource type="Script" path="res://Fighter.gd" id="2"]
 [ext_resource type="Script" path="res://Detection.gd" id="2_7x3gy"]
+[ext_resource type="ArrayMesh" uid="uid://dwfepm1wjriw8" path="res://assets/RadarBeam.obj" id="3_oycbp"]
 
 [sub_resource type="SphereShape3D" id="SphereShape3D_6pjqh"]
+margin = 1.0
+radius = 2.0
 
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_7poeg"]
 albedo_color = Color(0, 0.537255, 0.117647, 1)
@@ -23,18 +26,21 @@ albedo_color = Color(0.0666667, 0.0313726, 1, 1)
 material = SubResource("StandardMaterial3D_15eh7")
 size = Vector3(10, 8, 0.5)
 
+[sub_resource type="ConvexPolygonShape3D" id="ConvexPolygonShape3D_v2w0p"]
+margin = 0.863
+points = PackedVector3Array(-0.0886841, 0, 0, -456.395, -100, 263.448, -456.395, 100, 263.448, 456.307, 100, 263.448, 456.307, -100, 263.448, -438.258, -100, 292.749, -438.258, 100, 292.749, 438.169, 100, 292.749, 438.169, -100, 292.749, -418.154, -100, 320.812, -418.154, 100, 320.812, 418.066, 100, 320.812, 418.066, -100, 320.812, -396.263, -100, 347.43, -396.263, 100, 347.43, 396.175, 100, 347.43, 396.175, -100, 347.43, -372.675, -100, 372.604, -372.675, 100, 372.604, 372.587, 100, 372.604, 372.587, -100, 372.604, -347.479, -100, 396.179, -347.479, 100, 396.179, 347.391, 100, 396.179, 347.391, -100, 396.179, -320.853, -100, 418.051, -320.853, 100, 418.051, 320.765, 100, 418.051, 320.765, -100, 418.051, -292.797, -100, 438.169, -292.797, 100, 438.169, 292.709, 100, 438.169, 292.709, -100, 438.169, -263.58, -100, 456.379, -263.58, 100, 456.379, 263.492, 100, 456.379, 263.492, -100, 456.379, -233.112, -100, 472.629, -233.112, 100, 472.629, 233.024, 100, 472.629, 233.024, -100, 472.629, -201.75, -100, 486.866, -201.75, 100, 486.866, 201.662, 100, 486.866, 201.662, -100, 486.866, -169.406, -100, 498.989, -169.406, 100, 498.989, 169.318, 100, 498.989, 169.318, -100, 498.989, -136.436, -100, 508.997, -136.436, 100, 508.997, 136.348, 100, 508.997, 136.348, -100, 508.997, -102.84, -100, 516.838, -102.84, 100, 516.838, 102.752, 100, 516.838, 102.752, -100, 516.838, -68.7983, -100, 522.46, -68.7983, 100, 522.46, 68.7102, 100, 522.46, 68.7102, -100, 522.46, -34.4882, -100, 525.865, -34.4882, 100, 525.865, 34.4001, 100, 525.865, 34.4001, -100, 525.865, 0.000640869, -100, 527, 0.000640869, 100, 527)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_563rj"]
+transparency = 1
+albedo_color = Color(1, 1, 1, 0.00392157)
+
 [node name="Fighter" type="CharacterBody3D"]
 disable_mode = 1
-collision_layer = 0
-collision_mask = 0
+collision_mask = 2
 script = ExtResource("2")
 metadata/id = 0
 
-[node name="DetectionArea" type="Area3D" parent="."]
-transform = Transform3D(4, 0, 0, 0, -1.74846e-07, -4, 0, 4, -1.74846e-07, 0, 0.849539, 1.46409)
-collision_mask = 2
-
-[node name="CollisionShape3D" type="CollisionShape3D" parent="DetectionArea"]
+[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
 shape = SubResource("SphereShape3D_6pjqh")
 
 [node name="Camera3D" type="Camera3D" parent="."]
@@ -56,14 +62,20 @@ mesh = SubResource("PrismMesh_o8vq1")
 surface_material_override/0 = SubResource("StandardMaterial3D_y8agd")
 
 [node name="Radar" type="Area3D" parent="."]
+transform = Transform3D(1.5, 0, 0, 0, 1.5, 0, 0, 0, 1.5, 0, 0, 0)
 collision_layer = 4
 script = ExtResource("2_7x3gy")
 
-[node name="CollisionPolygon3D" type="CollisionPolygon3D" parent="Radar"]
-transform = Transform3D(-4.37114e-08, -1, -4.37114e-08, 0, -4.37114e-08, 1, -1, 4.37114e-08, 1.91069e-15, 0, 50, 0)
-depth = 300.0
-polygon = PackedVector2Array(0, 0, 5000, 30000, 5000, -30000)
-margin = 0.221
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Radar"]
+transform = Transform3D(-1, 0, -8.74228e-08, 0, 1, 0, 8.74228e-08, 0, -1, 0, 0, 0)
+shape = SubResource("ConvexPolygonShape3D_v2w0p")
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="Radar"]
+transform = Transform3D(-1, 0, -8.74228e-08, 0, 1, 0, 8.74228e-08, 0, -1, 0, 0, 0)
+mesh = ExtResource("3_oycbp")
+surface_material_override/0 = SubResource("StandardMaterial3D_563rj")
 
 [connection signal="area_entered" from="Radar" to="Radar" method="_on_radar_area_entered"]
 [connection signal="area_exited" from="Radar" to="Radar" method="_on_radar_area_exited"]
+[connection signal="body_entered" from="Radar" to="Radar" method="_on_body_entered" flags=3]
+[connection signal="body_exited" from="Radar" to="Radar" method="_on_body_exited" flags=3]

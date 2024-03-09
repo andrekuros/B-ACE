@@ -26,12 +26,12 @@ adjustment_enabled = true
 adjustment_brightness = 1.17
 adjustment_contrast = 1.22
 
-[sub_resource type="ORMMaterial3D" id="ORMMaterial3D_g573e"]
-albedo_color = Color(0.278431, 0.278431, 0.278431, 1)
-distance_fade_mode = 1
-
 [sub_resource type="BoxShape3D" id="4"]
 size = Vector3(2000, 500, 2000)
+
+[sub_resource type="ORMMaterial3D" id="ORMMaterial3D_g573e"]
+albedo_color = Color(0.207843, 0.207843, 0.207843, 1)
+distance_fade_mode = 1
 
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_a5iso"]
 
@@ -40,24 +40,18 @@ script = ExtResource("1_lysss")
 
 [node name="DirectionalLight3D" type="DirectionalLight3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 0.46793, 0.883766, 0, -0.883766, 0.46793, 0, 300, 0)
-light_color = Color(0.690196, 0.690196, 0.690196, 1)
-light_energy = 5.04
+light_color = Color(0.92549, 0.92549, 0.92549, 1)
+light_energy = 4.374
 light_indirect_energy = 0.0
 light_volumetric_fog_energy = 1.485
 shadow_enabled = true
 shadow_opacity = 0.98
 shadow_blur = 1.101
-sky_mode = 1
 
 [node name="WorldEnvironment" type="WorldEnvironment" parent="."]
 environment = SubResource("Environment_t3cor")
 
 [node name="Columns" type="CSGCombiner3D" parent="."]
-
-[node name="CSGBox3D" type="CSGBox3D" parent="Columns"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -170.99, 0)
-size = Vector3(3750, 10, 3750)
-material = SubResource("ORMMaterial3D_g573e")
 
 [node name="GameArea" type="Area3D" parent="."]
 collision_layer = 0
@@ -67,14 +61,22 @@ script = ExtResource("2")
 [node name="CollisionShape3D" type="CollisionShape3D" parent="GameArea"]
 shape = SubResource("4")
 
+[node name="CSGBox3D" type="CSGBox3D" parent="GameArea"]
+transform = Transform3D(10, 0, 0, 0, 10, 0, 0, 0, 10, 0, -150, 0)
+gi_mode = 0
+calculate_tangents = false
+size = Vector3(10000, -10, 3750)
+material = SubResource("ORMMaterial3D_g573e")
+
 [node name="Sync" type="Node" parent="."]
 script = ExtResource("1")
 
 [node name="CameraGlobal" type="Camera3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, -4.37114e-08, 1, 0, -1, -4.37114e-08, 0, 1200, 0)
 current = true
-fov = 70.7
+fov = 75.7
 size = 1000.0
+near = 0.101
 
 [node name="Goals" type="Node" parent="."]
 

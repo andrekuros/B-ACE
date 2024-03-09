@@ -21,8 +21,8 @@ if __name__ == "__main__":
     experiment_config.prefer_continuous_actions = False
     
     experiment_config.evaluation_interval = 18000
-    experiment_config.checkpoint_interval = 18000
-    
+    experiment_config.checkpoint_interval = 60000
+        
 
     # Number of frames collected and each experiment iteration
     experiment_config.on_policy_collected_frames_per_batch = 6000
@@ -48,7 +48,7 @@ if __name__ == "__main__":
     
     task = b_ace.B_ACE.b_ace.get_from_yaml()
         
-    algorithm_config = MappoConfig.get_from_yaml()
+    algorithm_config = IppoConfig.get_from_yaml()
 
     # Loads from "benchmarl/conf/model/layers/mlp.yaml"
     # model_config = GnnConfig.get_from_yaml()
@@ -57,7 +57,7 @@ if __name__ == "__main__":
 
 
 
-    model_config.layers = [256,512,256]
+    model_config.layers = [256,512,512]
 
     for i in range (1):
 

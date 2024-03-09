@@ -54,6 +54,7 @@ class RewardsControl:
 	
 	var mission_factor
 	var missile_fire_factor
+	var missile_no_fire_factor
 	var missile_miss_factor
 	var detect_loss_factor
 	var hit_enemy_factor
@@ -70,7 +71,8 @@ class RewardsControl:
 	
 	func _init(	_owner,
 				_mission_factor = 1.0,
-			 	_missile_fire_factor = 0.2,
+			 	_missile_fire_factor = 0.0,
+				_missile_no_fire_factor = -0.001,
 				_missile_miss_factor = -0.5,
 				_detect_loss_factor = -0.1,
 				_hit_enemy_factor = 3.0,
@@ -84,6 +86,7 @@ class RewardsControl:
 		Owner = _owner
 		mission_factor = _mission_factor
 		missile_fire_factor = _missile_fire_factor
+		missile_no_fire_factor = _missile_no_fire_factor
 		missile_miss_factor = _missile_miss_factor
 		detect_loss_factor = _detect_loss_factor
 		hit_enemy_factor = _hit_enemy_factor
@@ -101,6 +104,10 @@ class RewardsControl:
 	
 	func add_missile_fire_rew():
 		missile_fire += missile_fire_factor
+		#print("Figther::Info::missile_fire Rewards -> ", missile_fire )
+	
+	func add_missile_no_fire_rew():
+		missile_fire += missile_no_fire_factor
 		#print("Figther::Info::missile_fire Rewards -> ", missile_fire )
 	
 	func add_missile_miss_rew():

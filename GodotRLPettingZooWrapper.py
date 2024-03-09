@@ -8,7 +8,7 @@ import torch
 class GodotRLPettingZooWrapper(GodotEnv, ParallelEnv):
     metadata = {'render.modes': [], 'name': "godot_rl_multi_agent"}
 
-    def __init__(self, num_agents = 2, actions_type = "Low_Level_Discrete", **kwargs):
+    def __init__(self, num_agents = 1, action_type = "Low_Level_Continuous", **kwargs):
                 
         super().__init__( **kwargs)
 
@@ -16,7 +16,7 @@ class GodotRLPettingZooWrapper(GodotEnv, ParallelEnv):
         self.agents = [f'agent_{i}' for i in range(num_agents)]  # Initialize agents
         self.possible_agents = self.agents[:]
 
-        self.actions_type = actions_type
+        self.action_type = action_type
         
         self.agent_idx = [ {agent : i} for i, agent in enumerate(self.possible_agents)]
                 
@@ -79,9 +79,9 @@ class GodotRLPettingZooWrapper(GodotEnv, ParallelEnv):
     def step(self, actions):
         # Assuming the environment's step function can handle a dictionary of actions for each agent
                                        
-        if self.actions_type == "Low_Level_Continuous":
+        if self.action_type == "Low_Level_Continuous":
             godot_actions = [np.array([action]) for agent, action in actions.items()]        
-        elif self.actions_type == "Low_Level_Discrete": 
+        elif self.action_type == "Low_Level_Discrete": 
             godot_actions = [ self.decode_action(action) for agent, action in actions.items()]
         else:
             print("GododtPZWrapper::Error:: Unknow Actions Type -> ", self.actions_type)

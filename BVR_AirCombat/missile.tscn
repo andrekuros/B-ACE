@@ -2,6 +2,8 @@
 
 [ext_resource type="Script" path="res://Missile.gd" id="1_i3wbj"]
 
+[sub_resource type="SphereShape3D" id="SphereShape3D_16o7b"]
+
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_ibwa0"]
 albedo_color = Color(1, 0.0901961, 0.0901961, 1)
 emission_enabled = true
@@ -21,23 +23,11 @@ height = 3.923
 radial_segments = 4
 rings = 1
 
-[sub_resource type="SphereShape3D" id="SphereShape3D_16o7b"]
-
 [node name="Missile" type="RigidBody3D"]
 collision_layer = 0
 collision_mask = 0
 mass = 5.06
 script = ExtResource("1_i3wbj")
-
-[node name="MeshInstance3D" type="MeshInstance3D" parent="."]
-transform = Transform3D(7.64274e-15, -1.74846e-07, -4, -4, -1.74846e-07, 0, -1.74846e-07, 4, -1.74846e-07, -2.79206e-07, -2.79206e-07, 6.3875)
-layers = 2
-mesh = SubResource("CapsuleMesh_1xecw")
-
-[node name="MeshInstance3D2" type="MeshInstance3D" parent="."]
-transform = Transform3D(7.64274e-15, -1.74846e-07, -4, -4, -1.74846e-07, 0, -1.74846e-07, 4, -1.74846e-07, 1.25438e-07, 1.25438e-07, -2.86968)
-layers = 2
-mesh = SubResource("CapsuleMesh_3tfsy")
 
 [node name="Timer" type="Timer" parent="."]
 process_callback = 0
@@ -51,5 +41,20 @@ collision_layer = 2
 [node name="CollisionShape3D" type="CollisionShape3D" parent="Area3D"]
 shape = SubResource("SphereShape3D_16o7b")
 
+[node name="RenderModel" type="Node3D" parent="."]
+transform = Transform3D(1.2, 0, 0, 0, 1.2, 0, 0, 0, 1.2, 0, 0, 0)
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="RenderModel"]
+transform = Transform3D(7.64274e-15, -1.74846e-07, -4, -4, -1.74846e-07, 0, -1.74846e-07, 4, -1.74846e-07, -2.79206e-07, -2.79206e-07, 6.3875)
+layers = 2
+mesh = SubResource("CapsuleMesh_1xecw")
+skeleton = NodePath("../..")
+
+[node name="MeshInstance3D2" type="MeshInstance3D" parent="RenderModel"]
+transform = Transform3D(7.64274e-15, -1.74846e-07, -4, -4, -1.74846e-07, 0, -1.74846e-07, 4, -1.74846e-07, 1.25438e-07, 1.25438e-07, -2.86968)
+layers = 2
+mesh = SubResource("CapsuleMesh_3tfsy")
+skeleton = NodePath("../..")
+
 [connection signal="timeout" from="Timer" to="." method="_on_timer_timeout"]
-[connection signal="area_entered" from="Area3D" to="." method="_on_area_3d_area_entered"]
+[connection signal="body_entered" from="Area3D" to="." method="_on_area_3d_body_entered" flags=3]

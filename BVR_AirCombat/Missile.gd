@@ -3,16 +3,17 @@ extends RigidBody3D
 const SConv = preload("res://Figther_assets.gd").SConv
 
 var target: Node3D
-var speed: float = 150.0 #* SConv.KNOT2GDM_S
+var speed: float = 75.0 #* SConv.KNOT2GDM_S
 var turn_speed: float = 2.0
 
-var time_of_flight: float = 35.0 
+var time_of_flight: float = 60.0 
 var pitbull = false
 
 var initial_velocity: Vector3
 var n_steps = 0
 
 var shooter = null
+var upLink_support = true
 
 func is_type(type): return type == "Missile" 
 func get_type(): return "Missile"		
@@ -25,10 +26,14 @@ func _ready():
 	$Timer.wait_time = time_of_flight
 	$Timer.start()
 	
-
 # Function to be called when launching the missile, passing the launcher's velocity
-func launch(launcher_velocity: Vector3):
-	initial_velocity = launcher_velocity
+func launch(_shooter, _target):
+		
+	set_shooter(_shooter)
+	set_target(_target)
+	
+	initial_velocity = shooter.velocity	
+	upLink_support = true
 	
 
 func _integrate_forces(state: PhysicsDirectBodyState3D) -> void:	
@@ -47,9 +52,8 @@ func _integrate_forces(state: PhysicsDirectBodyState3D) -> void:
 			if target_distance < 10 * SConv.NM2GDM and not pitbull:
 				pitbull = true
 				#print("Pitbull")
-
-		# Optionally, ensure the missile is always facing towards its movement direction.
-		if linear_velocity.length() > 0.01:
+		
+		if linear_velocity.length() > 0.01 and (upLink_support or pitbull):
 			look_at(global_transform.origin + linear_velocity, Vector3.UP)
 	
 	n_steps += 1
@@ -60,13 +64,20 @@ func set_target(new_target: Node3D) -> void:
 func set_shooter(_shooter: Node3D) -> void:
 	shooter = _shooter
 
-func lost_support():
-	queue_free()
-	
+func lost_support():	
+	upLink_support = false
+	#queue_free()
 
-func _on_area_3d_area_entered(area):
-	
-	var body = area.get_parent()	
+func recover_support():	
+	upLink_support = true
+
+
+func _on_timer_timeout():
+	#print("missile: MISS ")
+	queue_free()  # Remove the missile from the scene
+
+
+func _on_area_3d_body_entered(body):	
 	if body.is_type("Fighter") and body != shooter: 	
 		# Implement what happens when the missile hits a target				
 		if body.activated:
@@ -75,12 +86,3 @@ func _on_area_3d_area_entered(area):
 			shooter.ownRewards.add_hit_enemy_rew()
 			# Remove the missile from the scene
 		queue_free() 
-	
-
-func _on_timer_timeout():
-	#print("missile: MISS ")
-	queue_free()  # Remove the missile from the scene
-
-
-
-

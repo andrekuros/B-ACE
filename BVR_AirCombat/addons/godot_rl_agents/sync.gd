@@ -1,10 +1,11 @@
 extends Node
 # --fixed-fps 2000 --disable-render-loop
 @export var action_repeat := 20
-@export var speed_up = 1
+@export var speed_up = 2000
 @export var renderize = 1
-@export var num_uavs = 4
-@export var num_targets = 1
+#@export var num_uavs = 4
+@export var num_allies = 2
+@export var num_enemies = 2
 @export var action_type = "Low_Level_Discrete"#"Low_Level_Continuous" #"Low_Level_Discrete"
 
 const MAX_STEPS = 15 * 60 * 20  
@@ -16,7 +17,6 @@ var debug = true
 # Variables to keep track of physics updates and time
 var physics_updates = 0
 var elapsed_time = 0.0
-
 
 var rng = RandomNumberGenerator.new()
 
@@ -34,8 +34,10 @@ const MINOR_VERSION := "3"
 const DEFAULT_PORT := "11008"
 const DEFAULT_SEED := "1"
 const DEFAULT_ACTION_REPEAT := "20"
+const DEFAULT_ACTION_TYPE := "Low_Level_Continuous"
 const DEFAULT_PHYSICS_FPS := "20"
-const DEFAULT_NUM_UAVS := "4"
+const DEFAULT_NUM_ALLIES := "1"
+const DEFAULT_NUM_ENEMIES := "1"
 const DEFAULT_NUM_TARGETS := "1"
 
 var stream : StreamPeerTCP = null
@@ -51,6 +53,7 @@ var agents_alive_control
 var enemies_alive_control
 
 var enemies_target
+var allies_target
 
 var need_to_send_obs = false
 var args = null
@@ -60,7 +63,6 @@ var just_reset = false
 var stop_simulation = false
 
 # Called when the node enters the scene tree for the first time.
-
 func _ready():
 
 	#env.debug_text.add_text("\nSync Ready") 
@@ -72,8 +74,10 @@ func _ready():
 	
 	physics_updates = 0
 	elapsed_time = 0.0
-
-
+	
+	if not debug:
+		debug_window.visible = false
+		
 func _reset_simulation():
 		
 	_reset_all_uavs()
@@ -88,8 +92,6 @@ func _reset_simulation():
 	stop_simulation = false
 	n_action_steps = 0
 	
-	
-
 func _set_heuristic(heuristic):
 	for agent in agents:
 		agent.set_heuristic(heuristic)
@@ -186,71 +188,84 @@ func _get_port():
 	return args.get("port", DEFAULT_PORT).to_int()
 
 func _set_seed():
-	var _seed = args.get("env_seed", DEFAULT_SEED).to_int()	
+	seed(args.get("env_seed", DEFAULT_SEED).to_int())	
+
+func _set_action_type():
+	action_type = args.get("action_type", DEFAULT_ACTION_TYPE)
 
 func _set_agents():	
 	
-	num_uavs = args.get("num_uavs", DEFAULT_NUM_UAVS).to_int()    
+	num_allies = args.get("num_allies", DEFAULT_NUM_ALLIES).to_int() 
+	num_enemies = args.get("num_enemies", DEFAULT_NUM_ENEMIES).to_int()   
 	
 	const model_scaleVector  = Vector3(1.0/SConv.SCALE_FACTOR, 1.0/SConv.SCALE_FACTOR, 1.0/SConv.SCALE_FACTOR)
 	const invert_scaleVector = Vector3(SConv.SCALE_FACTOR, SConv.SCALE_FACTOR, SConv.SCALE_FACTOR)	
 	const visual_scaleVector = Vector3(4.0,  4.0,  4.0)
 	
-	for i in range(num_uavs):
+	for i in range(num_allies):
 		
 		var newFigther = null				
 		newFigther = env.fighterObj.instantiate()		
-		newFigther.get_node("RenderModel").set_scale(visual_scaleVector)
-		
+		newFigther.get_node("RenderModel").set_scale(visual_scaleVector)		
 		newFigther.phy_fps = phy_fps
-		newFigther.action_repeat = action_repeat			
-						
-		var team_id =  i % 2 + 0  # Assigns UAVs alternately to team 1 or 2
+		newFigther.action_repeat = action_repeat
+		newFigther.action_type = action_type											
+		var team_id =  1  
+			
+		var offset = get_tree().get_nodes_in_group("blue").size()
+		newFigther.init_position = Vector3(offset * 6.0 * SConv.NM2GDM - 12.0 * SConv.NM2GDM * 0 , 20000 * SConv.FT2GDM , 30 * SConv.NM2GDM )
+		newFigther.init_rotation = Vector3(0, 0, 0)
+		newFigther.init_hdg = newFigther.init_rotation.y
+		newFigther.hdg_input = newFigther.init_hdg			
+		newFigther.set_meta('id', 100 +  i)
+		newFigther.team_id = team_id
+		newFigther.add_to_group("AGENT")							
+		newFigther.add_to_group("blue")		
+		newFigther.add_to_group("FIGTHERS")
 		
-		if team_id == 1: #Blue TEAM
-			var offset = get_tree().get_nodes_in_group("blue").size()
-			newFigther.init_position = Vector3(offset * 10.0 * SConv.NM2GDM, 20000 * SConv.FT2GDM , 30 * SConv.NM2GDM )
-			newFigther.init_rotation = Vector3(0, 0, 0)
-			newFigther.behaviour = "external"
-			newFigther.add_to_group("AGENT")			
-			newFigther.add_to_group("blue")						
+		newFigther.behaviour = "external"			
+		#newFigther.behaviour = "baseline1"
+		newFigther.target_position = enemies_target
+			
 		
-		else: #Red TEAM
-			var offset = get_tree().get_nodes_in_group("red").size()
-			newFigther.init_position = Vector3(offset * 10.0 * SConv.NM2GDM, 20000 * SConv.FT2GDM, -30 * SConv.NM2GDM )
-			newFigther.init_rotation = Vector3(0, 180, 0)
-			newFigther.behaviour = "baseline1"
-			newFigther.add_to_group("BASELINE")
-			newFigther.add_to_group("ENEMY")
-			newFigther.add_to_group("red" )
-			num_uavs -= 1
-				
+		
+		env.get_node("Fighters").add_child(newFigther)    
+		env.uavs.append(newFigther)			
+	
+	for i in range(num_enemies):
+		
+		var newFigther = null				
+		newFigther = env.fighterObj.instantiate()		
+		newFigther.get_node("RenderModel").set_scale(visual_scaleVector)		
+		newFigther.phy_fps = phy_fps
+		newFigther.action_repeat = action_repeat
+		newFigther.action_type = action_type											
+		var team_id =  0 
+		
+		var offset = get_tree().get_nodes_in_group("red").size()
+		newFigther.init_position = Vector3(offset * 6.0 * SConv.NM2GDM , 20000 * SConv.FT2GDM, -30 * SConv.NM2GDM )
+		newFigther.init_rotation = Vector3(0, 180, 0)
 		newFigther.add_to_group("FIGTHERS")
 		newFigther.init_hdg = newFigther.init_rotation.y
-		newFigther.hdg_input = newFigther.init_hdg
-		newFigther.target_position = enemies_target
-				
-		newFigther.set_meta('id', i)
-		newFigther.team_id = team_id
+		newFigther.hdg_input = newFigther.init_hdg	
+		newFigther.set_meta('id', 200 + i)
+		newFigther.team_id = team_id	
+		newFigther.add_to_group("BASELINE")
+		newFigther.add_to_group("ENEMY")
+		newFigther.add_to_group("red" )
+		newFigther.behaviour = "baseline1"
+		
+		
+		newFigther.target_position = enemies_target		
 		
 		env.get_node("Fighters").add_child(newFigther)    
 		env.uavs.append(newFigther)
-		
+			
 	
 	agents   = get_tree().get_nodes_in_group("AGENT")
 	enemies  = get_tree().get_nodes_in_group("BASELINE")
 	fighters = get_tree().get_nodes_in_group("FIGTHERS")
 				
-func _set_num_targets():
-	num_targets = args.get("num_targets", DEFAULT_NUM_TARGETS).to_int()
-	
-	for i in range(num_targets-1):
-		var addGoal = (env.goals[0][0]).duplicate()		
-		addGoal.position = Vector3(rng.randf_range(-350.0, 350.0),50,rng.randf_range(-350.0, -30.0))		
-		addGoal.set_meta('id', i + 1)
-		env.get_node("Goals").add_child(addGoal)
-		env.goals.append([addGoal,-1])	
-		env.goalsPending.append(len(env.goals)-1)	
 	
 func _set_action_repeat():
 	action_repeat = args.get("action_repeat", DEFAULT_ACTION_REPEAT).to_int()
@@ -261,12 +276,13 @@ func disconnect_from_server():
 func _initialize():		
 	
 	enemies_target = Vector3(0.0, 20000.0 * SConv.FT2GDM, 30.0 * SConv.NM2GDM)
+	allies_target = Vector3(0.0, 20000.0 * SConv.FT2GDM, -30.0 * SConv.NM2GDM)
 	
 	args = _get_args()	
 	_set_seed()	
 	_set_action_repeat()
-	_set_agents()	 
-	_set_num_targets()
+	_set_action_type()
+	_set_agents()	 	
 	_set_heuristic("AP")
 	
 	phy_fps = args.get("physics_fps", DEFAULT_PHYSICS_FPS).to_int()
@@ -302,8 +318,10 @@ func _physics_process(delta):
 	var current_time = Time.get_ticks_msec()	
 	if current_time - elapsed_time >= 1000:
 		fps_show.text = str(physics_updates / 20)
+		#print(str(physics_updates / 20))
 		physics_updates = 0
 		elapsed_time = current_time
+		
 
 	if agents_alive_control == 0:		
 		stop_simulation = true

@@ -1,0 +1,13 @@
+[gd_scene load_steps=3 format=3 uid="uid://b4qjgpl5wgap7"]
+
+[ext_resource type="ArrayMesh" uid="uid://dwfepm1wjriw8" path="res://assets/RadarBeam.obj" id="1_5b1mm"]
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_00blf"]
+transparency = 1
+albedo_color = Color(1, 1, 1, 0.00784314)
+
+[node name="RadarBeam" type="Node3D"]
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="."]
+mesh = ExtResource("1_5b1mm")
+surface_material_override/0 = SubResource("StandardMaterial3D_00blf")
