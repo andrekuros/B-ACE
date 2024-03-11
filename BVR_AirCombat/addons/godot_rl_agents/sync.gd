@@ -34,7 +34,7 @@ const MINOR_VERSION := "3"
 const DEFAULT_PORT := "11008"
 const DEFAULT_SEED := "1"
 const DEFAULT_ACTION_REPEAT := "20"
-const DEFAULT_ACTION_TYPE := "Low_Level_Continuous"
+const DEFAULT_ACTION_TYPE := "Low_Level_Discrete"
 const DEFAULT_PHYSICS_FPS := "20"
 const DEFAULT_NUM_ALLIES := "1"
 const DEFAULT_NUM_ENEMIES := "1"
@@ -190,14 +190,13 @@ func _get_port():
 func _set_seed():
 	seed(args.get("env_seed", DEFAULT_SEED).to_int())	
 
-func _set_action_type():
+func _set_env_config():
 	action_type = args.get("action_type", DEFAULT_ACTION_TYPE)
+	num_allies = args.get("num_allies", DEFAULT_NUM_ALLIES).to_int() 
+	num_enemies = args.get("num_enemies", DEFAULT_NUM_ENEMIES).to_int() 
 
 func _set_agents():	
-	
-	num_allies = args.get("num_allies", DEFAULT_NUM_ALLIES).to_int() 
-	num_enemies = args.get("num_enemies", DEFAULT_NUM_ENEMIES).to_int()   
-	
+			
 	const model_scaleVector  = Vector3(1.0/SConv.SCALE_FACTOR, 1.0/SConv.SCALE_FACTOR, 1.0/SConv.SCALE_FACTOR)
 	const invert_scaleVector = Vector3(SConv.SCALE_FACTOR, SConv.SCALE_FACTOR, SConv.SCALE_FACTOR)	
 	const visual_scaleVector = Vector3(4.0,  4.0,  4.0)
@@ -281,7 +280,7 @@ func _initialize():
 	args = _get_args()	
 	_set_seed()	
 	_set_action_repeat()
-	_set_action_type()
+	_set_env_config()
 	_set_agents()	 	
 	_set_heuristic("AP")
 	

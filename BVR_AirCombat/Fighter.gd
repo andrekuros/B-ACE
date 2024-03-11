@@ -427,8 +427,8 @@ func process_behavior(delta_s):
 				#tatic_status == "Return"							
 				#tatic_time = 0.0
 			
-			if 	team_id == 0 and position.z >= 0 or\
-				team_id == 1 and position.z <= 0:
+			if 	team_id == 0 and position.z >= 150 or\
+				team_id == 1 and position.z <= -150:
 				
 				desiredG_input = 3.0	
 				tatic_status = "Strike"							
@@ -464,10 +464,12 @@ func process_behavior(delta_s):
 						defense_side = 1 - randi_range(0,1) * 2 #Choose defence side
 						#print(tatic_status, tatic_time)							
 			
-			#if 	position.z >= 185:				
-			#	desiredG_input = 3.0	
-			#	tatic_status = "Strike"							
-			#	tatic_time = 0.0
+			if 	team_id == 0 and position.z >= 150 or\
+				team_id == 1 and position.z <= -150:
+				
+				desiredG_input = 3.0	
+				tatic_status = "Strike"							
+				tatic_time = 0.0
 				#print(tatic_status)
 		else:
 			#tatic_status = "Search"        

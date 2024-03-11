@@ -1,18 +1,69 @@
 from godot_rl.core.godot_env import GodotEnv
 from pettingzoo.utils import ParallelEnv
+
+from godot_rl.core.utils import ActionSpaceProcessor, convert_macos_path
 import numpy as np
 import gymnasium as gym
 import torch
+import atexit
+from sys import platform
+from gymnasium import spaces
+import json
+import subprocess
+from typing import Optional
 
 
 class GodotRLPettingZooWrapper(GodotEnv, ParallelEnv):
     metadata = {'render.modes': [], 'name': "godot_rl_multi_agent"}
 
-    def __init__(self, num_agents = 1, action_type = "Low_Level_Continuous", **kwargs):
-                
-        super().__init__( **kwargs)
+    def __init__(self,
+                env_path: str = None,
+                port: int = GodotEnv.DEFAULT_PORT,
+                show_window: bool = True,
+                seed: int = 0,
+                framerate: Optional[int] = None,
+                action_repeat: Optional[int] = None,
+                speedup: Optional[int] = None,
+                convert_action_space: bool = False,
+                **env_config_kwargs):
+                       
+        #super().__init__( **kwargs)
 
-        # self.num_agents = num_agents
+        # Assuming env_config_kwargs is a dictionary with all necessary keys and values
+        #env_path = env_config_kwargs.pop("env_path", "BVR_AirCombat/bin/BVR_1x1_FullView.exe")
+        num_agents = env_config_kwargs.pop("num_allies", 1)
+        num_enemies = env_config_kwargs.pop("num_enemies", 1)
+        #show_window = env_config_kwargs.pop("show_window", False)
+        #seed = env_config_kwargs.pop("seed", 0)
+        #port = env_config_kwargs.pop("port", 12500)
+        #framerate = env_config_kwargs.pop("framerate", None)
+        #action_repeat = env_config_kwargs.pop("action_repeat", 20)
+        action_type = env_config_kwargs.pop("action_type", "Low_Level_Continuous")
+        #speedup = env_config_kwargs.pop("speedup", 2000)
+
+        self.proc = None
+        if env_path is not None and env_path != "debug":
+            env_path = self._set_platform_suffix(env_path)
+
+            self.check_platform(env_path)  
+
+            self._launch_env(env_path, port, show_window, framerate, seed, action_repeat, speedup,
+                             num_agents, num_enemies, action_type)
+        else:
+            print("No game binary has been provided, please press PLAY in the Godot editor")
+
+        self.port = port
+        self.connection = self._start_server()
+        self.num_envs = None
+        self._handshake()
+        self._get_env_info()
+        # sf2 requires a tuple action space
+        self._tuple_action_space = spaces.Tuple([v for _, v in self._action_space.items()])
+        self.action_space_processor = ActionSpaceProcessor(self._tuple_action_space, convert_action_space)
+
+        atexit.register(self._close)
+
+        #Initialization for PettingZoo Paralell
         self.agents = [f'agent_{i}' for i in range(num_agents)]  # Initialize agents
         self.possible_agents = self.agents[:]
 
@@ -36,6 +87,39 @@ class GodotRLPettingZooWrapper(GodotEnv, ParallelEnv):
         self.observations =  {agent : {}  for agent in self.possible_agents}  
         self.info =  {agent : {}  for agent in self.possible_agents}  
 
+
+    def _launch_env(self, env_path, port, show_window, framerate, seed, action_repeat, speedup, 
+                    num_agents, num_enemies, action_type):        
+                
+        # --fixed-fps {framerate}
+        path = convert_macos_path(env_path) if platform == "darwin" else env_path
+
+        launch_cmd = f"{path} --port={port} --env_seed={seed}"
+
+        # Building the launch command
+        launch_cmd = f"{env_path}"
+
+        # Adding parameters to the command string based on the extracted values
+        launch_cmd += f" --num_allies={num_agents}"
+        launch_cmd += f" --num_enemies={num_enemies}"
+        if not show_window:
+            launch_cmd += " --disable-render-loop --headless"
+        if seed is not None:
+            launch_cmd += f" --seed={seed}"
+        if port is not None:
+            launch_cmd += f" --port={port}"
+        if framerate is not None:
+            launch_cmd += f" --fixed-fps {framerate}"
+        launch_cmd += f" --action_repeat={action_repeat}"
+        launch_cmd += f" --action_type={action_type}"
+        launch_cmd += f" --speedup={speedup}"
+
+        launch_cmd = launch_cmd.split(" ")
+        self.proc = subprocess.Popen(
+            launch_cmd,
+            start_new_session=True,
+            # shell=True,
+        )
     
     def reset(self, seed=0, options = None):
         

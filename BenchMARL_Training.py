@@ -46,7 +46,7 @@ if __name__ == "__main__":
     experiment_config.save_folder = "/Results"
     # experiment_config.lr = 0.0003
     
-    task = b_ace.B_ACE.b_ace.get_from_yaml()
+    task = b_ace.B_ACE.b_ace.get_from_yaml()    
         
     algorithm_config = IppoConfig.get_from_yaml()
 
@@ -54,8 +54,6 @@ if __name__ == "__main__":
     # model_config = GnnConfig.get_from_yaml()
     model_config = MlpConfig.get_from_yaml()
     critic_model_config = MlpConfig.get_from_yaml()
-
-
 
     model_config.layers = [256,512,512]
 
