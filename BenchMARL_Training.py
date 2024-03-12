@@ -16,7 +16,7 @@ if __name__ == "__main__":
     # Loads from "benchmarl/conf/experiment/base_experiment.yaml"
     experiment_config = ExperimentConfig.get_from_yaml()
 
-    experiment_config.sampling_device = 'cpu'
+    experiment_config.sampling_device = 'cuda'
     experiment_config.train_device = 'cuda'
     experiment_config.prefer_continuous_actions = False
     experiment_config.evaluation_interval = 18000
@@ -38,12 +38,27 @@ if __name__ == "__main__":
     # experiment_config.evaluation = True  # Enable evaluation mode
     # experiment_config.restore_file = "mappo_b_ace_mlp__a5dbb727_24_02_26-23_09_37/checkpoints/checkpoint_2142000.pt"
     # experiment_config.loggers = []
-    experiment_config.save_folder = "/Results"
+    experiment_config.save_folder = "Results"
     # experiment_config.lr = 0.0003
     
     #TASK Config
-    task = b_ace.B_ACE.b_ace_e1.get_from_yaml()  
-            
+    task = b_ace.B_ACE.b_ace.get_from_yaml()  
+    config_dict = {
+        'task': 'b_ace_v1',
+        'env_path': 'BVR_AirCombat/bin/B_ACE_v1.exe',
+        'show_window': True,
+        'seed': 0,
+        'port': 12500,
+        'action_repeat': 20,
+        'speedup': 2000,
+        'num_allies': 1,
+        'num_enemies': 1,
+        'action_type': 'Low_Level_Continuous',
+        'enemies_baseline': 'baseline1',
+        'full_observation': 0
+    }
+    
+    task.config = config_dict
             
     algorithm_config = IppoConfig.get_from_yaml()
 

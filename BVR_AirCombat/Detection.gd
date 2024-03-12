@@ -28,7 +28,6 @@ func _on_radar_area_entered(area):
 	current_debounce_frame = debounce_frames
 	
 
-
 func _on_radar_area_exited(area):
 	var track_obj = area.get_parent()
 	if track_obj.is_type("Fighter") and track_obj.team_color != fighter.team_color:

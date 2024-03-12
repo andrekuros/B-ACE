@@ -1,6 +1,7 @@
 extends RigidBody3D
 
 const SConv = preload("res://Figther_assets.gd").SConv
+const Calc = preload("res://Calc.gd")
 
 var target: Node3D
 var speed: float = 75.0 #* SConv.KNOT2GDM_S
@@ -31,6 +32,10 @@ func launch(_shooter, _target):
 		
 	set_shooter(_shooter)
 	set_target(_target)
+	
+	var radial_factor = abs(Calc.get_2d_angle_off(_shooter, _target) / 180.0)	
+	
+	time_of_flight = time_of_flight * (1 - 0.3 * radial_factor) #lost 30% 180deg fire	
 	
 	initial_velocity = shooter.velocity	
 	upLink_support = true

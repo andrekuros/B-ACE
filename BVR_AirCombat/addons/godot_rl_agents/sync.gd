@@ -8,6 +8,7 @@ extends Node
 @export var num_enemies = 1
 @export var action_type = "Low_Level_Discrete"#"Low_Level_Continuous" #"Low_Level_Discrete"
 @export var enemies_baseline = "baseline1"
+@export var full_observation = 0
 
 const MAX_STEPS = 15 * 60 * 20  
 var n_action_steps = 0
@@ -39,8 +40,8 @@ const DEFAULT_ACTION_TYPE := "Low_Level_Discrete"
 const DEFAULT_PHYSICS_FPS := "20"
 const DEFAULT_NUM_ALLIES := "1"
 const DEFAULT_NUM_ENEMIES := "1"
-const DEFAULT_ENEMIES_BASELINE := "duck"
-
+const DEFAULT_ENEMIES_BASELINE := "baseline1"
+const DEFAULT_FULL_OBSERVATION := "0"
 
 var stream : StreamPeerTCP = null
 var connected = false
@@ -197,6 +198,7 @@ func _set_env_config():
 	num_allies = args.get("num_allies", DEFAULT_NUM_ALLIES).to_int() 
 	num_enemies = args.get("num_enemies", DEFAULT_NUM_ENEMIES).to_int() 
 	enemies_baseline = args.get("enemies_baseline", DEFAULT_ENEMIES_BASELINE)
+	full_observation = args.get("full_observation", DEFAULT_FULL_OBSERVATION).to_int()
 
 func _set_agents():	
 			
@@ -224,13 +226,14 @@ func _set_agents():
 		newFigther.add_to_group("AGENT")							
 		newFigther.add_to_group("blue")		
 		newFigther.add_to_group("FIGTHERS")
-		
-		newFigther.behaviour = "external"			
-		#newFigther.behaviour = "baseline1"
+				
 		newFigther.target_position = enemies_target
+		newFigther.set_behaviour("external")
+		#newFigther.set_behaviour("baseline1")
+		
+		newFigther.set_fullView(full_observation)
+		
 			
-		
-		
 		env.get_node("Fighters").add_child(newFigther)    
 		env.uavs.append(newFigther)			
 	
@@ -256,7 +259,7 @@ func _set_agents():
 		newFigther.add_to_group("ENEMY")
 		newFigther.add_to_group("red" )
 		newFigther.set_behaviour(enemies_baseline)
-		
+		newFigther.set_fullView(full_observation)
 		
 		newFigther.target_position = enemies_target		
 		
@@ -267,7 +270,10 @@ func _set_agents():
 	agents   = get_tree().get_nodes_in_group("AGENT")
 	enemies  = get_tree().get_nodes_in_group("BASELINE")
 	fighters = get_tree().get_nodes_in_group("FIGTHERS")
-				
+	
+	for fighter in fighters:
+		fighter.update_scene()
+
 	
 func _set_action_repeat():
 	action_repeat = args.get("action_repeat", DEFAULT_ACTION_REPEAT).to_int()
@@ -318,8 +324,8 @@ func _physics_process(delta):
 	elapsed_time += delta
 			
 	var current_time = Time.get_ticks_msec()	
-	if current_time - elapsed_time >= 1000:
-		fps_show.text = str(physics_updates / 20)
+	if current_time - elapsed_time >= 200:
+		fps_show.text = str(physics_updates / 4)
 		#print(str(physics_updates / 20))
 		physics_updates = 0
 		elapsed_time = current_time
@@ -401,7 +407,7 @@ func _physics_process(delta):
 		
 			var reply = {
 				"type": "reset",
-				"observation": obs
+				"obs": obs
 			}
 			_send_dict_as_json_message(reply)
 			# this should go straight to getting the action and setting it checked the agent, no need to perform one phyics tick
@@ -418,7 +424,7 @@ func _physics_process(delta):
 			
 			var reply = {
 				"type": "step",
-				"observation": obs,
+				"obs": obs,
 				"reward": reward,
 				"done": done
 			}
@@ -434,7 +440,7 @@ func _physics_process(delta):
 		var agent_idx = debug_window.selected_agent
 		
 		var obs = agents[agent_idx].get_obs()
-		debug_window.update_obs( obs['observation'] )
+		debug_window.update_obs( obs['obs'] )
 				
 		var actions_values = agents[agent_idx].get_current_inputs()
 		debug_window.update_actions( actions_values )		
@@ -510,6 +516,7 @@ func _reset_components():
 	var missiles = get_tree().get_nodes_in_group("Missile")
 	for missile in missiles:
 		missile.queue_free()
+	
 		
 	
 func _reset_all_uavs():
@@ -517,7 +524,8 @@ func _reset_all_uavs():
 		for uav in fighters:
 			uav.needs_reset = true
 			uav.reactivate()
-			uav.reset()  
+			uav.reset() 
+			uav.update_scene() 
 	
 func _get_obs_from_agents():
 	var obs = []
@@ -526,9 +534,9 @@ func _get_obs_from_agents():
 			obs.append(agent.get_obs())
 		else:
 			var zero_obs = []
-			for i in range(len(agent.get_obs()["observation"])):
+			for i in range(len(agent.get_obs()["obs"])):
 				zero_obs.append(0)
-			obs.append({"observation": zero_obs})
+			obs.append({"obs": zero_obs})
 		
 	return obs
 	
@@ -597,7 +605,7 @@ func initialize_debug():
 	var actions_values = [-1, -1, -1, -1]
 	
 	debug_window.initialize( 	obs["labels"],
-								obs["observation"],
+								obs["obs"],
 								actions_labels,
 								actions_values )
 	debug_window.visible = true

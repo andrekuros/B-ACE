@@ -28,7 +28,7 @@ var radar_fov = 45 # degrees
 var radar_near_range = 10.0 * SConv.NM2GDM # minimum distance to detect
 var radar_far_range = 60.0 * SConv.NM2GDM # maximum distance to detect
 
-var fullView = true
+var fullView = false
 
 var missiles = 6 # Adjust the number of missiles as needed
 
@@ -120,6 +120,7 @@ var turn_input = 0.0
 
 var radar_track_list = {}
 var HPT = -1
+var SPT = -1
 var data_link_list = []
 var in_flight_missile = null
 
@@ -128,6 +129,9 @@ var max_trail_points: int = 120 # Adjust based on desired trail length and updat
 
 var len_tracks_data_obs = 2
 var len_allieds_data_obs = 2
+
+var selected_obs_tracks  = []
+var selected_obs_allieds = []
 
 
 func is_type(type): return type == "Fighter" 
@@ -166,8 +170,7 @@ func reset():
 	done = false
 	best_goal_distance = to_local(cur_goal.position).length()
 	
-	missiles = 6
-	radar_track_list = {}	
+	missiles = 6	
 		
 	AP_mode = "FlyHdg" #"GoTo" / "Hold"
 	holdStatus = 0
@@ -181,28 +184,44 @@ func reset():
 
 	tatic_status = "Search" #"MissileSupport / Commit / Evade / Recommit
 	tatic_time = 0.0	
-	
-	radar_track_list = {}
+		
 	HPT = -1
+	SPT = -1
 	data_link_list = {}
 	in_flight_missile = null
-
+				
+	len_allieds_data_obs = 1 if len(alliesList) >= 1 else 0
+	len_tracks_data_obs = 2 if len(sync.env.get_tree().get_nodes_in_group("ENEMY")) > 1 else 1
+				
+	if fullView:
+		$Radar/CollisionShape3D.disabled = true    
+	else:
+		$Radar/CollisionShape3D.disabled = true    
+		await(0.05)
+		$Radar/CollisionShape3D.disabled = false 
+		radar_track_list = {} 
+	
+func update_scene():
+	
+	if fullView:		
+		var track_view_list
+		if is_in_group("ENEMY"):
+			track_view_list = sync.agents
+		elif is_in_group("AGENT"):
+			track_view_list = sync.enemies
+		else:
+			print("FIGTHER::WARNING::COMPONENT IN UNKNOW GROUP ", get_groups())						
+		
+		for enemy in track_view_list:
+			var radial = Calc.get_hdg_2d(position, enemy.position)
+			var dist = global_transform.origin.distance_to(enemy.global_transform.origin)	
+			var new_track = Track.new(enemy.get_meta("id"), enemy, dist, radial, true)					
+			radar_track_list[enemy.get_meta("id")] = new_track#Track.new(enemy.get_meta("id"), enemy, dist, radial, true)	
+								
 	alliesList = []
 	for agent in env.get_tree().get_nodes_in_group(color_group):
 		if agent.get_meta("id") != get_meta("id"):
 			alliesList.append(agent)  	
-	
-			
-	len_allieds_data_obs = 1 if len(alliesList) >= 1 else 0
-	len_tracks_data_obs = 2 if len(sync.env.get_tree().get_nodes_in_group("ENEMY")) > 1 else 1
-	
-	$Radar/CollisionShape3D.disabled = true    
-	await(0.05)
-	$Radar/CollisionShape3D.disabled = false  
-	
-	
-
-
 #func reset_if_done():
 	#if done:
 		#reset()
@@ -214,6 +233,11 @@ func set_behaviour(_behaviour):
 		print("FIGTHER::WARNING:: unknow Behavior ", _behaviour, " using duck enemy" )
 		behaviour = "baseline1"
 		
+func set_fullView(_def):
+	if _def == 1:
+		fullView = true
+	else:
+		fullView = false
 
 func get_done():
 	return done
@@ -256,21 +280,31 @@ func get_obs(with_labels = false):
 							 allied.missiles / 6.0,							 
 							 1 if is_instance_valid(allied.in_flight_missile) else 0,
 			]			
-	
-	for track in radar_track_list.values():
+		
+	#for track in radar_track_list.values():
+		
 				
-		#var info 
-		#if track.detected:					
-		var info = [ global_transform.origin.y / 150.0,
+	#HPT info
+	if HPT != -1:
+		var track = radar_track_list[HPT]
+		tracks_info.append_array([ track.obj.global_transform.origin.y / 150.0,
 					 Calc.get_desired_heading(current_hdg, track.radial) / 180.0,
 					 track.dist / 3000.0,
 					 track.obj.dist2go / 3000.0,
-					 1 if track.id == HPT else 0,
+					 1,
 					 1 if track.detected else 0
-				]
-		#else:			
-		#	info = [ 0.0, 0.0 , 0.0, 0.0, 0.0 ]
-		tracks_info.append_array(info)
+				])			
+	#SPT info
+	if SPT != -1:
+		var track = radar_track_list[SPT]
+		tracks_info.append_array([ track.obj.global_transform.origin.y / 150.0,
+					 Calc.get_desired_heading(current_hdg, track.radial) / 180.0,
+					 track.dist / 3000.0,
+					 track.obj.dist2go / 3000.0,
+					 0,
+					 1 if track.detected else 0
+				])
+		
 	
 	#print("bef:",  tracks_info, len(own_info))
 	
@@ -285,7 +319,7 @@ func get_obs(with_labels = false):
 	
 	#return {"obs": {"own_info": own_info, "tracks_info" : tracks_info}}	
 	if not with_labels:
-		return {"observation": obs}
+		return {"obs": obs}
 	else:
 		var labels_own = ['pos_x', 'pos_z', 'alt', 'dist2go' ,'radial2go', 'hdg', 'speed', 'missiles', 'fly_mis', 
 					  'last_g', 'last_hdg', 'last_level', ' last_fire_input' ]
@@ -302,7 +336,7 @@ func get_obs(with_labels = false):
 		else:
 			labels += labels_t1 
 		
-		return {"observation": obs, "labels": labels}
+		return {"obs": obs, "labels": labels}
 
 func get_reward():	
 	return ownRewards.get_total_rewards_and_reset()
@@ -313,8 +347,8 @@ func set_heuristic(heuristic):
 func get_obs_space():
 	# typs of obs space: box, discrete, repeated	
 	return {
-		"observation": {
-			"size": [len(get_obs()["observation"])],
+		"obs": {
+			"size": [len(get_obs()["obs"])],
 			"space": "box"
 		}
 	}   
@@ -379,17 +413,18 @@ func set_action(action):
 
 func get_current_inputs():
 	return [hdg_input, level_input, desiredG_input, shoot_input]
+
 	
 func process_tracks():	
 	
 	var min_dist = 100000
-	var new_HPT = null
-	
-	#print("process_track")
+	var new_HPT = -1
+	var new_sec_target = -1
+		
 	for id in radar_track_list.keys():
 		var track = radar_track_list[id]							
 		
-		if track.detected or fullView:
+		if track.detected:
 						
 			if track.obj.activated == false:
 				track.detected = false						
@@ -402,12 +437,14 @@ func process_tracks():
 			
 			if dist < min_dist: # and track.obj.get_meta('id') == 1:
 				min_dist = dist
-				new_HPT = id
-				
+				new_sec_target = new_HPT
+				new_HPT = id				
+								
 							
-			#print("own_id: ", get_meta('id'), " t_td", track.id, " track_dist: ", dist, " rad:", radial)
-	if HPT == -1 and new_HPT != null:
-		HPT = new_HPT
+			#print("own_id: ", get_meta('id'), " t_td", track.id, " track_dist: ", dist, " rad:", radial)	
+	
+	HPT = new_HPT
+	SPT = new_sec_target
 		#print("HPT_set ", get_meta('id') , " - ", HPT)
 		
 func process_behavior(delta_s):
@@ -465,9 +502,7 @@ func process_behavior(delta_s):
 			if HPT != -1:							
 				#print(radar_track_list[HPT].dist, "Shot: ", max_shoot_range_adjusted)	
 				hdg_input = radar_track_list[HPT].radial
-				
-				#print("Hdg_target: ", hdg_input)
-				
+												
 				if radar_track_list[HPT].dist < max_shoot_range_adjusted:
 					if abs(Calc.get_relative_radial(current_hdg, radar_track_list[HPT].radial)) < 15:					
 						if launch_missile_at_target(radar_track_list[HPT].obj): 
@@ -578,7 +613,7 @@ func reacquired_track(track_id, radial, dist):
 func _physics_process(delta: float) -> void:
 
 	current_hdg = rad_to_deg(global_transform.basis.get_euler().y)
-	
+
 	process_tracks()
 	
 	if n_steps % action_repeat == 0:

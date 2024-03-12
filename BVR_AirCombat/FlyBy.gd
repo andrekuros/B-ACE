@@ -29,7 +29,7 @@ func _ready():
 	cameraGlobal = get_node("CameraGlobal")
 	cameraGlobal.make_current()
 	self.position.y = zoom_level
-	look_at(Vector3.ZERO, Vector3.UP)
+	#look_at(Vector3.ZERO, Vector3.UP)
 
 func get_next_goal(current_goal):
 	if current_goal == null:
