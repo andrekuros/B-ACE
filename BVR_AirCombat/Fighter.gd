@@ -207,6 +207,14 @@ func reset():
 	#if done:
 		#reset()
 		
+func set_behaviour(_behaviour):
+	if behaviour == "baseline1" or behaviour == "duck" or behaviour == "external":	
+		behaviour = _behaviour
+	else:
+		print("FIGTHER::WARNING:: unknow Behavior ", _behaviour, " using duck enemy" )
+		behaviour = "baseline1"
+		
+
 func get_done():
 	return done
 	
@@ -403,135 +411,142 @@ func process_tracks():
 		#print("HPT_set ", get_meta('id') , " - ", HPT)
 		
 func process_behavior(delta_s):
-		
+			
 	tatic_time += delta_s	
 	
-	if tatic_status == "Search" or tatic_status == "Return":
+	if behaviour == "duck":
+		return
+					
+	elif behaviour == "baseline1":
 		
-		if HPT != -1:				
+		if tatic_status == "Search" or tatic_status == "Return":
 			
-			#Define new shotdistance with randominess
-			max_shoot_range_adjusted = max_shoot_range  + randf_range(-max_shoot_range_var * max_shoot_range, max_shoot_range_var * max_shoot_range)						
-			
-			tatic_status = "Engage"        
-			AP_mode = "FlyHdg"				
-			desiredG_input = 3.0
-			tatic_time = 0.0
-			
-		elif tatic_status == "Search":
-			#Aproach the target
-			#if 	position.z >= 0:
-				#var oposite_hdg =  rad_to_deg(global_transform.basis.get_euler().y) + 180.0				
-				#hdg_input = fmod(oposite_hdg + 180.0, 360.0) - 180.0
-				#desiredG_input = 3.0	
-				#tatic_status == "Return"							
-				#tatic_time = 0.0
-			
-			if 	team_id == 0 and position.z >= 150 or\
-				team_id == 1 and position.z <= -150:
+			if HPT != -1:				
 				
-				desiredG_input = 3.0	
-				tatic_status = "Strike"							
+				#Define new shotdistance with randominess
+				max_shoot_range_adjusted = max_shoot_range  + randf_range(-max_shoot_range_var * max_shoot_range, max_shoot_range_var * max_shoot_range)						
+				
+				tatic_status = "Engage"        
+				AP_mode = "FlyHdg"				
+				desiredG_input = 3.0
 				tatic_time = 0.0
-				#print(tatic_status)
+				
+			elif tatic_status == "Search":
+				#Aproach the target
+				#if 	position.z >= 0:
+					#var oposite_hdg =  rad_to_deg(global_transform.basis.get_euler().y) + 180.0				
+					#hdg_input = fmod(oposite_hdg + 180.0, 360.0) - 180.0
+					#desiredG_input = 3.0	
+					#tatic_status == "Return"							
+					#tatic_time = 0.0
+				
+				if 	team_id == 0 and position.z >= 150 or\
+					team_id == 1 and position.z <= -150:
+					
+					desiredG_input = 3.0	
+					tatic_status = "Strike"							
+					tatic_time = 0.0
+					#print(tatic_status)
+				
+			elif tatic_status == "Return" and tatic_time >= 80.0:			
+				hdg_input = init_hdg
+				desiredG_input = 3.0	
+				tatic_status = "Search"							
+				tatic_time = 0.0
 			
-		elif tatic_status == "Return" and tatic_time >= 80.0:			
-			hdg_input = init_hdg
-			desiredG_input = 3.0	
-			tatic_status = "Search"							
-			tatic_time = 0.0
-		
-	if tatic_status == "Strike":						
-		#hdg_input = fmod(aspect_to_obj(target_position) + current_hdg, 360) 
-		hdg_input = Calc.get_hdg_2d(position, target_position )
-		#print(hdg_input)
-		
+		if tatic_status == "Strike":						
+			#hdg_input = fmod(aspect_to_obj(target_position) + current_hdg, 360) 
+			hdg_input = Calc.get_hdg_2d(position, target_position )
+			#print(hdg_input)
+			
 
-	if tatic_status == "Engage":
-		
-		if HPT != -1:							
-			#print(radar_track_list[HPT].dist, "Shot: ", max_shoot_range_adjusted)	
-			hdg_input = radar_track_list[HPT].radial
+		if tatic_status == "Engage":
 			
-			#print("Hdg_target: ", hdg_input)
-			
-			if radar_track_list[HPT].dist < max_shoot_range_adjusted:
-				if abs(Calc.get_relative_radial(current_hdg, radar_track_list[HPT].radial)) < 15:					
-					if launch_missile_at_target(radar_track_list[HPT].obj): 
-						tatic_status = "MissileSupport"			
-						tatic_time = 0.0
-						max_shoot_range_adjusted = -1
-						defense_side = 1 - randi_range(0,1) * 2 #Choose defence side
-						#print(tatic_status, tatic_time)							
-			
-			if 	team_id == 0 and position.z >= 150 or\
-				team_id == 1 and position.z <= -150:
+			if HPT != -1:							
+				#print(radar_track_list[HPT].dist, "Shot: ", max_shoot_range_adjusted)	
+				hdg_input = radar_track_list[HPT].radial
 				
-				desiredG_input = 3.0	
-				tatic_status = "Strike"							
-				tatic_time = 0.0
-				#print(tatic_status)
-		else:
-			#tatic_status = "Search"        
-			#AP_mode = "FlyHdg"
-			#hdg_input = init_hdg				
-			tatic_time = 0.0	
-			#print(tatic_status, tatic_time)
-			tatic_status = "Evade"        
-			AP_mode = "FlyHdg"				
-			tatic_time = 0.0		
-								
-				#var oposite_hdg = rad_to_deg(global_transform.basis.get_euler().y) + 180.0				
-			hdg_input = Calc.clamp_hdg(current_hdg + 180)#fmod(oposite_hdg + 180.0, 360.0) - 180.0
-			desiredG_input = 6.0								
-			#print("ID:", get_meta("id"), ":" ,tatic_status, tatic_time, " / ", hdg_input)
-			
-		
-	if tatic_status == "MissileSupport": 
-		
-		if is_instance_valid(in_flight_missile):			
-			if in_flight_missile.pitbull or in_flight_missile == null:
-			
+				#print("Hdg_target: ", hdg_input)
+				
+				if radar_track_list[HPT].dist < max_shoot_range_adjusted:
+					if abs(Calc.get_relative_radial(current_hdg, radar_track_list[HPT].radial)) < 15:					
+						if launch_missile_at_target(radar_track_list[HPT].obj): 
+							tatic_status = "MissileSupport"			
+							tatic_time = 0.0
+							max_shoot_range_adjusted = -1
+							defense_side = 1 - randi_range(0,1) * 2 #Choose defence side
+							#print(tatic_status, tatic_time)							
+				
+				if 	team_id == 0 and position.z >= 150 or\
+					team_id == 1 and position.z <= -150:
+					
+					desiredG_input = 3.0	
+					tatic_status = "Strike"							
+					tatic_time = 0.0
+					#print(tatic_status)
+			else:
+				#tatic_status = "Search"        
+				#AP_mode = "FlyHdg"
+				#hdg_input = init_hdg				
+				tatic_time = 0.0	
+				#print(tatic_status, tatic_time)
 				tatic_status = "Evade"        
 				AP_mode = "FlyHdg"				
 				tatic_time = 0.0		
-								
-				#var oposite_hdg = rad_to_deg(global_transform.basis.get_euler().y) + 180.0				
-				hdg_input = Calc.clamp_hdg(current_hdg + 180- defense_side * 45.0)#fmod(oposite_hdg + 180.0, 360.0) - 180.0
+									
+					#var oposite_hdg = rad_to_deg(global_transform.basis.get_euler().y) + 180.0				
+				hdg_input = Calc.clamp_hdg(current_hdg + 180)#fmod(oposite_hdg + 180.0, 360.0) - 180.0
 				desiredG_input = 6.0								
-				#print(tatic_status, tatic_time, " / ", hdg_input)
+				#print("ID:", get_meta("id"), ":" ,tatic_status, tatic_time, " / ", hdg_input)
+				
+			
+		if tatic_status == "MissileSupport": 
+			
+			if is_instance_valid(in_flight_missile):			
+				if in_flight_missile.pitbull or in_flight_missile == null:
+				
+					tatic_status = "Evade"        
+					AP_mode = "FlyHdg"				
+					tatic_time = 0.0		
+									
+					#var oposite_hdg = rad_to_deg(global_transform.basis.get_euler().y) + 180.0				
+					hdg_input = Calc.clamp_hdg(current_hdg + 180- defense_side * 45.0)#fmod(oposite_hdg + 180.0, 360.0) - 180.0
+					desiredG_input = 6.0								
+					#print(tatic_status, tatic_time, " / ", hdg_input)
+				else:
+					if HPT != -1:
+						hdg_input = Calc.clamp_hdg(radar_track_list[HPT].radial + defense_side * 45.0) 
+					
+					
 			else:
-				if HPT != -1:
-					hdg_input = Calc.clamp_hdg(radar_track_list[HPT].radial + defense_side * 45.0) 
+				#tatic_status = "Search"        
+				#AP_mode = "FlyHdg"				
+				#tatic_time = 0.0	
 				
+				tatic_status = "Evade"        
+				AP_mode = "FlyHdg"				
+				tatic_time = 0.0		
+									
+					#var oposite_hdg = rad_to_deg(global_transform.basis.get_euler().y) + 180.0				
+				hdg_input = Calc.clamp_hdg(current_hdg + 180- defense_side * 45.0)#fmod(oposite_hdg + 180.0, 360.0) - 180.0
+				desiredG_input = 6.0			
+				#print(tatic_status, tatic_time)
 				
-		else:
-			#tatic_status = "Search"        
-			#AP_mode = "FlyHdg"				
-			#tatic_time = 0.0	
-			
-			tatic_status = "Evade"        
-			AP_mode = "FlyHdg"				
-			tatic_time = 0.0		
-								
-				#var oposite_hdg = rad_to_deg(global_transform.basis.get_euler().y) + 180.0				
-			hdg_input = Calc.clamp_hdg(current_hdg + 180- defense_side * 45.0)#fmod(oposite_hdg + 180.0, 360.0) - 180.0
-			desiredG_input = 6.0			
-			#print(tatic_status, tatic_time)
-			
 
-	if tatic_status == "Evade" and tatic_time >= 50.0:
-		
-		tatic_status = "Search"		
-		AP_mode = "FlyHdg"
-		
-		hdg_input = Calc.clamp_hdg(current_hdg + 180)				
-		#hdg_input = fmod(oposite_hdg + 180, 360) - 180
-		desiredG_input = 3.0		
-				
-		tatic_time = 0.0		
-		#print(tatic_status, tatic_time, " / ", hdg_input)
+		if tatic_status == "Evade" and tatic_time >= 50.0:
 			
+			tatic_status = "Search"		
+			AP_mode = "FlyHdg"
+			
+			hdg_input = Calc.clamp_hdg(current_hdg + 180)				
+			#hdg_input = fmod(oposite_hdg + 180, 360) - 180
+			desiredG_input = 3.0		
+					
+			tatic_time = 0.0		
+			#print(tatic_status, tatic_time, " / ", hdg_input)
+	else:
+		print("FIGHTER::ERROR:: Unknow behavior selected ", behaviour)		
+		
 func remove_track(track_id):
 	
 	if HPT == track_id:
@@ -567,7 +582,7 @@ func _physics_process(delta: float) -> void:
 	process_tracks()
 	
 	if n_steps % action_repeat == 0:
-		if behaviour == "baseline1":			
+		if behaviour == "baseline1" or behaviour == "duck":			
 			#if get_meta("id") == 2:
 			process_behavior(delta * (n_steps - last_beh_proc))
 			last_beh_proc = n_steps

@@ -39,6 +39,7 @@ class GodotRLPettingZooWrapper(GodotEnv, ParallelEnv):
         #framerate = env_config_kwargs.pop("framerate", None)
         #action_repeat = env_config_kwargs.pop("action_repeat", 20)
         action_type = env_config_kwargs.pop("action_type", "Low_Level_Continuous")
+        enemy_baseline= env_config_kwargs.pop("enemy_baseline", "duck")
         #speedup = env_config_kwargs.pop("speedup", 2000)
 
         self.proc = None
@@ -48,7 +49,7 @@ class GodotRLPettingZooWrapper(GodotEnv, ParallelEnv):
             self.check_platform(env_path)  
 
             self._launch_env(env_path, port, show_window, framerate, seed, action_repeat, speedup,
-                             num_agents, num_enemies, action_type)
+                             num_agents, num_enemies, action_type, enemy_baseline)
         else:
             print("No game binary has been provided, please press PLAY in the Godot editor")
 
@@ -89,7 +90,7 @@ class GodotRLPettingZooWrapper(GodotEnv, ParallelEnv):
 
 
     def _launch_env(self, env_path, port, show_window, framerate, seed, action_repeat, speedup, 
-                    num_agents, num_enemies, action_type):        
+                    num_agents, num_enemies, action_type, enemy_baseline):        
                 
         # --fixed-fps {framerate}
         path = convert_macos_path(env_path) if platform == "darwin" else env_path
@@ -112,6 +113,8 @@ class GodotRLPettingZooWrapper(GodotEnv, ParallelEnv):
             launch_cmd += f" --fixed-fps {framerate}"
         launch_cmd += f" --action_repeat={action_repeat}"
         launch_cmd += f" --action_type={action_type}"
+        launch_cmd += f" --enemy_baseline={enemy_baseline}"
+        
         launch_cmd += f" --speedup={speedup}"
 
         launch_cmd = launch_cmd.split(" ")

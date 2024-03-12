@@ -3,10 +3,11 @@ extends Node
 @export var action_repeat := 20
 @export var speed_up = 2000
 @export var renderize = 1
-#@export var num_uavs = 4
-@export var num_allies = 2
-@export var num_enemies = 2
+
+@export var num_allies = 1
+@export var num_enemies = 1
 @export var action_type = "Low_Level_Discrete"#"Low_Level_Continuous" #"Low_Level_Discrete"
+@export var enemies_baseline = "baseline1"
 
 const MAX_STEPS = 15 * 60 * 20  
 var n_action_steps = 0
@@ -38,7 +39,8 @@ const DEFAULT_ACTION_TYPE := "Low_Level_Discrete"
 const DEFAULT_PHYSICS_FPS := "20"
 const DEFAULT_NUM_ALLIES := "1"
 const DEFAULT_NUM_ENEMIES := "1"
-const DEFAULT_NUM_TARGETS := "1"
+const DEFAULT_ENEMIES_BASELINE := "duck"
+
 
 var stream : StreamPeerTCP = null
 var connected = false
@@ -194,6 +196,7 @@ func _set_env_config():
 	action_type = args.get("action_type", DEFAULT_ACTION_TYPE)
 	num_allies = args.get("num_allies", DEFAULT_NUM_ALLIES).to_int() 
 	num_enemies = args.get("num_enemies", DEFAULT_NUM_ENEMIES).to_int() 
+	enemies_baseline = args.get("enemies_baseline", DEFAULT_ENEMIES_BASELINE)
 
 func _set_agents():	
 			
@@ -252,7 +255,7 @@ func _set_agents():
 		newFigther.add_to_group("BASELINE")
 		newFigther.add_to_group("ENEMY")
 		newFigther.add_to_group("red" )
-		newFigther.behaviour = "baseline1"
+		newFigther.set_behaviour(enemies_baseline)
 		
 		
 		newFigther.target_position = enemies_target		
