@@ -53,9 +53,9 @@ if __name__ == "__main__":
         'speedup': 2000,
         'num_allies': 1,
         'num_enemies': 1,
-        'action_type': 'Low_Level_Continuous',
+        'action_type': 'Low_Level_Discrete',
         'enemies_baseline': 'baseline1',
-        'full_observation': 0
+        'full_observation': 1
     }
     
     task.config = config_dict
