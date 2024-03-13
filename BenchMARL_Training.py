@@ -55,12 +55,12 @@ if __name__ == "__main__":
         'num_enemies': 1,
         'action_type': 'Low_Level_Discrete',
         'enemies_baseline': 'baseline1',
-        'full_observation': 1
+        'full_observation': 0
     }
     
     task.config = config_dict
             
-    algorithm_config = IppoConfig.get_from_yaml()
+    algorithm_config = IqlConfig.get_from_yaml()
 
     # Loads from "benchmarl/conf/model/layers/mlp.yaml"
     # model_config = GnnConfig.get_from_yaml()
