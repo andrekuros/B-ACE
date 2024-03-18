@@ -190,8 +190,8 @@ func reset():
 	data_link_list = {}
 	in_flight_missile = null
 				
-	len_allieds_data_obs = 1 if len(alliesList) >= 1 else 0
-	len_tracks_data_obs = 2 if len(sync.env.get_tree().get_nodes_in_group("ENEMY")) > 1 else 1
+	len_allieds_data_obs = 1 if len(sync.env.get_tree().get_nodes_in_group("AGENT"))  > 1 else 0
+	len_tracks_data_obs =  2 if len(sync.env.get_tree().get_nodes_in_group("ENEMY"))  > 1 else 1
 				
 	if fullView:
 		$Radar/CollisionShape3D.disabled = true    
@@ -221,7 +221,10 @@ func update_scene():
 	alliesList = []
 	for agent in env.get_tree().get_nodes_in_group(color_group):
 		if agent.get_meta("id") != get_meta("id"):
-			alliesList.append(agent)  	
+			alliesList.append(agent) 
+			
+	len_allieds_data_obs = 1 if len(sync.env.get_tree().get_nodes_in_group("AGENT"))  > 1 else 0
+	len_tracks_data_obs =  2 if len(sync.env.get_tree().get_nodes_in_group("ENEMY"))  > 1 else 1 	
 #func reset_if_done():
 	#if done:
 		#reset()
@@ -256,7 +259,7 @@ func get_obs(with_labels = false):
 					 #fmod(aspect_to_obj(target_position) + current_hdg, 360),
 					 Calc.get_relative_radial(current_hdg, Calc.get_hdg_2d(position, target_position)) / 180.0,
 					 current_hdg / 180.0,
-					 current_speed / max_speed,
+					 #current_speed / max_speed,
 					 missiles / 6.0,
 					 1 if is_instance_valid(in_flight_missile) else 0,
 					 last_desiredG_input,
@@ -264,7 +267,7 @@ func get_obs(with_labels = false):
 					 last_level_input,
 					 last_fire_input,										
 					]	
-	var allied_info = [ 0.0, 0.0 , 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0 ]
+	var allied_info = [ 0.0, 0.0 , 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 ]
 	
 	if len_allieds_data_obs > 0:
 		var allied = alliesList[0]
@@ -276,7 +279,7 @@ func get_obs(with_labels = false):
 							 Calc.get_relative_radial(allied.current_hdg, Calc.get_hdg_2d(allied.position, allied.target_position)) / 180.0, 
 							#fmod(aspect_to_obj(allied.target_position) + allied.current_hdg, 360),
 							 allied.current_hdg / 180.0,
-							 allied.current_speed / max_speed,
+							 #allied.current_speed / max_speed,
 							 allied.missiles / 6.0,							 
 							 1 if is_instance_valid(allied.in_flight_missile) else 0,
 			]			
@@ -287,8 +290,10 @@ func get_obs(with_labels = false):
 	#HPT info
 	if HPT != -1:
 		var track = radar_track_list[HPT]
-		tracks_info.append_array([ track.obj.global_transform.origin.y / 150.0,
-					 Calc.get_desired_heading(current_hdg, track.radial) / 180.0,
+		tracks_info.append_array([ 
+					 (global_transform.origin.y - track.obj.global_transform.origin.y) / 150.0,
+					 #track.radial / 180.0,
+					 Calc.get_desired_heading(current_hdg, track.radial) / 180.0,					 					
 					 track.dist / 3000.0,
 					 track.obj.dist2go / 3000.0,
 					 1,
@@ -297,18 +302,19 @@ func get_obs(with_labels = false):
 	#SPT info
 	if SPT != -1:
 		var track = radar_track_list[SPT]
-		tracks_info.append_array([ track.obj.global_transform.origin.y / 150.0,
+		tracks_info.append_array([ 
+					(global_transform.origin.y - track.obj.global_transform.origin.y) / 150.0,
+					 #track.radial,
 					 Calc.get_desired_heading(current_hdg, track.radial) / 180.0,
 					 track.dist / 3000.0,
 					 track.obj.dist2go / 3000.0,
 					 0,
 					 1 if track.detected else 0
 				])
-		
-	
+			
 	#print("bef:",  tracks_info, len(own_info))
 	
-	for track in range(len_tracks_data_obs - len(tracks_info)/5):
+	for track in range(len_tracks_data_obs - len(tracks_info)/6):
 		tracks_info.append_array([ 0.0, 0.0 , 0.0, 0.0, 0.0 , 0.0 ])
 	#print( tracks_info, len(own_info))
 	
@@ -429,6 +435,8 @@ func process_tracks():
 			if track.obj.activated == false:
 				track.detected = false						
 				continue
+			
+			ownRewards.add_keep_track_rew()
 			
 			#var radial = fmod(aspect_to_obj(track.obj.position) + current_hdg, 360)
 			var radial = Calc.get_hdg_2d(position, track.obj.position)
@@ -613,16 +621,16 @@ func reacquired_track(track_id, radial, dist):
 func _physics_process(delta: float) -> void:
 
 	current_hdg = rad_to_deg(global_transform.basis.get_euler().y)
-
-	process_tracks()
 	
 	if n_steps % action_repeat == 0:
+		
+		process_tracks()
 		if behaviour == "baseline1" or behaviour == "duck":			
 			#if get_meta("id") == 2:
 			process_behavior(delta * (n_steps - last_beh_proc))
 			last_beh_proc = n_steps
 		
-	if  behaviour == "external"  and shoot_input > 0:
+	if  behaviour == "external"  and shoot_input > 0 and HPT != -1:
 		if launch_missile_at_target(radar_track_list[HPT].obj): 						
 			shoot_input = -1.0			
 	
@@ -690,9 +698,9 @@ func process_manouvers_action():
 			#-------- HDG Adjust ----------#
 			# Calculate the heading difference between current and desired								
 			var hdg_diff = Calc.clamp_hdg(hdg_input - current_hdg)	
-			
+									
 			# Adjust turn sensitivity based on the heading difference magnitude					
-			var adjusted_turn_input = hdg_diff / 5  
+			var adjusted_turn_input = hdg_diff / 60.0  
 			turn_input = clamp(adjusted_turn_input, -1.0, 1.0)
 #			
 		# -------- Level Adjust ---------- #

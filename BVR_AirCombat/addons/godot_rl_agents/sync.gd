@@ -4,17 +4,17 @@ extends Node
 @export var speed_up = 2000
 @export var renderize = 1
 
-@export var num_allies = 1
-@export var num_enemies = 1
+@export var num_allies = 2
+@export var num_enemies = 2
 @export var action_type = "Low_Level_Discrete"#"Low_Level_Continuous" #"Low_Level_Discrete"
-@export var enemies_baseline = "baseline1"
+@export var enemies_baseline = "duck"
 @export var full_observation = 0
 
 const MAX_STEPS = 15 * 60 * 20  
 var n_action_steps = 0
 var phy_fps = 20
 
-var debug = true
+var debug = false
 
 # Variables to keep track of physics updates and time
 var physics_updates = 0
@@ -38,8 +38,8 @@ const DEFAULT_SEED := "1"
 const DEFAULT_ACTION_REPEAT := "20"
 const DEFAULT_ACTION_TYPE := "Low_Level_Discrete"
 const DEFAULT_PHYSICS_FPS := "20"
-const DEFAULT_NUM_ALLIES := "1"
-const DEFAULT_NUM_ENEMIES := "1"
+const DEFAULT_NUM_ALLIES := "2"
+const DEFAULT_NUM_ENEMIES := "2"
 const DEFAULT_ENEMIES_BASELINE := "baseline1"
 const DEFAULT_FULL_OBSERVATION := "0"
 
@@ -138,6 +138,7 @@ func _send_env_info():
 	var json_dict = _get_dict_json_message()
 	assert(json_dict["type"] == "env_info")
 	
+	
 	var message = {
 		"type" : "env_info",
 		#"obs_size": agents[0].get_obs_size(),
@@ -195,6 +196,7 @@ func _set_seed():
 
 func _set_env_config():
 	action_type = args.get("action_type", DEFAULT_ACTION_TYPE)
+	action_repeat = args.get("action_repeat", DEFAULT_ACTION_REPEAT).to_int()
 	num_allies = args.get("num_allies", DEFAULT_NUM_ALLIES).to_int() 
 	num_enemies = args.get("num_enemies", DEFAULT_NUM_ENEMIES).to_int() 
 	enemies_baseline = args.get("enemies_baseline", DEFAULT_ENEMIES_BASELINE)
@@ -274,10 +276,6 @@ func _set_agents():
 	for fighter in fighters:
 		fighter.update_scene()
 
-	
-func _set_action_repeat():
-	action_repeat = args.get("action_repeat", DEFAULT_ACTION_REPEAT).to_int()
-	
 func disconnect_from_server():
 	stream.disconnect_from_host()
 
@@ -288,7 +286,6 @@ func _initialize():
 	
 	args = _get_args()	
 	_set_seed()	
-	_set_action_repeat()
 	_set_env_config()
 	_set_agents()	 	
 	_set_heuristic("AP")
@@ -432,6 +429,9 @@ func _physics_process(delta):
 		
 		var handled = handle_message()
 	else:						
+		
+		var actions = [{"turn_input": 2, "fire_input" :  1, "level_input" : 0}] 
+		_set_agent_actions(actions)
 		#print(n_action_steps, _get_reward_from_agents())		
 		_reset_agents_if_done()
 	

@@ -37,9 +37,9 @@ class GodotRLPettingZooWrapper(GodotEnv, ParallelEnv):
         #seed = env_config_kwargs.pop("seed", 0)
         #port = env_config_kwargs.pop("port", 12500)
         #framerate = env_config_kwargs.pop("framerate", None)
-        #action_repeat = env_config_kwargs.pop("action_repeat", 20)
+        action_repeat = env_config_kwargs.pop("action_repeat", 20)
         action_type = env_config_kwargs.pop("action_type", "Low_Level_Continuous")
-        enemy_baseline= env_config_kwargs.pop("enemy_baseline", "duck")
+        enemies_baseline= env_config_kwargs.pop("enemies_baseline", "baseline1")
         full_observation = env_config_kwargs.pop("full_observation", 0)
         
         
@@ -53,7 +53,7 @@ class GodotRLPettingZooWrapper(GodotEnv, ParallelEnv):
             self.check_platform(env_path)  
 
             self._launch_env(env_path, port, show_window, framerate, seed, action_repeat, speedup,
-                             num_agents, num_enemies, action_type, enemy_baseline, full_observation)
+                             num_agents, num_enemies, action_type, enemies_baseline, full_observation)
         else:
             print("No game binary has been provided, please press PLAY in the Godot editor")
         
@@ -89,7 +89,7 @@ class GodotRLPettingZooWrapper(GodotEnv, ParallelEnv):
 
 
     def _launch_env(self, env_path, port, show_window, framerate, seed, action_repeat, speedup, 
-                    num_agents, num_enemies, action_type, enemy_baseline, full_observation):        
+                    num_agents, num_enemies, action_type, enemies_baseline, full_observation):        
                 
         # --fixed-fps {framerate}
         path = convert_macos_path(env_path) if platform == "darwin" else env_path
@@ -112,7 +112,7 @@ class GodotRLPettingZooWrapper(GodotEnv, ParallelEnv):
             launch_cmd += f" --fixed-fps {framerate}"
         launch_cmd += f" --action_repeat={action_repeat}"
         launch_cmd += f" --action_type={action_type}"
-        launch_cmd += f" --enemy_baseline={enemy_baseline}"
+        launch_cmd += f" --enemies_baseline={enemies_baseline}"
         launch_cmd += f" --full_observation={full_observation}"
         
         launch_cmd += f" --speedup={speedup}"
@@ -135,7 +135,7 @@ class GodotRLPettingZooWrapper(GodotEnv, ParallelEnv):
             
             self.observations[self.possible_agents[i]] =  indiv_obs["obs"] 
             self.info[self.possible_agents[i]] = {}                  
-        # Assuming the reset method returns a dictionary of observations for each agent
+        # Assuming the reset method returns a dictionary of observations for each agent        
         return self.observations, self.info  
     
     def _observation_space(self, agent):        

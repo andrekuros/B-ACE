@@ -43,11 +43,14 @@ class Track:
 		self.detected = _detected
 		
 class RewardsControl:
+		
+	var printRewards = false
 	
 	var mission = 0.0
 	var missile_fire = 0.0
 	var missile_miss = 0.0
 	var detect_loss = 0.0
+	var keep_track = 0.0
 	var hit_enemy = 0.0
 	var hit_own = 0.0
 	var final_reward = 0.0
@@ -57,6 +60,7 @@ class RewardsControl:
 	var missile_no_fire_factor
 	var missile_miss_factor
 	var detect_loss_factor
+	var keep_track_factor
 	var hit_enemy_factor
 	var hit_own_factor
 	var situation_factor
@@ -75,6 +79,7 @@ class RewardsControl:
 				_missile_no_fire_factor = -0.001,
 				_missile_miss_factor = -0.5,
 				_detect_loss_factor = -0.1,
+				_keep_track = 0.001,
 				_hit_enemy_factor = 3.0,
 				_hit_own_factor = -5.0,
 				_situation_factor = 0.1, 
@@ -89,6 +94,7 @@ class RewardsControl:
 		missile_no_fire_factor = _missile_no_fire_factor
 		missile_miss_factor = _missile_miss_factor
 		detect_loss_factor = _detect_loss_factor
+		keep_track_factor = _keep_track 
 		hit_enemy_factor = _hit_enemy_factor
 		hit_own_factor = _hit_own_factor
 		situation_factor = _situation_factor 
@@ -100,26 +106,36 @@ class RewardsControl:
 	
 	func add_mission_rew(ref_value):
 		mission += mission_factor * ref_value
-		#print("Figther::" , Owner.get_meta("id" ), "::Info::Mission Rewards -> ", mission_factor * ref_value )
+		if printRewards:
+			print("Figther::" , Owner.get_meta("id" ), "::Info::Mission Rewards -> ", mission )
 	
 	func add_missile_fire_rew():
 		missile_fire += missile_fire_factor
-		#print("Figther::Info::missile_fire Rewards -> ", missile_fire )
+		if printRewards:
+			print("Figther::Info::missile_fire Rewards -> ", missile_fire )
 	
 	func add_missile_no_fire_rew():
 		missile_fire += missile_no_fire_factor
-		#print("Figther::Info::missile_fire Rewards -> ", missile_fire )
+		if printRewards:			
+			print("Figther::Info::missile_fire Rewards -> ", missile_fire )
 	
 	func add_missile_miss_rew():
 		missile_miss += missile_miss_factor
-		#print("Figther::Info::missile_miss Rewards -> ", missile_miss )
+		if printRewards:
+			print("Figther::Info::missile_miss Rewards -> ", missile_miss )
 	
 	func add_detect_loss_rew():
 		detect_loss += detect_loss_factor
-		#print("Figther::", Owner.get_meta("id" ), "::Info::hit_enemy Rewards -> ", hit_enemy )
-		
+		if printRewards:
+			print("Figther::", Owner.get_meta("id" ), "::Info::detect_loss Rewards -> ", detect_loss )
+	
+	func add_keep_track_rew():
+		keep_track += keep_track_factor
+		if printRewards:
+			print("Figther::", Owner.get_meta("id" ), "::Info::keep_track Rewards -> ", keep_track )
+					
 	func add_hit_enemy_rew():
-		hit_enemy += hit_enemy_factor
+		hit_enemy += hit_enemy_factor				
 	
 	func add_hit_own_rew():
 		hit_own += hit_own_factor
@@ -128,30 +144,35 @@ class RewardsControl:
 	func get_total_rewards_and_reset():
 		var total_rewards = mission + missile_fire + missile_miss + \
 							detect_loss + hit_enemy + hit_own + final_reward
-		#print("Figther::Info::Total Rewards -> ", total_rewards )
+		
+		if printRewards:
+			print("Figther::Info::Total Rewards -> ", total_rewards )
 		# Reset the values
 		mission = 0.0
 		missile_fire = 0.0
 		missile_miss = 0.0
 		detect_loss = 0.0
+		keep_track = 0
 		hit_enemy = 0.0
-		hit_own = 0.0
+		hit_own = 0.0		
 		final_reward = 0.0
+				
 		return total_rewards
 	
 	func add_final_episode_reward(condition):
 						
 		if condition == "Enemy_Achieved_Target":
 			final_reward += final_enemy_on_target_factor			
+			print("Figther::Info::Enemies_On Target Rewards -> ", final_reward )			
 		elif condition == "Enemies_Killed":
 			final_reward += final_enemies_killed_factor  + final_max_cycles_factor
-			#print("Figther::Info::Enemies_Killed Rewards -> ", final_enemies_killed_factor )			
+			print("Figther::Info::Enemies_Killed Rewards -> ", final_reward )			
 		elif condition == "Team_Killed":
 			final_reward += final_team_killed_factor + final_enemy_on_target_factor
-			#print("Figther::Info::TEAM_Killed Rewards -> ", final_team_killed_factor )			
+			print("Figther::Info::TEAM_Killed Rewards -> ", final_reward )			
 		elif condition == "Max_Cycles":
-			final_reward += final_max_cycles_factor
-			#print("Figther::Info::Rewards Added Max_Cycles -> ", final_max_cycles_factor )
+			final_reward += final_reward
+			print("Figther::Info::Rewards Added Max_Cycles -> ", final_reward )
 		else:
 			print("Figther::Warning Trying to add unknow final reward (", condition , ")")			
 
