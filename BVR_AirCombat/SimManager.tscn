@@ -1,0 +1,48 @@
+[gd_scene load_steps=5 format=3 uid="uid://cqx70qwmty8lr"]
+
+[ext_resource type="Script" path="res://SimManager.gd" id="1_ee7cu"]
+[ext_resource type="Script" path="res://ViewPort.gd" id="2_47jrj"]
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_cxgxf"]
+albedo_color = Color(0.392157, 0.392157, 0.392157, 1)
+
+[sub_resource type="Environment" id="Environment_c01bo"]
+background_mode = 1
+adjustment_enabled = true
+adjustment_brightness = 1.48
+adjustment_contrast = 1.96
+adjustment_saturation = 1.7
+
+[node name="SubViewportContainer" type="SubViewportContainer"]
+offset_right = 40.0
+offset_bottom = 40.0
+
+[node name="SubViewport" type="SubViewport" parent="."]
+handle_input_locally = false
+render_target_update_mode = 4
+script = ExtResource("2_47jrj")
+
+[node name="CameraGlobal" type="Camera3D" parent="SubViewport"]
+transform = Transform3D(1, 0, 0, 0, -4.37114e-08, 1, 0, -1, -4.37114e-08, 0, 1700, 0)
+keep_aspect = 0
+current = true
+fov = 76.7
+size = 3747.95
+near = 0.447
+
+[node name="SimManager" type="Node3D" parent="SubViewport"]
+script = ExtResource("1_ee7cu")
+
+[node name="CSGBox3D" type="CSGBox3D" parent="SubViewport"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -30.1531, 0)
+size = Vector3(10000, 1, 10000)
+material = SubResource("StandardMaterial3D_cxgxf")
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="SubViewport"]
+environment = SubResource("Environment_c01bo")
+
+[node name="DirectionalLight3D" type="DirectionalLight3D" parent="SubViewport"]
+transform = Transform3D(1, 0, 0, 0, 0.854459, 0.519519, 0, -0.519519, 0.854459, 0, 300, 0)
+layers = 15
+light_color = Color(0.819608, 0.819608, 0.819608, 1)
+light_bake_mode = 0

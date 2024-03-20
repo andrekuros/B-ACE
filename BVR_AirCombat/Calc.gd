@@ -21,6 +21,13 @@ static func get_3d_angle_off(shooter, target):
 		
 	return rad_to_deg(acos(shooter_forward.dot(shooter_to_target)))# Convert radians to degrees_off
 
+static func distance2D_to_pos(A, B):	
+
+#	# Create new vectors that ignore the Y component
+	var A_flat = Vector3(A.x, 0, A.z)
+	var B_flat = Vector3(B.x, 0, B.z)	
+	return A_flat.distance_to(B_flat)
+
 	
 static func get_desired_heading(current_hdg_deg: float, desired_relative_radial_deg: float) -> float:
 	var desired_hdg = current_hdg_deg + desired_relative_radial_deg	

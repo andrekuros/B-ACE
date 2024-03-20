@@ -10,13 +10,15 @@ config_version=5
 
 [application]
 
-config/name="FlyBy"
-run/main_scene="res://FlyBy.tscn"
+config/name="B_ACE"
+run/main_scene="res://B_ACE.tscn"
 config/features=PackedStringArray("4.1")
 config/icon="res://icon.png"
 
 [display]
 
+window/size/viewport_width=1200
+window/size/viewport_height=800
 window/vsync/vsync_mode=0
 
 [dotnet]
@@ -25,7 +27,7 @@ project/assembly_name="FlyBy"
 
 [editor_plugins]
 
-enabled=PackedStringArray("res://addons/godot_rl_agents/plugin.cfg", "res://addons/simplegrasstextured/plugin.cfg")
+enabled=PackedStringArray("res://addons/godot_rl_agents/plugin.cfg")
 
 [input]
 
@@ -90,6 +92,6 @@ common/enable_pause_aware_picking=true
 
 [rendering]
 
-textures/vram_compression/import_etc2_astc=true
+global_illumination/sdfgi/frames_to_update_lights=3
 quality/filters/use_fxaa=true
 environment/default_environment="res://default_env.tres"

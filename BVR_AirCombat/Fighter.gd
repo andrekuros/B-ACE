@@ -1,17 +1,18 @@
 extends CharacterBody3D
 
 const missile = preload("res://missile.tscn")
-const Track   = preload("res://Figther_assets.gd").Track
-const SConv   = preload("res://Figther_assets.gd").SConv
-const RewardsControl = preload("res://Figther_assets.gd").RewardsControl
+const Track   = preload("res://Sim_assets.gd").Track
+const SConv   = preload("res://Sim_assets.gd").SConv
+const RewardsControl = preload("res://Sim_assets.gd").RewardsControl
 
 const Calc = preload("res://Calc.gd")
 
 var ownRewards = RewardsControl.new(self)
 
-@onready var env = get_tree().root.get_node("FlyBy")
-@onready var tasksDoneViewer = env.get_node("CanvasLayer/Control/TasksDone")
-@onready var sync = get_tree().root.get_node("FlyBy/Sync")
+@onready var mainView = get_tree().root.get_node("B_ACE")
+#@onready var sync = get_tree().root.get_node("B_ACE/Sync")
+var manager = null
+var tree = null
 #@onready var actionsPanel = env.get_node("CanvasLayer/Control/ActionPanel")
 
 var alliesList = []
@@ -20,7 +21,7 @@ var phy_fps = 20
 var action_repeat = 20
 
 # AIR COMBAT DATA
-var team_id = 1 # Example: 1 or 2 for two different teams
+var team_id = 1 # Example: 0 or 1 for two different teams
 var radar_range = 60.0 * SConv.NM2GDM  # Detection range for the radar
 var enemies_in_range = [] # List to store detected enemies
 
@@ -35,7 +36,8 @@ var missiles = 6 # Adjust the number of missiles as needed
 var model = "Simple" 
 
 # State variables
-var current_speed: float = 550 * SConv.KNOT2GDM_S 
+var current_speed: float = 550   * SConv.KNOT2GDM_S 
+var current_level: float = 25000 * SConv.FT2GDM 
 var throttle: float = 1.0  # Throttle position: 0.0 (idle) to 1.0 (full)
 var bank_angle: float = 0.0  # Current bank angle
 var current_hdg = 0.0
@@ -43,14 +45,10 @@ var current_hdg = 0.0
 @export var action_type = "Low_Level_Discrete"# "Low_Level_Discrete" 
 
 var	hdg_input: float = 0.0 
-var	level_input: float = 20000 * SConv.FT2GDM 
+var	level_input: float = 25000 * SConv.FT2GDM 
 var	speed_input: float = 650 * SConv.KNOT2GDM_S
 var	desiredG_input: float = 0.0 
 var	shoot_input: int = 0
-
-var g_conv = [6.0, 3.0, 1.0, 3.0, 6.0]
-var turn_conv = [-45.0, -20.0, 0.0, 20.0, 45.0]
-var level_conv = [10, 45, 80, 115, 150]
 
 var last_hdg_input = hdg_input
 var last_level_input = level_input
@@ -61,11 +59,22 @@ var wing_area = 50
 var max_speed = 650 * SConv.KNOT2GDM_S # Example max speed value
 var min_speed = 250 * SConv.KNOT2GDM_S # Example min speed value
 
+var max_level = 50000 * SConv.FT2GDM
+var min_level = 1000  * SConv.FT2GDM
+
+const max_g = 9.0
+
 var max_pitch = deg_to_rad(35.0)
 var min_pitch = deg_to_rad(-15.0)
 var pitch_speed = 0.5
 
-var max_g = 9.0
+func altitude_speed_factor (alt):
+	return -0.3 * alt / 76.2 + 1.3 #25000ft is base alt for speed
+
+
+func altitude_g_factor (alt):
+	return -0.5 * alt / 76.2 + 1.5 #25000ft is base alt for max_g
+
 
 var init_position = Vector3.ZERO
 var init_rotation = Vector3.ZERO
@@ -75,10 +84,6 @@ var init_hdg = 0
 var dist2go = 100000.0
 
 var target_position = Vector3.ZERO
-
-var found_goal = false
-var exited_arena = false
-var cur_goal = null
 
 var done = false
 var _heuristic = "AP" #"model" / "AP"
@@ -90,7 +95,6 @@ var goal_position = Vector3.ZERO
 
 var transform_backup = null
 
-
 #Simulations config
 var n_steps = 0
 const MAX_STEPS = 15 * 60 * 20
@@ -99,13 +103,12 @@ var needs_reset = false
 var activated = true
 var killed = false
 
-var material2 = null
-var team_color = null
-var color_group = null
+var team_color
+var team_color_group
 
 #Heuristic Behavior Params
-var max_shoot_range = 30.0 * SConv.NM2GDM
-var max_shoot_range_var = 0.1
+var max_shoot_range = 30 *  SConv.NM2GDM
+var max_shoot_range_var = 0.0
 var max_shoot_range_adjusted = -1
 var defense_side = 1
 
@@ -118,6 +121,14 @@ var int_hdg = 0.0
 var pitch_input  = 0.0
 var turn_input = 0.0
 
+var g_conv = [max_g, 3.0, 1.0, 3.0, max_g]
+var turn_conv = [-45.0, -20.0, 0.0, 20.0, 45.0]
+var level_conv = [10, 45, 80, 115, 150]
+
+var action_g_len = len(g_conv)
+var action_turn_len = len(turn_conv) 
+var action_level_len = len(level_conv) 
+
 var radar_track_list = {}
 var HPT = -1
 var SPT = -1
@@ -127,56 +138,74 @@ var in_flight_missile = null
 # Maximum number of points to retain in the trail
 var max_trail_points: int = 120 # Adjust based on desired trail length and update rate
 
-var len_tracks_data_obs = 2
-var len_allieds_data_obs = 2
+var len_tracks_data_obs = 0
+var len_allieds_data_obs = 0
 
 var selected_obs_tracks  = []
 var selected_obs_allieds = []
 
+var test_executed = false
+
+var simGroups
+var init_config = null
 
 func is_type(type): return type == "Fighter" 
 func get_type(): return "Fighter"	
 
 func _ready():
-	transform_backup = transform
+	transform_backup = transform			
+
+func update_init_config(config):
 	
-	var root_node = $RenderModel  # Adjust the path to your model's root node.	
-	team_color = Color.BLUE if team_id == 1 else Color.RED  # Set the desired color.			
-	color_group = "blue" if team_id == 1 else "red"	
-		
+	#print(config)
+	init_config = config
 	
-	change_mesh_instance_colors(root_node, team_color)
-	reset()
+	var offset_pos = init_config["offset_pos"] 	
 	
+	var init_pos = init_config["init_position"]
+	
+	init_position = Vector3((offset_pos.x + init_pos["x"]) * SConv.NM2GDM , 
+							(offset_pos.y + init_pos["y"]) * SConv.FT2GDM , 
+							(offset_pos.z + init_pos["z"]) * SConv.NM2GDM )
+	#print(init_position)
+	var _init_hdg = init_config["init_hdg"]												
+	init_rotation = Vector3(0, _init_hdg, 0)				
+	init_hdg = _init_hdg
+	hdg_input = _init_hdg			
+							
+	var target_pos = Vector3(init_config["target_position"]["x"] * SConv.NM2GDM,
+							 init_config["target_position"]["y"] * SConv.NM2GDM,
+							 init_config["target_position"]["z"] * SConv.NM2GDM)	
+	
+	target_position = target_pos	
+
 func reset():
+	
+	if init_config != null:						
+		update_init_config(init_config)
+			
 	needs_reset = false
+	test_executed = false
 	
-	cur_goal = env.get_next_goal(null)
-	transform_backup = transform_backup
-	position = init_position
-	
-	#inertial_velocity = Vector3.ZERO
-	velocity = Vector3(0,0,-max_speed * SConv.NM2GDM)
-	#rotation = Vector3.ZERO	
+	var root_node = $RenderModel  # Adjust the path to your model's root node.		
+	change_mesh_instance_colors(root_node, team_color)
+		
+	position = init_position		
+	velocity = Vector3(0,0,-max_speed * SConv.NM2GDM)	
 	rotation_degrees = init_rotation#Vector3(0, 0, 0) # Adjust as necessary	
 		
 	hdg_input = init_rotation.y
-	last_hdg_input = hdg_input
+	last_hdg_input = hdg_input	
 	current_hdg = init_hdg
+	level_input = init_position.y
 	
 	n_steps = 0
-	found_goal = false
-	exited_arena = false 
 	done = false
-	best_goal_distance = to_local(cur_goal.position).length()
 	
 	missiles = 6	
 		
 	AP_mode = "FlyHdg" #"GoTo" / "Hold"
-	holdStatus = 0
-	best_goal_distance = 10000.0	
-	dist2go = 100000.0
-	
+		
 	ownRewards.get_total_rewards_and_reset()
 	
 	activated = true
@@ -190,25 +219,28 @@ func reset():
 	data_link_list = {}
 	in_flight_missile = null
 				
-	len_allieds_data_obs = 1 if len(sync.env.get_tree().get_nodes_in_group("AGENT"))  > 1 else 0
-	len_tracks_data_obs =  2 if len(sync.env.get_tree().get_nodes_in_group("ENEMY"))  > 1 else 1
+	len_allieds_data_obs = 1 if len(alliesList) >= 1 else 0
+	len_tracks_data_obs = 2 if len(tree.get_nodes_in_group(simGroups.ENEMY)) > 1 else 1
 				
 	if fullView:
 		$Radar/CollisionShape3D.disabled = true    
 	else:
+		#TODO Reeset Colision detection
 		$Radar/CollisionShape3D.disabled = true    
-		await(0.05)
+		#await(0.05)
 		$Radar/CollisionShape3D.disabled = false 
-		radar_track_list = {} 
+		#$Radar/CollisionShape3D.clear_overlaps()
+		radar_track_list = {} 	
 	
-func update_scene():
-	
+func update_scene(_tree):
+		
+	tree = _tree
 	if fullView:		
 		var track_view_list
-		if is_in_group("ENEMY"):
-			track_view_list = sync.agents
-		elif is_in_group("AGENT"):
-			track_view_list = sync.enemies
+		if is_in_group(simGroups.ENEMY):
+			track_view_list = manager.agents
+		elif is_in_group(simGroups.AGENT):
+			track_view_list = manager.enemies
 		else:
 			print("FIGTHER::WARNING::COMPONENT IN UNKNOW GROUP ", get_groups())						
 		
@@ -218,13 +250,12 @@ func update_scene():
 			var new_track = Track.new(enemy.get_meta("id"), enemy, dist, radial, true)					
 			radar_track_list[enemy.get_meta("id")] = new_track#Track.new(enemy.get_meta("id"), enemy, dist, radial, true)	
 								
-	alliesList = []
-	for agent in env.get_tree().get_nodes_in_group(color_group):
+	alliesList = []		
+	for agent in tree.get_nodes_in_group(team_color_group):
 		if agent.get_meta("id") != get_meta("id"):
-			alliesList.append(agent) 
-			
-	len_allieds_data_obs = 1 if len(sync.env.get_tree().get_nodes_in_group("AGENT"))  > 1 else 0
-	len_tracks_data_obs =  2 if len(sync.env.get_tree().get_nodes_in_group("ENEMY"))  > 1 else 1 	
+			alliesList.append(agent)
+	len_allieds_data_obs = 1 if len(alliesList) >= 1 else 0
+	reset()				
 #func reset_if_done():
 	#if done:
 		#reset()
@@ -248,9 +279,7 @@ func get_done():
 func set_done_false():
 	done = false
 	
-func get_obs(with_labels = false):
-		
-	var tracks_info = []
+func get_obs(with_labels = false):			
 	
 	var own_info = [ global_transform.origin.x / 3000.0,
 					 global_transform.origin.z / 3000.0,
@@ -265,10 +294,10 @@ func get_obs(with_labels = false):
 					 last_desiredG_input,
 					 last_hdg_input,
 					 last_level_input,
-					 last_fire_input,										
+					 last_fire_input										
 					]	
 	var allied_info = [ 0.0, 0.0 , 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 ]
-	
+		
 	if len_allieds_data_obs > 0:
 		var allied = alliesList[0]
 		if allied.activated:
@@ -284,9 +313,9 @@ func get_obs(with_labels = false):
 							 1 if is_instance_valid(allied.in_flight_missile) else 0,
 			]			
 		
-	#for track in radar_track_list.values():
-		
-				
+	#for track in radar_track_list.values():		
+			
+	var tracks_info = []	
 	#HPT info
 	if HPT != -1:
 		var track = radar_track_list[HPT]
@@ -310,11 +339,10 @@ func get_obs(with_labels = false):
 					 track.obj.dist2go / 3000.0,
 					 0,
 					 1 if track.detected else 0
-				])
-			
+				])	
 	#print("bef:",  tracks_info, len(own_info))
 	
-	for track in range(len_tracks_data_obs - len(tracks_info)/6):
+	for track in range(len_tracks_data_obs - len(tracks_info) / 6):
 		tracks_info.append_array([ 0.0, 0.0 , 0.0, 0.0, 0.0 , 0.0 ])
 	#print( tracks_info, len(own_info))
 	
@@ -400,21 +428,21 @@ func set_action(action):
 		last_fire_input = action["input"][3]
 			
 		hdg_input = Calc.get_desired_heading(current_hdg, last_hdg_input * 180.0)		
-		level_input = (last_level_input * 22500.0 + 27500.0) * SConv.FT2GDM  	
+		level_input = (last_level_input * 25000.0 + 25000.0) * SConv.FT2GDM  	
 		desiredG_input = (last_desiredG_input * (max_g  - 1.0) + (max_g + 1.0))/2.0	
 		shoot_input = 0 if last_fire_input <= 0 else 1
 	
 	elif action_type == "Low_Level_Discrete":  
-			
-		last_hdg_input 		= action["turn_input"] 
-		last_desiredG_input = g_conv[action["turn_input"]] 
-		last_level_input 	= action["level_input"] 
+								
+		hdg_input = Calc.get_desired_heading(current_hdg, turn_conv[action["turn_input"]])		
+		level_input = level_conv[action["level_input"] ]
+		desiredG_input = g_conv[action["turn_input"]] 
+		shoot_input = action["fire_input"]    
+		
+		last_hdg_input 		= action["turn_input"] / action_turn_len
+		last_desiredG_input = g_conv[action["turn_input"]] / action_turn_len
+		last_level_input 	= action["level_input"] / action_level_len
 		last_fire_input 	= action["fire_input"] 
-			
-		hdg_input = Calc.get_desired_heading(current_hdg, turn_conv[last_hdg_input])		
-		level_input = level_conv[last_level_input]
-		desiredG_input = last_desiredG_input
-		shoot_input = last_fire_input   
 
 
 func get_current_inputs():
@@ -441,7 +469,9 @@ func process_tracks():
 			#var radial = fmod(aspect_to_obj(track.obj.position) + current_hdg, 360)
 			var radial = Calc.get_hdg_2d(position, track.obj.position)
 			var dist = to_local(track.obj.position).length()			
-			track.update_dist_radial(dist, radial)			
+			track.update_dist_radial(dist, radial, 0)			
+			
+			#track.update_missile_ranges()
 			
 			if dist < min_dist: # and track.obj.get_meta('id') == 1:
 				min_dist = dist
@@ -451,7 +481,7 @@ func process_tracks():
 							
 			#print("own_id: ", get_meta('id'), " t_td", track.id, " track_dist: ", dist, " rad:", radial)	
 	
-	HPT = new_HPT
+	HPT = new_HPT	
 	SPT = new_sec_target
 		#print("HPT_set ", get_meta('id') , " - ", HPT)
 		
@@ -460,6 +490,17 @@ func process_behavior(delta_s):
 	tatic_time += delta_s	
 	
 	if behaviour == "duck":
+		return
+		
+	elif behaviour == "test":
+		
+		return
+		if manager.enemies[0].in_flight_missile and not test_executed:			
+			hdg_input = Calc.clamp_hdg(current_hdg + 180 )#fmod(oposite_hdg + 180.0, 360.0) - 180.0
+			desiredG_input = 6.0
+			test_executed = true			
+			
+		
 		return
 					
 	elif behaviour == "baseline1":
@@ -476,17 +517,10 @@ func process_behavior(delta_s):
 				desiredG_input = 3.0
 				tatic_time = 0.0
 				
-			elif tatic_status == "Search":
-				#Aproach the target
-				#if 	position.z >= 0:
-					#var oposite_hdg =  rad_to_deg(global_transform.basis.get_euler().y) + 180.0				
-					#hdg_input = fmod(oposite_hdg + 180.0, 360.0) - 180.0
-					#desiredG_input = 3.0	
-					#tatic_status == "Return"							
-					#tatic_time = 0.0
+			elif tatic_status == "Search":				
 				
-				if 	team_id == 0 and position.z >= 150 or\
-					team_id == 1 and position.z <= -150:
+				if 	team_id == 1 and position.z >= 150 or\
+					team_id == 0 and position.z <= -150:
 					
 					desiredG_input = 3.0	
 					tatic_status = "Strike"							
@@ -520,8 +554,8 @@ func process_behavior(delta_s):
 							defense_side = 1 - randi_range(0,1) * 2 #Choose defence side
 							#print(tatic_status, tatic_time)							
 				
-				if 	team_id == 0 and position.z >= 150 or\
-					team_id == 1 and position.z <= -150:
+				if 	team_id == 1 and position.z >= 150 or\
+					team_id == 0 and position.z <= -150:
 					
 					desiredG_input = 3.0	
 					tatic_status = "Strike"							
@@ -539,7 +573,7 @@ func process_behavior(delta_s):
 									
 					#var oposite_hdg = rad_to_deg(global_transform.basis.get_euler().y) + 180.0				
 				hdg_input = Calc.clamp_hdg(current_hdg + 180)#fmod(oposite_hdg + 180.0, 360.0) - 180.0
-				desiredG_input = 6.0								
+				desiredG_input = max_g								
 				#print("ID:", get_meta("id"), ":" ,tatic_status, tatic_time, " / ", hdg_input)
 				
 			
@@ -572,7 +606,7 @@ func process_behavior(delta_s):
 									
 					#var oposite_hdg = rad_to_deg(global_transform.basis.get_euler().y) + 180.0				
 				hdg_input = Calc.clamp_hdg(current_hdg + 180- defense_side * 45.0)#fmod(oposite_hdg + 180.0, 360.0) - 180.0
-				desiredG_input = 6.0			
+				desiredG_input = max_g			
 				#print(tatic_status, tatic_time)
 				
 
@@ -609,32 +643,38 @@ func remove_track(track_id):
 func reacquired_track(track_id, radial, dist):
 	
 	var track = radar_track_list[track_id]
-	track.update_dist_radial(dist, radial)
+	track.update_dist_radial(dist, radial, 0)
 	track.detected_status(true)
 	
 	if is_instance_valid(in_flight_missile):			
 		if not in_flight_missile.pitbull and in_flight_missile != null:
 			in_flight_missile.recover_support()			
 				
-
 		
 func _physics_process(delta: float) -> void:
 
-	current_hdg = rad_to_deg(global_transform.basis.get_euler().y)
+	current_hdg = rad_to_deg(global_transform.basis.get_euler().y)	
+	current_level = global_transform.origin.y
 	
+	#if current_hdg >= -0.999 and current_hdg <= 1.001:
+	#	print(get_meta('id')," - ",  n_steps)
+	
+	#if current_level >= 150:
+	#	print(get_meta('id')," ALT - ",  n_steps)
+				
 	if n_steps % action_repeat == 0:
 		
-		process_tracks()
-		if behaviour == "baseline1" or behaviour == "duck":			
+		process_tracks()	
+		if behaviour == "baseline1" or behaviour == "duck" or behaviour == "test":			
 			#if get_meta("id") == 2:
 			process_behavior(delta * (n_steps - last_beh_proc))
 			last_beh_proc = n_steps
 		
 	if  behaviour == "external"  and shoot_input > 0 and HPT != -1:
 		if launch_missile_at_target(radar_track_list[HPT].obj): 						
-			shoot_input = -1.0			
+			shoot_input = -1	
 	
-	var turn_g = clamp(desiredG_input, desiredG_input,  max_g) * SConv.GRAVITY_GDM
+	var turn_g = clamp(desiredG_input, desiredG_input,  max_g * altitude_g_factor(current_level)) * SConv.GRAVITY_GDM
 	var turn_speed =  turn_g / velocity.length() 
 	
 	process_manouvers_action()
@@ -647,15 +687,16 @@ func _physics_process(delta: float) -> void:
 	$RenderModel.rotation.x = lerp($RenderModel.rotation.x, -float(pitch_input), turn_speed )
 
 	# Movement is always forward
-	velocity = -transform.basis.z.normalized() * max_speed
+	velocity = -transform.basis.z.normalized() * max_speed * altitude_speed_factor(current_level)
+	#print(max_speed * altitude_speed_factor(current_level) * SConv.GDM_S2KNOT)
+	
 	# Handle landing/taking unchecked
 	set_velocity(velocity)
 	set_up_direction(Vector3.UP)
 	move_and_slide()
 	
 	n_steps += 1
-	
-			
+				
 		
 func process_behavior_actions():
 	
@@ -676,17 +717,13 @@ func process_behavior_actions():
 func process_manouvers_action():
 	#print(_heuristic)
 	if _heuristic == "model":
-		return
-	
+		return	
 	#if _heuristic == "human":
 		#turn_input = Input.get_action_strength("roll_left") - Input.get_action_strength("roll_right")
 		#pitch_input = Input.get_action_strength("pitch_up") - Input.get_action_strength("pitch_down")
 	#
-	if _heuristic == "AP":		
-		
-		
-		#if AP_mode == "GoTo": 
-														#
+	if _heuristic == "AP":						
+		#if AP_mode == "GoTo": 													#
 			##print(targetHdg)
 			#if goal_distance > 3:			
 				#turn_input = (targetHdg / abs(1 if targetHdg == 0 else targetHdg)) * (0.85 + (clamp(20 / goal_distance, 0,1))) * clamp(abs(targetHdg), 0.0 , 1.0)  
@@ -698,17 +735,17 @@ func process_manouvers_action():
 			#-------- HDG Adjust ----------#
 			# Calculate the heading difference between current and desired								
 			var hdg_diff = Calc.clamp_hdg(hdg_input - current_hdg)	
-									
+			
 			# Adjust turn sensitivity based on the heading difference magnitude					
 			var adjusted_turn_input = hdg_diff / 60.0  
 			turn_input = clamp(adjusted_turn_input, -1.0, 1.0)
 #			
 		# -------- Level Adjust ---------- #
 		#
-			var current_level = global_transform.origin.y
+			
 			var level_diff = level_input - current_level
 			
-			var adjusted_pitch_input = level_diff / 10			  
+			var adjusted_pitch_input = level_diff / 10.0			  
 			
 			var desired_pitch = clamp(adjusted_pitch_input, min_pitch, max_pitch)											
 			var current_pitch = global_transform.basis.get_euler().x
@@ -717,8 +754,7 @@ func process_manouvers_action():
 			pitch_input = pitch_diff
 			
 					
-			#print("Level: ", level_diff, "PitchInput: ", pitch_input)
-		
+			#print("Level: ", level_diff, "PitchInput: ", pitch_input)		
 		#if AP_mode == "Hold":
 			#
 			#if holdStatus == 0:
@@ -745,10 +781,10 @@ func launch_missile_at_target(target):
 		var new_missile = missile.instantiate()
 		change_mesh_instance_colors(new_missile, team_color)
 		
-		env.add_child(new_missile)							
+		manager.add_child(new_missile)							
 		#new_missile.set_target(target) 		
 		#new_missile.set_shooter(self)				
-		new_missile.add_to_group("Missile")
+		new_missile.add_to_group(simGroups.MISSILE)
 		new_missile.global_position = global_position
 		
 		new_missile.launch(self, target)			
@@ -779,19 +815,13 @@ func own_kill():
 		activated = false
 		killed = true	
 		done = true	
-		ownRewards.add_hit_own_rew()
+		ownRewards.add_hit_own_rew()		
+		manager.inform_kill(team_id) 
+			
 		
-		if is_in_group("AGENT"):
-			sync.agents_alive_control -= 1
-		elif is_in_group("ENEMY"):
-			sync.enemies_alive_control -= 1
-		else:
-			print("Figther::Warning::Agent in unknown Group -> ", get_groups())
-	
-
 		
 func reactivate():
-		# Enabling processing
+	# Enabling processing
 	set_process(true)
 	set_physics_process(true)	
 	collision_layer = init_layer
@@ -799,7 +829,8 @@ func reactivate():
 	input_ray_pickable = true	
 	visible = true
 	activated = true
-	killed = true
+	killed = false
+	done = false
 	ownRewards.get_total_rewards_and_reset()
 	missiles = 6
 	

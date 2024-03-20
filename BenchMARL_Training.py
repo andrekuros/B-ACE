@@ -8,7 +8,7 @@ from benchmarl.environments.godotrl import b_ace
 
 from benchmarl.experiment import Experiment, ExperimentConfig
 from benchmarl.models.mlp import MlpConfig
-from benchmarl.algorithms import IppoConfig, IqlConfig, QmixConfig, VdnConfig, VdnConfig, MappoConfig, MaddpgConfig
+from benchmarl.algorithms import IppoConfig, IqlConfig, QmixConfig, VdnConfig, VdnConfig, MappoConfig, MaddpgConfig, IddpgConfig
 from benchmarl.models.gnn import GnnConfig
 
 if __name__ == "__main__":
@@ -18,11 +18,11 @@ if __name__ == "__main__":
 
     experiment_config.sampling_device = 'cuda'
     experiment_config.train_device = 'cuda'
-    experiment_config.prefer_continuous_actions = True
+    experiment_config.prefer_continuous_actions = False
     experiment_config.checkpoint_interval = 180000
     
     experiment_config.evaluation_interval = 18000
-    experiment_config.evaluation_episodes = 20              
+    experiment_config.evaluation_episodes = 1              
     
     # experiment_config.exploration_eps_init = 1.0
     # experiment_config.exploration_eps_end = 1.0   
@@ -54,19 +54,19 @@ if __name__ == "__main__":
     experiment_config.off_policy_init_random_frames: 0
     
     
-    experiment_config.off_policy_n_envs_per_worker= 1
-    experiment_config.on_policy_n_envs_per_worker= 1
+    experiment_config.off_policy_n_envs_per_worker= 4
+    experiment_config.on_policy_n_envs_per_worker= 4
      
-    experiment_config.evaluation = True  # Enable evaluation mode
-    experiment_config.restore_file = "D:\Projects\B-ACE\B-ACE\Results\maddpg_b_ace_mlp__14627b2c_24_03_17-21_29_33\checkpoints\checkpoint_2340000.pt"
-    experiment_config.loggers = []
+    #experiment_config.evaluation = True  # Enable evaluation mode
+    #experiment_config.restore_file = "D:\Projects\B-ACE\B-ACE\Results\maddpg_b_ace_mlp__14627b2c_24_03_17-21_29_33\checkpoints\checkpoint_2340000.pt"
+    #experiment_config.loggers = []
     
-    #experiment_config.save_folder = "Results"
-    # experiment_config.lr = 0.0003
+    experiment_config.save_folder = "Results"
+    #experiment_config.lr = 0.0003
     
     #TASK Config
     task = b_ace.B_ACE.b_ace.get_from_yaml()  
-    config_dict = {
+    env_config = {
         'task': 'b_ace_v1',
         'env_path': 'BVR_AirCombat/bin/B_ACE_v1.exe',
         'show_window': True,
@@ -74,16 +74,16 @@ if __name__ == "__main__":
         'port': 12500,
         'action_repeat': 20,
         'speedup': 2000,
-        'num_allies': 2,
-        'num_enemies': 2,
-        'action_type': 'Low_Level_Continuous' ,
-        'enemies_baseline': 'baseline1',
-        'full_observation': 0
+        'num_allies': 1,
+        'num_enemies': 1,
+        'action_type': 'Low_Level_Discrete' ,
+        'enemies_baseline': 'duck',
+        'full_observation': 1
     }
-    
-    task.config = config_dict
+      
+    task.config = env_config 
             
-    algorithm_config = MaddpgConfig.get_from_yaml()
+    algorithm_config = IppoConfig.get_from_yaml()
 
     # Loads from "benchmarl/conf/model/layers/mlp.yaml"
     #model_config = GnnConfig.get_from_yaml()

@@ -32,7 +32,7 @@ points = PackedVector3Array(-0.0886841, 0, 0, -456.395, -100, 263.448, -456.395,
 
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_563rj"]
 transparency = 1
-albedo_color = Color(1, 1, 1, 0.00392157)
+albedo_color = Color(1, 1, 1, 0.0196078)
 
 [node name="Fighter" type="CharacterBody3D"]
 disable_mode = 1
@@ -45,7 +45,7 @@ shape = SubResource("SphereShape3D_6pjqh")
 
 [node name="Camera3D" type="Camera3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 0.888617, 0.45865, 0, -0.45865, 0.888617, -0.705931, 57.8745, 114.771)
-fov = 56.6
+fov = 65.4
 near = 0.001
 
 [node name="RenderModel" type="Node3D" parent="."]

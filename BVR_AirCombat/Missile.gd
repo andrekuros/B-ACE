@@ -1,6 +1,6 @@
 extends RigidBody3D
 
-const SConv = preload("res://Figther_assets.gd").SConv
+const SConv = preload("res://Sim_assets.gd").SConv
 const Calc = preload("res://Calc.gd")
 
 var target: Node3D
@@ -16,6 +16,8 @@ var n_steps = 0
 var shooter = null
 var upLink_support = true
 
+const visual_scaleVector = Vector3(2.0,  2.0,  2.0)
+
 func is_type(type): return type == "Missile" 
 func get_type(): return "Missile"		
 
@@ -24,6 +26,8 @@ func _ready():
 	# Set the missile's initial velocity
 	linear_velocity = initial_velocity
 	# Additional setup for the missile's independent flight path
+	
+	get_node("RenderModel").set_scale(visual_scaleVector)
 	$Timer.wait_time = time_of_flight
 	$Timer.start()
 	
@@ -51,7 +55,7 @@ func _integrate_forces(state: PhysicsDirectBodyState3D) -> void:
 				
 		# Update the missile's velocity to move towards the target.
 		linear_velocity = new_velocity				
-
+		
 		if n_steps % 10 == 0:
 			var target_vector = to_local(target.position)
 			var target_distance = target_vector.length()

@@ -1,6 +1,6 @@
 extends VBoxContainer
 
-const SConv = preload("res://Figther_assets.gd").SConv
+const SConv = preload("res://Sim_assets.gd").SConv
 
 
 func _ready():

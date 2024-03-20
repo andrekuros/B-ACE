@@ -145,7 +145,6 @@ class GodotRLPettingZooWrapper(GodotEnv, ParallelEnv):
         return self.action_space_processor.action_space
     
     
-    
     def step(self, actions):
         # Assuming the environment's step function can handle a dictionary of actions for each agent                                      
         if self.action_type == "Low_Level_Continuous":
@@ -160,6 +159,8 @@ class GodotRLPettingZooWrapper(GodotEnv, ParallelEnv):
         # Assuming 'obs' is a list of dictionaries with 'obs' keys among others
         for i, agent in enumerate(self.possible_agents):
             # Convert observations, rewards, etc., to tensors
+            # if dones[i] == True:
+            #     continue
             # .to('cuda') moves the tensor to GPU if you're using CUDA; remove it if not using GPU
             self.observations[agent] =  obs[i]['obs']            
             self.rewards[agent] = reward[i],#torch.tensor([reward[i]], dtype=torch.float32).to('cuda')
@@ -167,7 +168,9 @@ class GodotRLPettingZooWrapper(GodotEnv, ParallelEnv):
             self.truncations[agent] = truncs[i],#torch.tensor([False], dtype=torch.bool).to('cuda')  # Assuming False for all
             # For 'info', it might not need to be a tensor depending on its use
             self.info[agent] = info[i]  # Assuming 'info' does not need tensor conversion
-
+            
+            #print( self.observations[agent])
+            
         #  # Update the list of active agents based on the 'dones' information
         #  for agent, done in dones.items():
         #      if done:

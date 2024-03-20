@@ -2,7 +2,7 @@ extends Area3D
 
 @onready var fighter = get_parent()
 
-const Track = preload("res://Figther_assets.gd").Track
+const Track = preload("res://Sim_assets.gd").Track
 const Calc = preload("res://Calc.gd")  # Ensure you have a Calc script for calculations
 
 var pending_tracks_to_add = {}
