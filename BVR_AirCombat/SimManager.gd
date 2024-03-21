@@ -162,6 +162,9 @@ func _set_agents(tree):
 		newFigther.action_type = simConfig.action_type											
 		newFigther.add_to_group(simGroups.FIGHTER)
 		newFigther.simGroups = simGroups
+		
+		newFigther.set_fullView(simConfig.full_observation)	
+		newFigther.set_actions_2d(simConfig.actions_2d)	
 							
 		if comp == "Allied_Agent":
 			
@@ -213,7 +216,7 @@ func _set_agents(tree):
 			newFigther.set_behaviour(simConfig.enemies_baseline)		
 																			
 		
-		newFigther.set_fullView(simConfig.full_observation)				
+					
 		fighters.append(newFigther)
 		#env.uavs.append(newFigther)			
 		#env.get_node("Fighters").add_child(newFigther)    

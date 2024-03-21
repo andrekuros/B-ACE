@@ -30,6 +30,7 @@ var radar_near_range = 10.0 * SConv.NM2GDM # minimum distance to detect
 var radar_far_range = 60.0 * SConv.NM2GDM # maximum distance to detect
 
 var fullView = false
+var actions_2d = false
 
 var missiles = 6 # Adjust the number of missiles as needed
 
@@ -74,7 +75,6 @@ func altitude_speed_factor (alt):
 
 func altitude_g_factor (alt):
 	return -0.5 * alt / 76.2 + 1.5 #25000ft is base alt for max_g
-
 
 var init_position = Vector3.ZERO
 var init_rotation = Vector3.ZERO
@@ -190,7 +190,15 @@ func reset():
 	var root_node = $RenderModel  # Adjust the path to your model's root node.		
 	change_mesh_instance_colors(root_node, team_color)
 		
-	position = init_position		
+	var local_offset = Vector3(0.0,0.0,0.0)
+	if behaviour == "duck" or behaviour == "baseline1":
+		var x_offset = randf_range(-15.0 * SConv.NM2GDM, 15.0 * SConv.NM2GDM)
+		var z_offset = randf_range(-5.0 * SConv.NM2GDM, 5.0 * SConv.NM2GDM)
+		var y_offset = randf_range(-10000.0 * SConv.FT2GDM, 10000.0 * SConv.FT2GDM)
+		
+		local_offset = Vector3(x_offset,y_offset, z_offset)
+	
+	position = init_position + 	local_offset	
 	velocity = Vector3(0,0,-max_speed * SConv.NM2GDM)	
 	rotation_degrees = init_rotation#Vector3(0, 0, 0) # Adjust as necessary	
 		
@@ -273,6 +281,12 @@ func set_fullView(_def):
 	else:
 		fullView = false
 
+func set_actions_2d(_def):
+	if _def == 1:
+		actions_2d = true
+	else:
+		actions_2d = false
+
 func get_done():
 	return done
 	
@@ -286,15 +300,17 @@ func get_obs(with_labels = false):
 					 global_transform.origin.y / 150.0,
 					 dist2go / 3000.0,
 					 #fmod(aspect_to_obj(target_position) + current_hdg, 360),
-					 Calc.get_relative_radial(current_hdg, Calc.get_hdg_2d(position, target_position)) / 180.0,
-					 current_hdg / 180.0,
+					 sin(Calc.get_relative_radial(current_hdg, Calc.get_hdg_2d(position, target_position)) / 180.0),
+					 cos(Calc.get_relative_radial(current_hdg, Calc.get_hdg_2d(position, target_position)) / 180.0),
+					 sin(current_hdg / 180.0),
+					 cos(current_hdg / 180.0),
 					 #current_speed / max_speed,
 					 missiles / 6.0,
 					 1 if is_instance_valid(in_flight_missile) else 0,
-					 last_desiredG_input,
-					 last_hdg_input,
-					 last_level_input,
-					 last_fire_input										
+					 #last_desiredG_input,
+					 #last_hdg_input,
+					 #last_level_input,
+					 #last_fire_input										
 					]	
 	var allied_info = [ 0.0, 0.0 , 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 ]
 		
@@ -306,7 +322,7 @@ func get_obs(with_labels = false):
 							 allied.global_transform.origin.y / 150.0,
 							 allied.dist2go / 3000.0,							 
 							 Calc.get_relative_radial(allied.current_hdg, Calc.get_hdg_2d(allied.position, allied.target_position)) / 180.0, 
-							#fmod(aspect_to_obj(allied.target_position) + allied.current_hdg, 360),
+							 #fmod(aspect_to_obj(allied.target_position) + allied.current_hdg, 360),
 							 allied.current_hdg / 180.0,
 							 #allied.current_speed / max_speed,
 							 allied.missiles / 6.0,							 
@@ -322,7 +338,8 @@ func get_obs(with_labels = false):
 		tracks_info.append_array([ 
 					 (global_transform.origin.y - track.obj.global_transform.origin.y) / 150.0,
 					 #track.radial / 180.0,
-					 Calc.get_desired_heading(current_hdg, track.radial) / 180.0,					 					
+					 sin(Calc.get_desired_heading(current_hdg, track.radial) / 180.0),					 					
+					 cos(Calc.get_desired_heading(current_hdg, track.radial) / 180.0),
 					 track.dist / 3000.0,
 					 track.obj.dist2go / 3000.0,
 					 1,
@@ -343,7 +360,7 @@ func get_obs(with_labels = false):
 	#print("bef:",  tracks_info, len(own_info))
 	
 	for track in range(len_tracks_data_obs - len(tracks_info) / 6):
-		tracks_info.append_array([ 0.0, 0.0 , 0.0, 0.0, 0.0 , 0.0 ])
+		tracks_info.append_array([ 0.0, 0.0 , 0.0, 0.0, 0.0 , 0.0, 0.0  ])
 	#print( tracks_info, len(own_info))
 	
 	var obs = own_info + tracks_info 
@@ -391,29 +408,49 @@ func get_action_space():
 	
 	if action_type == "Low_Level_Continuous":
 	
-		return {				
-			"input" : {
-				"size": 4,
-				"action_type": "continuous"
-			} 
-		} 
+		if actions_2d:
+			return {				
+				"input" : {
+					"size": 3,
+					"action_type": "continuous"
+				} 
+			}
+		else:
+			return {				
+				"input" : {
+					"size": 4,
+					"action_type": "continuous"
+				} 
+			}
+									
 	elif action_type == "Low_Level_Discrete":         		
 		
-		return {									
-					"fire_input" : {
-					"size": 1,
-					"action_type": "discrete"
-				},					
-					"level_input" : {
-					"size": 5,
-					"action_type": "discrete"
-				},
-					"turn_input" : {
-					"size": 5,
-					"action_type": "discrete"
-				},
-				
-		} 
+		if actions_2d:
+			return {									
+						"fire_input" : {
+						"size": 1,
+						"action_type": "discrete"
+					},
+						"turn_input" : {
+						"size": 5,
+						"action_type": "discrete"
+					}
+			}
+		else:
+			return {									
+						"fire_input" : {
+						"size": 1,
+						"action_type": "discrete"
+					},					
+						"level_input" : {
+						"size": 5,
+						"action_type": "discrete"
+					},
+						"turn_input" : {
+						"size": 5,
+						"action_type": "discrete"
+					},									
+			} 
 	else:
 		print("Fighter::Error::Unknown Action Type -> ", action_type)
 		return {}			
@@ -435,19 +472,20 @@ func set_action(action):
 	elif action_type == "Low_Level_Discrete":  
 								
 		hdg_input = Calc.get_desired_heading(current_hdg, turn_conv[action["turn_input"]])		
-		level_input = level_conv[action["level_input"] ]
+		if not actions_2d:
+			level_input = level_conv[action["level_input"] ]					
 		desiredG_input = g_conv[action["turn_input"]] 
 		shoot_input = action["fire_input"]    
 		
 		last_hdg_input 		= action["turn_input"] / action_turn_len
 		last_desiredG_input = g_conv[action["turn_input"]] / action_turn_len
-		last_level_input 	= action["level_input"] / action_level_len
+		if not actions_2d:
+			last_level_input= action["level_input"] / action_level_len
 		last_fire_input 	= action["fire_input"] 
 
 
 func get_current_inputs():
 	return [hdg_input, level_input, desiredG_input, shoot_input]
-
 	
 func process_tracks():	
 	
@@ -458,29 +496,29 @@ func process_tracks():
 	for id in radar_track_list.keys():
 		var track = radar_track_list[id]							
 		
-		if track.detected:
-						
-			if track.obj.activated == false:
+		if track.obj.activated == false:
 				track.detected = false						
 				continue
-			
+				
+		if track.detected:
+												
 			ownRewards.add_keep_track_rew()
-			
-			#var radial = fmod(aspect_to_obj(track.obj.position) + current_hdg, 360)
+						
 			var radial = Calc.get_hdg_2d(position, track.obj.position)
 			var dist = to_local(track.obj.position).length()			
-			track.update_dist_radial(dist, radial, 0)			
-			
-			#track.update_missile_ranges()
-			
+			track.update_track(track.obj.position, dist, radial, 0)			
+									
 			if dist < min_dist: # and track.obj.get_meta('id') == 1:
 				min_dist = dist
 				new_sec_target = new_HPT
-				new_HPT = id				
-								
-							
+				new_HPT = id																		
 			#print("own_id: ", get_meta('id'), " t_td", track.id, " track_dist: ", dist, " rad:", radial)	
-	
+		else:
+			
+			var radial = Calc.get_hdg_2d(position, track.last_know_pos)
+			var dist = to_local(track.last_know_pos).length()		
+			track.update_track(track.last_know_pos, dist, radial, 0)	
+				
 	HPT = new_HPT	
 	SPT = new_sec_target
 		#print("HPT_set ", get_meta('id') , " - ", HPT)
@@ -490,6 +528,16 @@ func process_behavior(delta_s):
 	tatic_time += delta_s	
 	
 	if behaviour == "duck":
+		if 	tatic_status != "Strike": 
+			if team_id == 1 and position.z >= 150 or\
+					team_id == 0 and position.z <= -150:					
+					desiredG_input = 3.0	
+					tatic_status = "Strike"							
+					tatic_time = 0.0
+		
+		else :									
+			hdg_input = Calc.get_hdg_2d(position, target_position )			
+		
 		return
 		
 	elif behaviour == "test":
@@ -643,7 +691,7 @@ func remove_track(track_id):
 func reacquired_track(track_id, radial, dist):
 	
 	var track = radar_track_list[track_id]
-	track.update_dist_radial(dist, radial, 0)
+	track.update_track(track.obj.position, dist, radial, 0)
 	track.detected_status(true)
 	
 	if is_instance_valid(in_flight_missile):			

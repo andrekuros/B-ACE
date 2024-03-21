@@ -8,8 +8,9 @@ class SimConfig:
 	const DEFAULT_ACTION_TYPE := "Low_Level_Discrete"	
 	const DEFAULT_NUM_ALLIES := "1"
 	const DEFAULT_NUM_ENEMIES := "1"
-	const DEFAULT_ENEMIES_BASELINE := "baseline1"
-	const DEFAULT_FULL_OBSERVATION := "1"
+	const DEFAULT_ENEMIES_BASELINE := "duck"
+	const DEFAULT_FULL_OBSERVATION := "0"
+	const DEFAULT_ACTIONS_2D := "0"
 		
 
 	var phy_fps
@@ -20,13 +21,14 @@ class SimConfig:
 	var num_enemies
 	var enemies_baseline	
 	var full_observation
+	var actions_2d
 	
 	var agents_config = { "blue_agents": 
 			{                        
 				"init_position": {
 					"x": 0.0,
 					"y": 25000.0,
-					"z": 35.0
+					"z": 30.0
 				},
 				"offset_pos": {
 				"x": 0.0,
@@ -48,7 +50,7 @@ class SimConfig:
 				"init_position": {
 				"x": 0.0,
 				"y": 25000.0,
-				"z": -35.0
+				"z": -30.0
 				},
 			"offset_pos": {
 				"x": 0.0,
@@ -80,6 +82,7 @@ class SimConfig:
 		self.enemies_baseline = args.get("enemies_baseline", DEFAULT_ENEMIES_BASELINE)
 		
 		self.full_observation = args.get("full_observation", DEFAULT_FULL_OBSERVATION).to_int()
+		self.actions_2d = args.get("actions_2d", DEFAULT_ACTIONS_2D).to_int()
 		
 class SimGroups:
 	
@@ -123,6 +126,7 @@ class Track:
 	var obj
 	var dist
 	var radial
+	var last_know_pos
 	var angle_off
 	var own_missile_RMax
 	var own_missile_Nez
@@ -138,10 +142,12 @@ class Track:
 		self.dist = _dist
 		self.radial = _radial
 		self.detected = _detected
+		self.last_know_pos = _obj.position
 	
-	func update_dist_radial(_dist, _radial, _angle_off):
+	func update_track(_pos, _dist, _radial, _angle_off):
 		self.dist = _dist
 		self.radial = _radial
+		self.last_know_pos = _pos
 		self.angle_off = _angle_off
 	
 	#func update_missile_ranges():
@@ -190,7 +196,7 @@ class RewardsControl:
 	
 	func _init(	_owner,
 				_mission_factor = 1.0,
-			 	_missile_fire_factor = 0.0,
+			 	_missile_fire_factor = -0.1,
 				_missile_no_fire_factor = -0.001,
 				_missile_miss_factor = -0.5,
 				_detect_loss_factor = -0.1,
