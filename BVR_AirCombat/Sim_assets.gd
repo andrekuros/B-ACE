@@ -1,5 +1,7 @@
 extends Node
 
+const Calc = preload("res://Calc.gd") # Ensure you have a Calc script for calculations
+
 class SimConfig:	
 	
 	const DEFAULT_PHYSICS_FPS := "20"
@@ -8,7 +10,7 @@ class SimConfig:
 	const DEFAULT_ACTION_TYPE := "Low_Level_Discrete"	
 	const DEFAULT_NUM_ALLIES := "1"
 	const DEFAULT_NUM_ENEMIES := "1"
-	const DEFAULT_ENEMIES_BASELINE := "duck"
+	const DEFAULT_ENEMIES_BASELINE := "baseline1"
 	const DEFAULT_FULL_OBSERVATION := "0"
 	const DEFAULT_ACTIONS_2D := "0"
 		
@@ -126,8 +128,9 @@ class Track:
 	var obj
 	var dist
 	var radial
-	var last_know_pos
+	var aspect_angle
 	var angle_off
+	var last_know_pos	
 	var own_missile_RMax
 	var own_missile_Nez
 	var own_missile_6h	
@@ -136,20 +139,30 @@ class Track:
 	var enemy_missile_6h
 	var detected
 
-	func _init(_id, _obj, _dist, _radial, _detected):
-		self.id = _id
-		self.obj = _obj
-		self.dist = _dist
-		self.radial = _radial
-		self.detected = _detected
-		self.last_know_pos = _obj.position
+	func _init(_id, fighter, track_obj):
+		self.id = _id		
+		self.obj = track_obj
+		self.last_know_pos = fighter.position
+		
+		update_track(fighter, track_obj)
+					
+	func update_track(fighter, track_obj, _detected = true):
+		
+		self.dist = fighter.global_transform.origin.distance_to(track_obj.global_transform.origin)
+		self.radial = Calc.get_hdg_2d(fighter.position, track_obj.position)        								
+		self.angle_off = Calc.get_2d_aspect_angle(fighter.current_hdg, self.radial)
+		self.aspect_angle = Calc.get_2d_aspect_angle(fighter.current_hdg, self.radial)				
+		self.detected = _detected		
+		if _detected:
+			self.last_know_pos = track_obj.position
 	
-	func update_track(_pos, _dist, _radial, _angle_off):
-		self.dist = _dist
-		self.radial = _radial
-		self.last_know_pos = _pos
-		self.angle_off = _angle_off
-	
+	func update_track_not_detected(fighter):
+		self.dist = fighter.global_transform.origin.distance_to(self.last_know_pos)
+		self.radial = Calc.get_hdg_2d(fighter.position, self.last_know_pos)        								
+		self.angle_off = Calc.get_2d_aspect_angle(fighter.current_hdg, self.radial)
+		self.aspect_angle = Calc.get_2d_aspect_angle(fighter.current_hdg, self.radial)						
+		
+					
 	#func update_missile_ranges():
 		
 	#	self.own_missile_RMax
@@ -162,6 +175,17 @@ class Track:
 	
 	func detected_status(_detected):
 		self.detected = _detected
+		
+	func radial2aspect_angle(own_hdg, taget_radial):		
+		return clamp_hdg(taget_radial - own_hdg)
+		
+	func clamp_hdg(hdg):
+		if hdg > 180.0:
+			return hdg - 360.0
+		elif hdg < -180.0:
+			return hdg + 360.0
+		else:
+			return hdg
 		
 class RewardsControl:
 		

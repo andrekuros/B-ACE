@@ -133,10 +133,13 @@ class GodotRLPettingZooWrapper(GodotEnv, ParallelEnv):
     
     def _observation_space(self, agent):        
         return self.observation_spaces[agent]
+    
     def action_space(self, agent = None):
         
         return self.action_space_processor.action_space
     
+    def seed(self, _seed):
+        self.seed = _seed
     
     def step(self, actions):
         # Assuming the environment's step function can handle a dictionary of actions for each agent                                      
@@ -148,7 +151,7 @@ class GodotRLPettingZooWrapper(GodotEnv, ParallelEnv):
             print("GododtPZWrapper::Error:: Unknow Actions Type -> ", self.actions_type)
                                 
         obs, reward, dones, truncs, info = super().step(godot_actions, order_ij=True)
-        
+                
         # Assuming 'obs' is a list of dictionaries with 'obs' keys among others
         for i, agent in enumerate(self.possible_agents):
             # Convert observations, rewards, etc., to tensors

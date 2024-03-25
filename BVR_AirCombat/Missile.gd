@@ -37,7 +37,7 @@ func launch(_shooter, _target):
 	set_shooter(_shooter)
 	set_target(_target)
 	
-	var radial_factor = abs(Calc.get_2d_angle_off(_shooter, _target) / 180.0)
+	var radial_factor = abs(Calc.get_2d_angle_off(_shooter.current_hdg, _target.current_hdg) / 180.0)
 	var level_factor  = (_shooter.global_transform.origin.y - _target.global_transform.origin.y) / 150.0
 	
 	time_of_flight = time_of_flight * (1 - 0.5 * radial_factor) #lost 50% 180deg fire

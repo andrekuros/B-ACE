@@ -171,11 +171,12 @@ func update_init_config(config):
 	var _init_hdg = init_config["init_hdg"]												
 	init_rotation = Vector3(0, _init_hdg, 0)				
 	init_hdg = _init_hdg
-	hdg_input = _init_hdg			
-							
+	hdg_input = _init_hdg
+	current_hdg = init_hdg			
+								
 	var target_pos = Vector3(init_config["target_position"]["x"] * SConv.NM2GDM,
-							 init_config["target_position"]["y"] * SConv.NM2GDM,
-							 init_config["target_position"]["z"] * SConv.NM2GDM)	
+							 init_config["target_position"]["y"] * SConv.FT2GDM,
+							 init_config["target_position"]["z"] * SConv.NM2GDM)		
 	
 	target_position = target_pos	
 
@@ -252,10 +253,8 @@ func update_scene(_tree):
 		else:
 			print("FIGTHER::WARNING::COMPONENT IN UNKNOW GROUP ", get_groups())						
 		
-		for enemy in track_view_list:
-			var radial = Calc.get_hdg_2d(position, enemy.position)
-			var dist = global_transform.origin.distance_to(enemy.global_transform.origin)	
-			var new_track = Track.new(enemy.get_meta("id"), enemy, dist, radial, true)					
+		for enemy in track_view_list:			
+			var new_track = Track.new(enemy.get_meta("id"), self, enemy)					
 			radar_track_list[enemy.get_meta("id")] = new_track#Track.new(enemy.get_meta("id"), enemy, dist, radial, true)	
 								
 	alliesList = []		
@@ -298,13 +297,12 @@ func get_obs(with_labels = false):
 	var own_info = [ global_transform.origin.x / 3000.0,
 					 global_transform.origin.z / 3000.0,
 					 global_transform.origin.y / 150.0,
-					 dist2go / 3000.0,
-					 #fmod(aspect_to_obj(target_position) + current_hdg, 360),
-					 sin(Calc.get_relative_radial(current_hdg, Calc.get_hdg_2d(position, target_position)) / 180.0),
-					 cos(Calc.get_relative_radial(current_hdg, Calc.get_hdg_2d(position, target_position)) / 180.0),
-					 sin(current_hdg / 180.0),
-					 cos(current_hdg / 180.0),
-					 #current_speed / max_speed,
+					 dist2go / 3000.0,					 
+					 Calc.get_2d_aspect_angle(current_hdg, Calc.get_hdg_2d(position, target_position)) / 180.0,
+					 #cos(Calc.get_relative_radial(current_hdg, Calc.get_hdg_2d(position, target_position)) / 180.0),
+					 #sin(current_hdg / 180.0),
+					 current_hdg / 180.0,
+					 current_speed / max_speed,
 					 missiles / 6.0,
 					 1 if is_instance_valid(in_flight_missile) else 0,
 					 #last_desiredG_input,
@@ -321,7 +319,7 @@ func get_obs(with_labels = false):
 							 allied.global_transform.origin.z / 3000.0,
 							 allied.global_transform.origin.y / 150.0,
 							 allied.dist2go / 3000.0,							 
-							 Calc.get_relative_radial(allied.current_hdg, Calc.get_hdg_2d(allied.position, allied.target_position)) / 180.0, 
+							 Calc.get_2d_aspect_angle(allied.current_hdg, Calc.get_hdg_2d(allied.position, allied.target_position)) / 180.0, 
 							 #fmod(aspect_to_obj(allied.target_position) + allied.current_hdg, 360),
 							 allied.current_hdg / 180.0,
 							 #allied.current_speed / max_speed,
@@ -336,10 +334,9 @@ func get_obs(with_labels = false):
 	if HPT != -1:
 		var track = radar_track_list[HPT]
 		tracks_info.append_array([ 
-					 (global_transform.origin.y - track.obj.global_transform.origin.y) / 150.0,
-					 #track.radial / 180.0,
-					 sin(Calc.get_desired_heading(current_hdg, track.radial) / 180.0),					 					
-					 cos(Calc.get_desired_heading(current_hdg, track.radial) / 180.0),
+					 (global_transform.origin.y - track.obj.global_transform.origin.y) / 150.0,					 
+					 track.aspect_angle / 180.0,					 
+					 track.angle_off / 180.0,					 										 
 					 track.dist / 3000.0,
 					 track.obj.dist2go / 3000.0,
 					 1,
@@ -349,8 +346,7 @@ func get_obs(with_labels = false):
 	if SPT != -1:
 		var track = radar_track_list[SPT]
 		tracks_info.append_array([ 
-					(global_transform.origin.y - track.obj.global_transform.origin.y) / 150.0,
-					 #track.radial,
+					(global_transform.origin.y - track.obj.global_transform.origin.y) / 150.0,					 
 					 Calc.get_desired_heading(current_hdg, track.radial) / 180.0,
 					 track.dist / 3000.0,
 					 track.obj.dist2go / 3000.0,
@@ -360,7 +356,17 @@ func get_obs(with_labels = false):
 	#print("bef:",  tracks_info, len(own_info))
 	
 	for track in range(len_tracks_data_obs - len(tracks_info) / 6):
-		tracks_info.append_array([ 0.0, 0.0 , 0.0, 0.0, 0.0 , 0.0, 0.0  ])
+		#tracks_info.append_array([0.0, 0.0 , 0.0, 0.0, 0.0 , 0.0, 0.0  ])
+		var ref_enemy = manager.enemies[0]
+		tracks_info.append_array([ 
+					 0.0,					 
+					 Calc.get_2d_aspect_angle(current_hdg, 0.0) / 180.0,					 
+					 -1.0,					 										 
+					 0.5,
+					 0.2,
+					 0.0,
+					 0.0
+				])	
 	#print( tracks_info, len(own_info))
 	
 	var obs = own_info + tracks_info 
@@ -503,13 +509,11 @@ func process_tracks():
 		if track.detected:
 												
 			ownRewards.add_keep_track_rew()
-						
-			var radial = Calc.get_hdg_2d(position, track.obj.position)
-			var dist = to_local(track.obj.position).length()			
-			track.update_track(track.obj.position, dist, radial, 0)			
 									
-			if dist < min_dist: # and track.obj.get_meta('id') == 1:
-				min_dist = dist
+			track.update_track(self, track.obj)			
+									
+			if track.dist < min_dist: # and track.obj.get_meta('id') == 1:
+				min_dist = track.dist
 				new_sec_target = new_HPT
 				new_HPT = id																		
 			#print("own_id: ", get_meta('id'), " t_td", track.id, " track_dist: ", dist, " rad:", radial)	
@@ -517,7 +521,7 @@ func process_tracks():
 			
 			var radial = Calc.get_hdg_2d(position, track.last_know_pos)
 			var dist = to_local(track.last_know_pos).length()		
-			track.update_track(track.last_know_pos, dist, radial, 0)	
+			track.update_track_not_detected(self)	
 				
 	HPT = new_HPT	
 	SPT = new_sec_target
@@ -594,7 +598,7 @@ func process_behavior(delta_s):
 				hdg_input = radar_track_list[HPT].radial
 												
 				if radar_track_list[HPT].dist < max_shoot_range_adjusted:
-					if abs(Calc.get_relative_radial(current_hdg, radar_track_list[HPT].radial)) < 15:					
+					if abs(radar_track_list[HPT].aspect_angle) < 15:					
 						if launch_missile_at_target(radar_track_list[HPT].obj): 
 							tatic_status = "MissileSupport"			
 							tatic_time = 0.0
@@ -691,7 +695,7 @@ func remove_track(track_id):
 func reacquired_track(track_id, radial, dist):
 	
 	var track = radar_track_list[track_id]
-	track.update_track(track.obj.position, dist, radial, 0)
+	track.update_track(self, track.obj)
 	track.detected_status(true)
 	
 	if is_instance_valid(in_flight_missile):			

@@ -13,7 +13,7 @@ from tianshou.data import (
     ReplayBuffer,
      to_numpy,
 )
-from tianshou.data.batch import _alloc_by_keys_diff
+#from tianshou.data.batch import _alloc_by_keys_diff
 from tianshou.env import BaseVectorEnv, DummyVectorEnv
 from tianshou.policy import BasePolicy
 
@@ -108,9 +108,10 @@ class CollectorMA(Collector):
                 state = result.get("state", None)
                 if state is not None:
                     policy.hidden_state = state  # save state into buffer
-                act = to_numpy(result.act)
+                print("COLLECTORMA:",  result)
+                act = to_numpy(result['agent_0'].act)
                 if self.exploration_noise:
-                    act = self.policy.exploration_noise(act, self.data)
+                    act = self.policy.exploration_noise(result, self.data)['agent_0'].act
                 self.data.update(policy=policy, act=act)
 
             # get bounded and remapped actions first (not saved into buffer)
