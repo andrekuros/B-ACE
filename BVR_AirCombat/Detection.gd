@@ -36,7 +36,7 @@ func _on_body_entered(body):
 			var new_track = Track.new(track_id, fighter, track_obj)
 			fighter.radar_track_list[track_id] = new_track
 		else:
-			fighter.reacquired_track(track_id, radial, dist)
+			fighter.reacquired_track(track_id)
 
 func _on_body_exited(body):
 	var track_obj = body

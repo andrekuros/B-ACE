@@ -2,89 +2,110 @@ extends Node
 
 const Calc = preload("res://Calc.gd") # Ensure you have a Calc script for calculations
 
-class SimConfig:	
+class EnvConfig:	
 	
-	const DEFAULT_PHYSICS_FPS := "20"
-	const DEFAULT_MAX_CYCLES := "36000" # 15 * 20 * 60 (15 MINUTES REAL TIME)
-	const DEFAULT_ACTION_REPEAT := "20"
-	const DEFAULT_ACTION_TYPE := "Low_Level_Discrete"	
-	const DEFAULT_NUM_ALLIES := "1"
-	const DEFAULT_NUM_ENEMIES := "1"
-	const DEFAULT_ENEMIES_BASELINE := "baseline1"
-	const DEFAULT_FULL_OBSERVATION := "0"
-	const DEFAULT_ACTIONS_2D := "0"
+	const DEFAULT_PHYSICS_FPS := 20
+	const DEFAULT_MAX_CYCLES := 36000 # 30 * 20 * 60 (30 MINUTES REAL TIME)	
+	const DEFAULT_PARALLEL_ENVS := 1 
+	const DEFAULT_SEED := 1
+	const DEFAULT_SPEED_UP := 1000
+	const DEFAULT_RENDERIZE := 1
+	const DEFAULT_EXPERIMENT_MODE := 0
+	const DEFAULT_DEBUG_VIEW := 0
+	const DEFAULT_ACTION_REPEAT := 20
+	const DEFAULT_ACTION_TYPE := "Low_Level_Discrete"		
+	const DEFAULT_FULL_OBSERVATION := 0
+	const DEFAULT_ACTIONS_2D := 0
+	
+	var phy_fps: int
+	var max_cycles: int
+	var seed: int
+	var parallel_envs: int
+	var speed_up: int
+	var renderize: int 
+	var debug_view: int
+	var experiment_mode: int 		
+	var action_type: String
+	var action_repeat: int		
+	var full_observation: int
+	var actions_2d: int		
 		
-
-	var phy_fps
-	var max_cycles 		
-	var action_type
-	var action_repeat	
+	func _init(config):				
+				
+		self.phy_fps 		= int(config.get("phy_fps", DEFAULT_PHYSICS_FPS))
+		self.max_cycles 	= int(config.get("max_cycles", DEFAULT_MAX_CYCLES))
+		self.seed 			= int(config.get("seed", DEFAULT_SEED))
+		self.parallel_envs	= int(config.get("parallel_envs", DEFAULT_PARALLEL_ENVS))
+		
+		self.speed_up		= int(config.get("speed_up", DEFAULT_SPEED_UP))
+		self.renderize		= int(config.get("renderize", DEFAULT_RENDERIZE))
+		self.debug_view		= int(config.get("debug_view", DEFAULT_DEBUG_VIEW))
+		self.experiment_mode= int(config.get("experiment_mode", DEFAULT_EXPERIMENT_MODE))
+		
+		self.action_type 	= config.get("action_type", DEFAULT_ACTION_TYPE)
+		self.action_repeat 	= int(config.get("action_repeat", DEFAULT_ACTION_REPEAT))
+		
+		self.full_observation 	= int(config.get("full_observation", DEFAULT_FULL_OBSERVATION))
+		self.actions_2d 		= int(config.get("actions_2d", DEFAULT_ACTIONS_2D))
+				
+	
+	func update_config(config):		
+		
+		self.max_cycles = config.get("max_cycles", self.max_cycles)
+		self.seed = config.get("seed", self.seed)
+		self.parallel_envs = config.get("parallel_envs", self.parallel_envs)
+		self.speed_up = config.get("speed_up", self.speed_up)
+		self.renderize = config.get("renderize", self.renderize)
+		self.debug_view = config.get("debug_view", self.debug_view)
+		self.experiment_mode= config.get("experiment_mode", self.experiment_mode)
+		self.action_type = config.get("action_type", self.action_type)
+		self.action_repeat = config.get("action_repeat", self.action_repeat)
+		self.full_observation = config.get("full_observation", self.full_observation)
+		self.actions_2d = config.get("actions_2d", self.actions_2d)
+							
+class SimConfig:	
+		
+	const DEFAULT_NUM_ALLIES := 1
+	const DEFAULT_NUM_ENEMIES := 1
+	const DEFAULT_ENEMIES_BEHAVIOR:= "baseline1"
+	const DEFAULT_AGENTS_BEHAVIOR :=  "baseline1"	
+			
 	var num_allies 
 	var num_enemies
-	var enemies_baseline	
-	var full_observation
-	var actions_2d
-	
+	var enemies_behavior
+	var agents_behavior	
+		
 	var agents_config = { "blue_agents": 
 			{                        
-				"init_position": {
-					"x": 0.0,
-					"y": 25000.0,
-					"z": 30.0
-				},
-				"offset_pos": {
-				"x": 0.0,
-				"y": 0.0,
-				"z": 0.0
-				},
+				"init_position": {"x": 0.0, "y": 25000.0,"z": 30.0},
+				"offset_pos": {	"x": 0.0, "y": 0.0, "z": 0.0},
 				"init_hdg": 0.0,                        
-				"target_position": {
-					"x": 0.0,
-					"y": 25000.0,
-					"z": 30.0
-				},
-				"behaviour": "external",
-				"full_view": 0
+				"target_position": {"x": 0.0,"y": 25000.0,"z": -30.0},
+				"rnd_offset_range":{"x": 15.0,"y": 10000.0,"z": 5.0},
+				#"rnd_offset_range":{"x": 0.0,"y": 0.0,"z": 0.0},
+				"rnd_shot_dist_var": 0.0 																						
 			},
 		
 			"red_agents":
 			{ 
-				"init_position": {
-				"x": 0.0,
-				"y": 25000.0,
-				"z": -30.0
-				},
-			"offset_pos": {
-				"x": 0.0,
-				"y": 0.0,
-				"z": 0.0
-			},
-			"init_hdg" : 180.0,                        
-			"target_position": {
-				"x": 0.0,
-				"y": 25000.0,
-				"z": 30.0
-			},
-			"behaviour": "baseline1",
-			"full_view": 0                    
+				"init_position": {"x": 0.0,"y": 25000.0,"z": -30.0},
+				"offset_pos": {"x": 0.0,"y": 0.0,"z": 0.0},
+				"init_hdg" : 180.0,                        
+				"target_position": {"x": 0.0,"y": 25000.0,"z": 30.0},
+				"rnd_offset_range":{"x": 15.0,"y": 10000.0,"z": 5.0},
+				#"rnd_offset_range":{"x": 0.0,"y": 0.0,"z": 0.0},
+				"rnd_shot_dist_var": 0.0					
 		}
 	}
-	
+			
+	func _init(config):				
+						
+		self.num_allies 		= config.get("num_allies", DEFAULT_NUM_ALLIES)
+		self.num_enemies 		= config.get("num_enemies", DEFAULT_NUM_ENEMIES)
+		self.enemies_behavior 	= config.get("enemies_behavior", DEFAULT_ENEMIES_BEHAVIOR)
+		self.agents_behavior 	= config.get("agents_behavior", DEFAULT_AGENTS_BEHAVIOR)
+		self.agents_config 		= config.get("agents_config" , self.agents_config)
 		
-	func _init(args):				
-		
-		self.phy_fps = args.get("phy_fps", DEFAULT_PHYSICS_FPS).to_int()
-		self.max_cycles = args.get("max_cycles", DEFAULT_MAX_CYCLES).to_int()
-		
-		self.action_type = args.get("action_type", DEFAULT_ACTION_TYPE)
-		self.action_repeat = args.get("action_repeat", DEFAULT_ACTION_REPEAT).to_int()
-		
-		self.num_allies = args.get("num_allies", DEFAULT_NUM_ALLIES).to_int() 
-		self.num_enemies = args.get("num_enemies", DEFAULT_NUM_ENEMIES).to_int() 
-		self.enemies_baseline = args.get("enemies_baseline", DEFAULT_ENEMIES_BASELINE)
-		
-		self.full_observation = args.get("full_observation", DEFAULT_FULL_OBSERVATION).to_int()
-		self.actions_2d = args.get("actions_2d", DEFAULT_ACTIONS_2D).to_int()
 		
 class SimGroups:
 	

@@ -19,43 +19,48 @@ class GodotRLPettingZooWrapper(GodotEnv, ParallelEnv):
 
     def __init__(self,
                 env_path: str = None,
-                port: int = GodotEnv.DEFAULT_PORT,
+                
                 show_window: bool = True,
                 seed: int = 0,
-                framerate: Optional[int] = None,
-                action_repeat: Optional[int] = None,
-                speedup: Optional[int] = None,
+                framerate: Optional[int] = None,                
                 convert_action_space: bool = False,
                 device: str = "cpu",
-                **env_config_kwargs):                       
-        #super().__init__( **kwargs)    
+                **config_kwargs):                               
         
-        self.device = device        
-        self.seed = env_config_kwargs.pop("seed", 0)                
-        self.action_repeat = env_config_kwargs.pop("action_repeat", 20)                    
-        self.num_allies = env_config_kwargs.pop("num_allies", 1)
-        self.num_enemies = env_config_kwargs.pop("num_enemies", 1)
-        self.action_type = env_config_kwargs.pop("action_type", "Low_Level_Continuous")
-        self.enemies_baseline = env_config_kwargs.pop("enemies_baseline", "baseline1")
-        self.full_observation = env_config_kwargs.pop("full_observation", 0)
-        self.actions_2d = env_config_kwargs.pop("actions_2d", 0)      
-                        
-        port = GodotRLPettingZooWrapper.DEFAULT_PORT + random.randint(0,3100) 
-        self.port = port
+        self.device = device
+        
+        self.env_config = config_kwargs.get("EnvConfig", "")     
+        #Godot Line Parameters Commands
+        self.env_path       = self.env_config.get("env_path", "./bin/BVR.exe")  
+        self.show_window    = self.env_config.get("renderize", 1)  
+        self._seed          = self.env_config.get("seed", 1)  
+        self.action_repeat  = self.env_config.get("action_repeat", 20)  
+        self.action_type    = self.env_config.get("action_type", "Low_Level_Continuous")  
+        self.speedup        = self.env_config.get("speedup", 1000)                          
+        self.parallel_envs  = self.env_config.get("parallel_envs", 1)   
+        
+        self.sim_config = config_kwargs.get("SimConfig", "")
+        self.num_allies = self.sim_config.get("num_allies", 1)
+                                     
+        self.port = GodotRLPettingZooWrapper.DEFAULT_PORT + random.randint(0,3100)                 
         self.proc = None
-        if env_path is not None and env_path != "debug":
-            env_path = self._set_platform_suffix(env_path)
+        
+        if self.env_path is not None and self.env_path != "debug":
+            self.env_path = self._set_platform_suffix(self.env_path)
 
-            self.check_platform(env_path)  
+            self.check_platform(self.env_path)  
 
-            self._launch_env(env_path, port, show_window, framerate, self.seed, action_repeat, speedup)
+            self._launch_env(self.env_path, self.port, self.show_window == 1, None, self._seed, self.action_repeat, self.speedup)
         else:
             print("No game binary has been provided, please press PLAY in the Godot editor")
         
         self.connection = self._start_server()
         self.num_envs = None
-        self._handshake()
+        
+        self._handshake()                
+        self.send_sim_config(self.env_config, self.sim_config)                
         self._get_env_info()
+        
         # sf2 requires a tuple action space
         self._tuple_action_space = spaces.Tuple([v for _, v in self._action_space.items()])
         self.action_space_processor = ActionSpaceProcessor(self._tuple_action_space, convert_action_space)
@@ -63,7 +68,6 @@ class GodotRLPettingZooWrapper(GodotEnv, ParallelEnv):
         atexit.register(self._close)
                                 
         #Initialization for PettingZoo Paralell
-        
         self.agents = [f'agent_{i}' for i in range(self.num_allies)]  # Initialize agents
         self.possible_agents = self.agents[:]
 
@@ -80,50 +84,21 @@ class GodotRLPettingZooWrapper(GodotEnv, ParallelEnv):
         self.truncations =  {agent : False  for agent in self.possible_agents} 
         self.observations =  {agent : {}  for agent in self.possible_agents}  
         self.info =  {agent : {}  for agent in self.possible_agents}  
-
-
-    def _launch_env(self, env_path, port, show_window, framerate, seed, action_repeat, speedup): 
-                                                                           
-        # --fixed-fps {framerate}
-        path = convert_macos_path(env_path) if platform == "darwin" else env_path
-
-        launch_cmd = f"{path} --port={port} --env_seed={seed}"
-
-        # Building the launch command
-        launch_cmd = f"{env_path}"
+                            
+    def send_sim_config(self, _env_config, _sim_config):
+        message = {"type": "config"}        
+        message["sim_config"] = _sim_config
+        message["env_config"] = _env_config
+        self._send_as_json(message)
+            
         
-        if not show_window:
-            launch_cmd += " --disable-render-loop --headless"
-        if seed is not None:
-            launch_cmd += f" --seed={seed}"
-        if port is not None:
-            launch_cmd += f" --port={port}"
-        if framerate is not None:
-            launch_cmd += f" --fixed-fps {framerate}"
-        launch_cmd += f" --speedup={speedup}"
-        launch_cmd += f" --action_repeat={action_repeat}"
-        
-        launch_cmd += f" --num_allies={self.num_allies}"
-        launch_cmd += f" --num_enemies={self.num_enemies}"
-        launch_cmd += f" --action_type={self.action_type}"
-        launch_cmd += f" --enemies_baseline={self.enemies_baseline}"
-        launch_cmd += f" --full_observation={self.full_observation}"
-        launch_cmd += f" --actions_2d={self.actions_2d}"                
-
-        launch_cmd = launch_cmd.split(" ")
-        self.proc = subprocess.Popen(
-            launch_cmd,
-            start_new_session=True,
-            # shell=True,
-        )
-    
     def reset(self, seed=0, options = None):
         
         result  = super().reset()
         
         observations = []
         self.observations = {}
-
+        
         for i, indiv_obs in enumerate(result[0]):
             
             self.observations[self.possible_agents[i]] =  indiv_obs["obs"] 
@@ -134,8 +109,7 @@ class GodotRLPettingZooWrapper(GodotEnv, ParallelEnv):
     def _observation_space(self, agent):        
         return self.observation_spaces[agent]
     
-    def action_space(self, agent = None):
-        
+    def action_space(self, agent = None):        
         return self.action_space_processor.action_space
     
     def seed(self, _seed):
@@ -163,10 +137,8 @@ class GodotRLPettingZooWrapper(GodotEnv, ParallelEnv):
             self.terminations[agent] = dones[i],#torch.tensor([False], dtype=torch.bool).to('cuda')  # Assuming False for all
             self.truncations[agent] = truncs[i],#torch.tensor([False], dtype=torch.bool).to('cuda')  # Assuming False for all
             # For 'info', it might not need to be a tensor depending on its use
-            self.info[agent] = info[i]  # Assuming 'info' does not need tensor conversion
-            
-            #print( self.observations[agent])
-            
+            self.info[agent] = info[i]  # Assuming 'info' does not need tensor conversion            
+                        
         #  # Update the list of active agents based on the 'dones' information
         #  for agent, done in dones.items():
         #      if done:

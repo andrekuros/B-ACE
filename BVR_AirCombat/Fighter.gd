@@ -37,29 +37,23 @@ var missiles = 6 # Adjust the number of missiles as needed
 var model = "Simple" 
 
 # State variables
-var current_speed: float = 550   * SConv.KNOT2GDM_S 
-var current_level: float = 25000 * SConv.FT2GDM 
-var throttle: float = 1.0  # Throttle position: 0.0 (idle) to 1.0 (full)
-var bank_angle: float = 0.0  # Current bank angle
-var current_hdg = 0.0
+var current_speed
+var current_level
+var current_hdg 
 
-@export var action_type = "Low_Level_Discrete"# "Low_Level_Discrete" 
+var action_type = "Low_Level_Discrete"# "Low_Level_Discrete" 
 
 var	hdg_input: float = 0.0 
 var	level_input: float = 25000 * SConv.FT2GDM 
-var	speed_input: float = 650 * SConv.KNOT2GDM_S
-var	desiredG_input: float = 0.0 
+var	desiredG_input: float = 1.0 
 var	shoot_input: int = 0
 
-var last_hdg_input = hdg_input
-var last_level_input = level_input
-var last_desiredG_input = desiredG_input
-var last_fire_input = shoot_input
+var last_hdg_input
+var last_level_input
+var last_desiredG_input
+var last_fire_input
 
-var wing_area = 50
-var max_speed = 650 * SConv.KNOT2GDM_S # Example max speed value
-var min_speed = 250 * SConv.KNOT2GDM_S # Example min speed value
-
+var max_speed = 650 * SConv.KNOT2GDM_S
 var max_level = 50000 * SConv.FT2GDM
 var min_level = 1000  * SConv.FT2GDM
 
@@ -72,7 +66,6 @@ var pitch_speed = 0.5
 func altitude_speed_factor (alt):
 	return -0.3 * alt / 76.2 + 1.3 #25000ft is base alt for speed
 
-
 func altitude_g_factor (alt):
 	return -0.5 * alt / 76.2 + 1.5 #25000ft is base alt for max_g
 
@@ -82,18 +75,14 @@ var init_layer = collision_layer
 var init_mask = collision_mask 
 var init_hdg = 0
 var dist2go = 100000.0
+var strike_line_z = 0
 
 var target_position = Vector3.ZERO
 
 var done = false
 var _heuristic = "AP" #"model" / "AP"
-var behaviour = "baseline1" # baseline1 / external
+var behavior = "baseline1" # baseline1 / external
 var AP_mode = "FlyHdg" #"GoTo" / "Hold"
-var holdStatus = 0
-var best_goal_distance := 10000.0
-var goal_position = Vector3.ZERO
-
-var transform_backup = null
 
 #Simulations config
 var n_steps = 0
@@ -153,21 +142,18 @@ func is_type(type): return type == "Fighter"
 func get_type(): return "Fighter"	
 
 func _ready():
-	transform_backup = transform			
+	pass
 
 func update_init_config(config):
-	
-	#print(config)
+		
 	init_config = config
 	
-	var offset_pos = init_config["offset_pos"] 	
-	
-	var init_pos = init_config["init_position"]
-	
+	var offset_pos = init_config["offset_pos"] 		
+	var init_pos = init_config["init_position"]	
 	init_position = Vector3((offset_pos.x + init_pos["x"]) * SConv.NM2GDM , 
 							(offset_pos.y + init_pos["y"]) * SConv.FT2GDM , 
 							(offset_pos.z + init_pos["z"]) * SConv.NM2GDM )
-	#print(init_position)
+	
 	var _init_hdg = init_config["init_hdg"]												
 	init_rotation = Vector3(0, _init_hdg, 0)				
 	init_hdg = _init_hdg
@@ -178,7 +164,22 @@ func update_init_config(config):
 							 init_config["target_position"]["y"] * SConv.FT2GDM,
 							 init_config["target_position"]["z"] * SConv.NM2GDM)		
 	
-	target_position = target_pos	
+	target_position = target_pos
+	
+	#10NM before target 
+	strike_line_z = target_pos.z - (sign(target_pos.z) * 10 * SConv.NM2GDM )
+	
+	max_shoot_range_var = init_config['rnd_shot_dist_var']
+	
+
+func set_behavior(_behavior):	
+	if  _behavior == "baseline1" or _behavior == "duck" or\
+		_behavior == "wez_eval_shooter" or _behavior == "wez_eval_target_max" or _behavior == "wez_eval_target_nez"or\
+		_behavior == "external":	
+		behavior = _behavior
+	else:
+		print("FIGTHER::WARNING:: unknow Behavior ", _behavior, "using baseline1 enemy" )
+		behavior = "baseline1"	
 
 func reset():
 	
@@ -192,21 +193,29 @@ func reset():
 	change_mesh_instance_colors(root_node, team_color)
 		
 	var local_offset = Vector3(0.0,0.0,0.0)
-	if behaviour == "duck" or behaviour == "baseline1":
-		var x_offset = randf_range(-15.0 * SConv.NM2GDM, 15.0 * SConv.NM2GDM)
-		var z_offset = randf_range(-5.0 * SConv.NM2GDM, 5.0 * SConv.NM2GDM)
-		var y_offset = randf_range(-10000.0 * SConv.FT2GDM, 10000.0 * SConv.FT2GDM)
-		
-		local_offset = Vector3(x_offset,y_offset, z_offset)
 	
-	position = init_position + 	local_offset	
-	velocity = Vector3(0,0,-max_speed * SConv.NM2GDM)	
-	rotation_degrees = init_rotation#Vector3(0, 0, 0) # Adjust as necessary	
+	if behavior == "duck" or behavior == "baseline1":
+				
+		var rnd_offset = Vector3(init_config['rnd_offset_range']['x'],
+								 init_config['rnd_offset_range']['y'],
+								 init_config['rnd_offset_range']['z'])
 		
-	hdg_input = init_rotation.y
-	last_hdg_input = hdg_input	
-	current_hdg = init_hdg
-	level_input = init_position.y
+		var x_offset = randf_range(-rnd_offset.x * SConv.NM2GDM, rnd_offset.x * SConv.NM2GDM)
+		var z_offset = randf_range(-rnd_offset.z * SConv.NM2GDM, rnd_offset.z * SConv.NM2GDM)
+		var y_offset = randf_range(-rnd_offset.y * SConv.FT2GDM, rnd_offset.y * SConv.FT2GDM)		
+		local_offset = Vector3(x_offset,y_offset, z_offset)			
+		
+	hdg_input 		= init_rotation.y
+	last_hdg_input 	= hdg_input	
+	current_hdg 	= init_hdg
+	current_level 	= init_position.y
+	level_input 	= current_level
+	
+	velocity = Vector3(0,0,-max_speed * altitude_speed_factor(current_level) * SConv.NM2GDM)	
+	position = init_position + 	local_offset		
+	rotation_degrees = init_rotation#Vector3(0, 0, 0) # Adjust as necessary		
+		
+	dist2go = Calc.distance2D_to_pos(position, target_position)			
 	
 	n_steps = 0
 	done = false
@@ -235,10 +244,8 @@ func reset():
 		$Radar/CollisionShape3D.disabled = true    
 	else:
 		#TODO Reeset Colision detection
-		$Radar/CollisionShape3D.disabled = true    
-		#await(0.05)
-		$Radar/CollisionShape3D.disabled = false 
-		#$Radar/CollisionShape3D.clear_overlaps()
+		$Radar/CollisionShape3D.disabled = true    		
+		$Radar/CollisionShape3D.disabled = false 		
 		radar_track_list = {} 	
 	
 func update_scene(_tree):
@@ -266,14 +273,7 @@ func update_scene(_tree):
 #func reset_if_done():
 	#if done:
 		#reset()
-		
-func set_behaviour(_behaviour):
-	if behaviour == "baseline1" or behaviour == "duck" or behaviour == "external":	
-		behaviour = _behaviour
-	else:
-		print("FIGTHER::WARNING:: unknow Behavior ", _behaviour, " using duck enemy" )
-		behaviour = "baseline1"
-		
+				
 func set_fullView(_def):
 	if _def == 1:
 		fullView = true
@@ -529,33 +529,39 @@ func process_tracks():
 		
 func process_behavior(delta_s):
 			
-	tatic_time += delta_s	
+	tatic_time += delta_s		
 	
-	if behaviour == "duck":
+	if behavior == "duck":
 		if 	tatic_status != "Strike": 
-			if team_id == 1 and position.z >= 150 or\
-					team_id == 0 and position.z <= -150:					
-					desiredG_input = 3.0	
-					tatic_status = "Strike"							
-					tatic_time = 0.0
+			if (sign(strike_line_z) > 0 and position.z > strike_line_z) or\
+			   	(sign(strike_line_z) < 0 and position.z < strike_line_z):				
+				desiredG_input = 3.0	
+				tatic_status = "Strike"							
+				tatic_time = 0.0
 		
 		else :									
 			hdg_input = Calc.get_hdg_2d(position, target_position )			
-		
 		return
 		
-	elif behaviour == "test":
-		
+	elif behavior == "test" or behavior == "wez_eval_target_max":		
 		return
-		if manager.enemies[0].in_flight_missile and not test_executed:			
-			hdg_input = Calc.clamp_hdg(current_hdg + 180 )#fmod(oposite_hdg + 180.0, 360.0) - 180.0
-			desiredG_input = 6.0
-			test_executed = true			
 			
-		
+	elif behavior == "wez_eval_target_nez":		
+								
+		if manager.agents[0].in_flight_missile and not test_executed:			
+			hdg_input = Calc.clamp_hdg(Calc.get_hdg_2d(position, manager.enemies[0].position) + 180.0)
+			#hdg_input = Calc.clamp_hdg(current_hdg + 180 )#fmod(oposite_hdg + 180.0, 360.0) - 180.0
+			desiredG_input = 6.0
+			test_executed = true														
 		return
+	
+	elif behavior == "wez_eval_shooter" :
+		if not test_executed:
+			launch_missile_at_target(manager.enemies[0])	
+			test_executed = true
+			return
 					
-	elif behaviour == "baseline1":
+	elif behavior == "baseline1":
 		
 		if tatic_status == "Search" or tatic_status == "Return":
 			
@@ -571,9 +577,8 @@ func process_behavior(delta_s):
 				
 			elif tatic_status == "Search":				
 				
-				if 	team_id == 1 and position.z >= 150 or\
-					team_id == 0 and position.z <= -150:
-					
+				if (sign(strike_line_z) > 0 and position.z > strike_line_z) or\
+			   		(sign(strike_line_z) < 0 and position.z < strike_line_z):					
 					desiredG_input = 3.0	
 					tatic_status = "Strike"							
 					tatic_time = 0.0
@@ -585,12 +590,10 @@ func process_behavior(delta_s):
 				tatic_status = "Search"							
 				tatic_time = 0.0
 			
-		if tatic_status == "Strike":						
-			#hdg_input = fmod(aspect_to_obj(target_position) + current_hdg, 360) 
+		if tatic_status == "Strike":									
 			hdg_input = Calc.get_hdg_2d(position, target_position )
-			#print(hdg_input)
 			
-
+			
 		if tatic_status == "Engage":
 			
 			if HPT != -1:							
@@ -601,33 +604,29 @@ func process_behavior(delta_s):
 					if abs(radar_track_list[HPT].aspect_angle) < 15:					
 						if launch_missile_at_target(radar_track_list[HPT].obj): 
 							tatic_status = "MissileSupport"			
-							tatic_time = 0.0
+							tatic_time = 0.0							
 							max_shoot_range_adjusted = -1
 							defense_side = 1 - randi_range(0,1) * 2 #Choose defence side
-							#print(tatic_status, tatic_time)							
+							#print(tatic_status, tatic_time)
+												
 				
-				if 	team_id == 1 and position.z >= 150 or\
-					team_id == 0 and position.z <= -150:
+				if (sign(strike_line_z) > 0 and position.z > strike_line_z) or\
+			   		(sign(strike_line_z) < 0 and position.z < strike_line_z):															
 					
 					desiredG_input = 3.0	
 					tatic_status = "Strike"							
 					tatic_time = 0.0
 					#print(tatic_status)
-			else:
-				#tatic_status = "Search"        
-				#AP_mode = "FlyHdg"
-				#hdg_input = init_hdg				
+			else:			
 				tatic_time = 0.0	
 				#print(tatic_status, tatic_time)
 				tatic_status = "Evade"        
 				AP_mode = "FlyHdg"				
 				tatic_time = 0.0		
-									
-					#var oposite_hdg = rad_to_deg(global_transform.basis.get_euler().y) + 180.0				
+													
 				hdg_input = Calc.clamp_hdg(current_hdg + 180)#fmod(oposite_hdg + 180.0, 360.0) - 180.0
 				desiredG_input = max_g								
-				#print("ID:", get_meta("id"), ":" ,tatic_status, tatic_time, " / ", hdg_input)
-				
+				#print("ID:", get_meta("id"), ":" ,tatic_status, tatic_time, " / ", hdg_input)				
 			
 		if tatic_status == "MissileSupport": 
 			
@@ -644,19 +643,12 @@ func process_behavior(delta_s):
 					#print(tatic_status, tatic_time, " / ", hdg_input)
 				else:
 					if HPT != -1:
-						hdg_input = Calc.clamp_hdg(radar_track_list[HPT].radial + defense_side * 45.0) 
-					
-					
-			else:
-				#tatic_status = "Search"        
-				#AP_mode = "FlyHdg"				
-				#tatic_time = 0.0	
-				
+						hdg_input = Calc.clamp_hdg(radar_track_list[HPT].radial + defense_side * 45.0) 										
+			else:								
 				tatic_status = "Evade"        
 				AP_mode = "FlyHdg"				
 				tatic_time = 0.0		
-									
-					#var oposite_hdg = rad_to_deg(global_transform.basis.get_euler().y) + 180.0				
+													
 				hdg_input = Calc.clamp_hdg(current_hdg + 180- defense_side * 45.0)#fmod(oposite_hdg + 180.0, 360.0) - 180.0
 				desiredG_input = max_g			
 				#print(tatic_status, tatic_time)
@@ -667,14 +659,13 @@ func process_behavior(delta_s):
 			tatic_status = "Search"		
 			AP_mode = "FlyHdg"
 			
-			hdg_input = Calc.clamp_hdg(current_hdg + 180)				
-			#hdg_input = fmod(oposite_hdg + 180, 360) - 180
+			hdg_input = Calc.clamp_hdg(current_hdg + 180)							
 			desiredG_input = 3.0		
 					
 			tatic_time = 0.0		
 			#print(tatic_status, tatic_time, " / ", hdg_input)
 	else:
-		print("FIGHTER::ERROR:: Unknow behavior selected ", behaviour)		
+		print("FIGHTER::ERROR:: Unknow behavior selected ", behavior)		
 		
 func remove_track(track_id):
 	
@@ -683,16 +674,12 @@ func remove_track(track_id):
 		if is_instance_valid(in_flight_missile):			
 			if not in_flight_missile.pitbull and in_flight_missile != null:
 				in_flight_missile.lost_support()
-				#in_flight_missile = null
-				#ownRewards.add_missile_miss_rew()
-		#print("Figther(%s): Track Removed (%s)", get_meta("id"), track_id)
-		#print("Fighter(%s): Track Removed (%s)"%[get_meta("id"), track_id])
-
+				
 	if radar_track_list.has(track_id):
 		radar_track_list[track_id].detected_status(false)
 		ownRewards.add_detect_loss_rew()
 		
-func reacquired_track(track_id, radial, dist):
+func reacquired_track(track_id):
 	
 	var track = radar_track_list[track_id]
 	track.update_track(self, track.obj)
@@ -707,26 +694,21 @@ func _physics_process(delta: float) -> void:
 
 	current_hdg = rad_to_deg(global_transform.basis.get_euler().y)	
 	current_level = global_transform.origin.y
-	
-	#if current_hdg >= -0.999 and current_hdg <= 1.001:
-	#	print(get_meta('id')," - ",  n_steps)
-	
-	#if current_level >= 150:
-	#	print(get_meta('id')," ALT - ",  n_steps)
 				
 	if n_steps % action_repeat == 0:
 		
+		dist2go = Calc.distance2D_to_pos(position, target_position)			
 		process_tracks()	
-		if behaviour == "baseline1" or behaviour == "duck" or behaviour == "test":			
-			#if get_meta("id") == 2:
+		if behavior != "external":						
 			process_behavior(delta * (n_steps - last_beh_proc))
 			last_beh_proc = n_steps
 		
-	if  behaviour == "external"  and shoot_input > 0 and HPT != -1:
+	if  behavior == "external"  and shoot_input > 0 and HPT != -1:
 		if launch_missile_at_target(radar_track_list[HPT].obj): 						
 			shoot_input = -1	
 	
-	var turn_g = clamp(desiredG_input, desiredG_input,  max_g * altitude_g_factor(current_level)) * SConv.GRAVITY_GDM
+	
+	var turn_g = clamp(desiredG_input, 1.0,  max_g * altitude_g_factor(current_level)) * SConv.GRAVITY_GDM
 	var turn_speed =  turn_g / velocity.length() 
 	
 	process_manouvers_action()
@@ -738,9 +720,9 @@ func _physics_process(delta: float) -> void:
 	$RenderModel.rotation.z = lerp($RenderModel.rotation.z, -float(turn_input) , turn_speed)
 	$RenderModel.rotation.x = lerp($RenderModel.rotation.x, -float(pitch_input), turn_speed )
 
+	current_speed = max_speed * altitude_speed_factor(current_level)
 	# Movement is always forward
-	velocity = -transform.basis.z.normalized() * max_speed * altitude_speed_factor(current_level)
-	#print(max_speed * altitude_speed_factor(current_level) * SConv.GDM_S2KNOT)
+	velocity = -transform.basis.z.normalized() * current_speed	
 	
 	# Handle landing/taking unchecked
 	set_velocity(velocity)
@@ -833,9 +815,7 @@ func launch_missile_at_target(target):
 		var new_missile = missile.instantiate()
 		change_mesh_instance_colors(new_missile, team_color)
 		
-		manager.add_child(new_missile)							
-		#new_missile.set_target(target) 		
-		#new_missile.set_shooter(self)				
+		manager.add_child(new_missile)										
 		new_missile.add_to_group(simGroups.MISSILE)
 		new_missile.global_position = global_position
 		
@@ -847,7 +827,7 @@ func launch_missile_at_target(target):
 				in_flight_missile.lost_support()				
 				ownRewards.add_missile_miss_rew()
 		
-		in_flight_missile = new_missile
+		in_flight_missile = new_missile		
 								
 		missiles -= 1		
 		ownRewards.add_missile_fire_rew()

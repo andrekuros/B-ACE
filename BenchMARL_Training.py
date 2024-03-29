@@ -57,25 +57,32 @@ if __name__ == "__main__":
     
     #TASK Config
     task = b_ace.B_ACE.b_ace.get_from_yaml()  
-    env_config = {
-        'task': 'b_ace_v1',
-        'env_path': 'BVR_AirCombat/bin/B_ACE_v3.exe',
-        'show_window': True,
-        'seed': 10,
-        'port': 12500,
-        'action_repeat': 20,
-        'speedup': 2000,
-        'num_allies': 1,
-        'num_enemies': 1,
-        'action_type': 'Low_Level_Continuous' ,
-        'enemies_baseline': 'baseline1',
-        'full_observation': 0,
-        'actions_2d': 0
-    }
+    b_ace_config = { 'EnvConfig' : {
+                        'task': 'b_ace_v1',
+                        'env_path': 'BVR_AirCombat/bin/B_ACE_v4.exe',
+                        'renderize': 1,
+                        'experiment_mode'  : 0,
+                        'parallel_envs': 1,
+                        'seed': 10,
+                        'port': 12500,
+                        'action_repeat': 20,
+                        'speedup': 2000,
+                        'action_type': 'Low_Level_Continuous' ,                        
+                        'full_observation': 0,
+                        'actions_2d': 0
+                        },
+                    "SimConfig" : {                        
+                        'num_allies': 1,
+                        'num_enemies': 1
+                        ,
+                        'enemies_behavior': 'baseline1',
+                        'agents_behavior' : 'external'    
+                    }
+                }
       
-    task.config = env_config    
+    task.config = b_ace_config    
             
-    algorithm_config = MaddpgConfig.get_from_yaml()
+    algorithm_config = IddpgConfig.get_from_yaml()
 
     # Loads from "benchmarl/conf/model/layers/mlp.yaml"
     #model_config = GnnConfig.get_from_yaml()
