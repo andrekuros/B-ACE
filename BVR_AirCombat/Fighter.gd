@@ -515,6 +515,7 @@ func get_current_inputs():
 	
 func process_tracks():	
 	
+	print(team_id)
 	var min_dist = 100000
 	var new_HPT = -1
 	var new_sec_target = -1
@@ -530,24 +531,20 @@ func process_tracks():
 												
 			ownRewards.add_keep_track_rew()
 									
-			track.update_track(self, track.obj)			
+			track.update_track(self, track.obj, get_wez_for_track(track))			
 									
 			if track.dist < min_dist: # and track.obj.get_meta('id') == 1:
 				min_dist = track.dist
 				new_sec_target = new_HPT
 				new_HPT = id
-			
-			
+						
 			var angle_off = 0  / 180.0 * PI
-			var aspect = 180.0 / 180.0 * PI
-			
-			print(get_wez_for_track(track))
-			
+			var aspect = 180.0 / 180.0 * PI						
 																	
 			#print("own_id: ", get_meta('id'), " t_td", track.id, " track_dist: ", dist, " rad:", radial)	
 		else:
 						
-			track.update_track_not_detected(self)	
+			track.update_track_not_detected(self, get_wez_for_track(track))	
 				
 	HPT = new_HPT	
 	SPT = new_sec_target
@@ -716,21 +713,35 @@ func reacquired_track(track_id):
 			in_flight_missile.recover_support()			
 
 func get_wez_for_track(track):
-	
-	print(get_meta("id"))
+		
 	var input_data = ["blue_alt","diffAlt" ,"cosAspect" ,"sinAspect" ,"cosAngleOff", "sinAngleOff"]
-	print(track.angle_off)
-	print(track.aspect_angle)
-	print(rNez_calc.execute([current_level/152.4/3,
-							(current_level - track.obj.current_level)/152.4/3,
-							cos(track.aspect_angle),sin(track.aspect_angle), 
-							cos(track.angle_off),sin(track.angle_off)]))
-							
-	print([current_level/152.4/3,
-							(current_level - track.obj.current_level)/152.4/3,
+	#print(get_meta("id"))
+	#print(track.angle_off)
+	#print(track.aspect_angle)
+	
+	var ownRMax = rMax_calc.execute([current_level/152.4 * 0.3048,
+							(current_level - track.obj.current_level)/152.4 * 0.3048,
 							cos(track.aspect_angle),sin(track.aspect_angle), 
 							cos(track.angle_off),sin(track.angle_off)])
-					
+	
+	var ownRNez = rNez_calc.execute([current_level/152.4 * 0.3048,
+							(current_level - track.obj.current_level)/152.4 * 0.3048,
+							cos(track.aspect_angle),sin(track.aspect_angle), 
+							cos(track.angle_off),sin(track.angle_off)])
+							
+	var enemyRMax = rMax_calc.execute([track.obj.current_level/152.4 * 0.3048,
+							(track.obj.current_level - current_level)/152.4 * 0.3048,
+							cos(track.inv_angle_off),sin(track.inv_angle_off), 
+							cos(track.inv_aspect_angle),sin(track.inv_aspect_angle)])
+	
+	var enemyRNez = rNez_calc.execute([current_level/152.4 * 0.3048,
+							(current_level - track.obj.current_level)/152.4 * 0.3048,
+							cos(track.inv_angle_off),sin(track.inv_angle_off), 
+							cos(track.inv_aspect_angle),sin(track.inv_aspect_angle)])
+									
+	#print([current_level/152.4/3,(current_level - track.obj.current_level)/152.4/3,cos(track.aspect_angle),sin(track.aspect_angle), cos(track.angle_off),sin(track.angle_off)])
+	print([ownRMax, ownRNez, enemyRMax, enemyRNez])
+	return [ownRMax, ownRNez, enemyRMax, enemyRNez]
 		
 func _physics_process(delta: float) -> void:
 

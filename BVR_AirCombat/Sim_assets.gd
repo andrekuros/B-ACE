@@ -14,7 +14,7 @@ class EnvConfig:
 	const DEFAULT_DEBUG_VIEW := 0
 	const DEFAULT_ACTION_REPEAT := 20
 	const DEFAULT_ACTION_TYPE := "Low_Level_Discrete"		
-	const DEFAULT_FULL_OBSERVATION := 1
+	const DEFAULT_FULL_OBSERVATION := 0
 	const DEFAULT_ACTIONS_2D := 0
 	
 	var phy_fps: int
@@ -24,11 +24,11 @@ class EnvConfig:
 	var speed_up: int
 	var renderize: int 
 	var debug_view: int
-	var experiment_mode: int 		
+	var experiment_mode: int
 	var action_type: String
-	var action_repeat: int		
+	var action_repeat: int
 	var full_observation: int
-	var actions_2d: int		
+	var actions_2d: int
 		
 	func _init(config):				
 				
@@ -67,7 +67,7 @@ class SimConfig:
 		
 	const DEFAULT_NUM_ALLIES := 1
 	const DEFAULT_NUM_ENEMIES := 1
-	const DEFAULT_ENEMIES_BEHAVIOR:= "wez_eval_target_max"
+	const DEFAULT_ENEMIES_BEHAVIOR:= "wez_eval_target_nez"
 	const DEFAULT_AGENTS_BEHAVIOR := "wez_eval_shooter" #wez_eval_shooter
 	
 	const DEFAULT_RMAX_MODEL := "2076654628949.1245*blue_alt + 12.056060791015625*diffAlt + 3.0914306640625*cosAspect + -0.1983642578125*sinAspect + 1.73046875*cosAngleOff + 0.10888671875*sinAngleOff + -35.2476806640625*blue_alt**2 + -6.3177490234375*blue_alt*diffAlt + 3.72723388671875*blue_alt*cosAspect + 2.304412841796875*blue_alt*sinAspect + 1.2400970458984375*blue_alt*cosAngleOff + -1.28912353515625*blue_alt*sinAngleOff + -17.99517822265625*diffAlt**2 + 8.948974609375*diffAlt*cosAspect + -1.229034423828125*diffAlt*sinAspect + 4.14361572265625*diffAlt*cosAngleOff + 0.794921875*diffAlt*sinAngleOff + 7.788848876953125*cosAspect**2 + 0.34857177734375*cosAspect*sinAspect + -4.484832763671875*cosAspect*cosAngleOff + -0.1380462646484375*cosAspect*sinAngleOff + 6.889312744140625*sinAspect**2 + 0.1212310791015625*sinAspect*cosAngleOff + 3.8235931396484375*sinAspect*sinAngleOff + 8.410614013671875*cosAngleOff**2 + 0.252349853515625*cosAngleOff*sinAngleOff + 6.260711669921875*sinAngleOff**2 + 189.436767578125*blue_alt**3 + 107.62933349609375*blue_alt**2*diffAlt + 52.844482421875*blue_alt**2*cosAspect + -6.945526123046875*blue_alt**2*sinAspect + 20.019058227539062*blue_alt**2*cosAngleOff + 3.559173583984375*blue_alt**2*sinAngleOff + -87.88659763336182*blue_alt*diffAlt**2 + -24.760971069335938*blue_alt*diffAlt*cosAspect + 18.163850784301758*blue_alt*diffAlt*sinAspect + 5.955109596252441*blue_alt*diffAlt*cosAngleOff + -1.6511790752410889*blue_alt*diffAlt*sinAngleOff + -1038327314485.8118*blue_alt*cosAspect**2 + -10.471000671386719*blue_alt*cosAspect*sinAspect + -15.278762817382812*blue_alt*cosAspect*cosAngleOff + 3.6130733489990234*blue_alt*cosAspect*sinAngleOff + -1038327314467.9543*blue_alt*sinAspect**2 + -0.7051506042480469*blue_alt*sinAspect*cosAngleOff + 9.699928283691406*blue_alt*sinAspect*sinAngleOff + -1038327314483.5344*blue_alt*cosAngleOff**2 + -1.356292724609375*blue_alt*cosAngleOff*sinAngleOff + -1038327314470.24*blue_alt*sinAngleOff**2 + 136.47922039031982*diffAlt**3 + 27.957998275756836*diffAlt**2*cosAspect + -8.655871868133545*diffAlt**2*sinAspect + -9.961368560791016*diffAlt**2*cosAngleOff + -2.487596035003662*diffAlt**2*sinAngleOff + 7.298583984375*diffAlt*cosAspect**2 + 6.508277893066406*diffAlt*cosAspect*sinAspect + -3.8415298461914062*diffAlt*cosAspect*cosAngleOff + -2.7787551879882812*diffAlt*cosAspect*sinAngleOff + 4.798301696777344*diffAlt*sinAspect**2 + -0.00328826904296875*diffAlt*sinAspect*cosAngleOff + -4.613254547119141*diffAlt*sinAspect*sinAngleOff + 11.846946716308594*diffAlt*cosAngleOff**2 + 0.6610751152038574*diffAlt*cosAngleOff*sinAngleOff + 0.264678955078125*diffAlt*sinAngleOff**2 + 1.5635452270507812*cosAspect**3 + -0.2617835998535156*cosAspect**2*sinAspect + 0.3662872314453125*cosAspect**2*cosAngleOff + 0.15230560302734375*cosAspect**2*sinAngleOff + 1.549346923828125*cosAspect*sinAspect**2 + -0.3339691162109375*cosAspect*sinAspect*cosAngleOff + 2.7457275390625*cosAspect*sinAspect*sinAngleOff + -2.857158660888672*cosAspect*cosAngleOff**2 + -0.6147308349609375*cosAspect*cosAngleOff*sinAngleOff + 5.997802734375*cosAspect*sinAngleOff**2 + 0.06819915771484375*sinAspect**3 + 1.3641109466552734*sinAspect**2*cosAngleOff + -0.0592193603515625*sinAspect**2*sinAngleOff + -0.0585479736328125*sinAspect*cosAngleOff**2 + 2.662933349609375*sinAspect*cosAngleOff*sinAngleOff + -0.1279449462890625*sinAspect*sinAngleOff**2 + 1.086395263671875*cosAngleOff**3 + 0.037811279296875*cosAngleOff**2*sinAngleOff + 0.6650466918945312*cosAngleOff*sinAngleOff**2 + 0.057952880859375*sinAngleOff**3 + -110.43049049377441*blue_alt**4 + -374.5380916595459*blue_alt**3*diffAlt + -126.92086029052734*blue_alt**3*cosAspect + -15.900655746459961*blue_alt**3*sinAspect + -50.887380838394165*blue_alt**3*cosAngleOff + -16.113043308258057*blue_alt**3*sinAngleOff + 274.4538631439209*blue_alt**2*diffAlt**2 + 146.27089309692383*blue_alt**2*diffAlt*cosAspect + 16.06563711166382*blue_alt**2*diffAlt*sinAspect + 51.40291213989258*blue_alt**2*diffAlt*cosAngleOff + 15.849489510059357*blue_alt**2*diffAlt*sinAngleOff + -14.251876831054688*blue_alt**2*cosAspect**2 + 28.579818725585938*blue_alt**2*cosAspect*sinAspect + 9.159783363342285*blue_alt**2*cosAspect*cosAngleOff + 0.28330421447753906*blue_alt**2*cosAspect*sinAngleOff + -20.96734619140625*blue_alt**2*sinAspect**2 + 3.1692371368408203*blue_alt**2*sinAspect*cosAngleOff + 1.8480148315429688*blue_alt**2*sinAspect*sinAngleOff + -17.36309814453125*blue_alt**2*cosAngleOff**2 + 3.7424869537353516*blue_alt**2*cosAngleOff*sinAngleOff + -17.856475830078125*blue_alt**2*sinAngleOff**2 + 48.632596015930176*blue_alt*diffAlt**3 + -83.27345657348633*blue_alt*diffAlt**2*cosAspect + -20.46155560016632*blue_alt*diffAlt**2*sinAspect + -42.40724563598633*blue_alt*diffAlt**2*cosAngleOff + 9.27934718132019*blue_alt*diffAlt**2*sinAngleOff + -7.10333251953125*blue_alt*diffAlt*cosAspect**2 + -48.59035134315491*blue_alt*diffAlt*cosAspect*sinAspect + -33.11201524734497*blue_alt*diffAlt*cosAspect*cosAngleOff + 2.948246717453003*blue_alt*diffAlt*cosAspect*sinAngleOff + 0.7986373901367188*blue_alt*diffAlt*sinAspect**2 + -2.037494659423828*blue_alt*diffAlt*sinAspect*cosAngleOff + 10.24866008758545*blue_alt*diffAlt*sinAspect*sinAngleOff + -0.7918167114257812*blue_alt*diffAlt*cosAngleOff**2 + -5.823333263397217*blue_alt*diffAlt*cosAngleOff*sinAngleOff + -5.51434326171875*blue_alt*diffAlt*sinAngleOff**2 + 5.97662353515625*blue_alt*cosAspect**3 + 2.0822958946228027*blue_alt*cosAspect**2*sinAspect + -2.5890560150146484*blue_alt*cosAspect**2*cosAngleOff + -2.1821060180664062*blue_alt*cosAspect**2*sinAngleOff + -2.2214012145996094*blue_alt*cosAspect*sinAspect**2 + -0.2612800598144531*blue_alt*cosAspect*sinAspect*cosAngleOff + 7.824872970581055*blue_alt*cosAspect*sinAspect*sinAngleOff + 10.97076416015625*blue_alt*cosAspect*cosAngleOff**2 + 0.5106010437011719*blue_alt*cosAspect*cosAngleOff*sinAngleOff + -7.227508544921875*blue_alt*cosAspect*sinAngleOff**2 + 0.24064064025878906*blue_alt*sinAspect**3 + 3.7694530487060547*blue_alt*sinAspect**2*cosAngleOff + 0.8681716918945312*blue_alt*sinAspect**2*sinAngleOff + 0.9417991638183594*blue_alt*sinAspect*cosAngleOff**2 + -4.547910690307617*blue_alt*sinAspect*cosAngleOff*sinAngleOff + 1.3790931701660156*blue_alt*sinAspect*sinAngleOff**2 + 1.1799125671386719*blue_alt*cosAngleOff**3 + -0.8796977996826172*blue_alt*cosAngleOff**2*sinAngleOff + -0.0067596435546875*blue_alt*cosAngleOff*sinAngleOff**2 + -0.4347419738769531*blue_alt*sinAngleOff**3 + -642.1519951820374*diffAlt**4 + -1.479940414428711*diffAlt**3*cosAspect + 3.2153713703155518*diffAlt**3*sinAspect + 15.169073581695557*diffAlt**3*cosAngleOff + 3.2277870178222656*diffAlt**3*sinAngleOff + -23.70647144317627*diffAlt**2*cosAspect**2 + 25.227389335632324*diffAlt**2*cosAspect*sinAspect + 32.06813144683838*diffAlt**2*cosAspect*cosAngleOff + -1.1652107238769531*diffAlt**2*cosAspect*sinAngleOff + 5.719335556030273*diffAlt**2*sinAspect**2 + 1.285778284072876*diffAlt**2*sinAspect*cosAngleOff + -12.021614074707031*diffAlt**2*sinAspect*sinAngleOff + -11.29319953918457*diffAlt**2*cosAngleOff**2 + 1.7453880310058594*diffAlt**2*cosAngleOff*sinAngleOff + -6.700664520263672*diffAlt**2*sinAngleOff**2 + 3.09014892578125*diffAlt*cosAspect**3 + -0.25733375549316406*diffAlt*cosAspect**2*sinAspect + 9.445121765136719*diffAlt*cosAspect**2*cosAngleOff + 1.6865348815917969*diffAlt*cosAspect**2*sinAngleOff + 5.84228515625*diffAlt*cosAspect*sinAspect**2 + 0.5880584716796875*diffAlt*cosAspect*sinAspect*cosAngleOff + -10.846814155578613*diffAlt*cosAspect*sinAspect*sinAngleOff + -3.9632797241210938*diffAlt*cosAspect*cosAngleOff**2 + 0.3884916305541992*diffAlt*cosAspect*cosAngleOff*sinAngleOff + 12.895729064941406*diffAlt*cosAspect*sinAngleOff**2 + -0.9809226989746094*diffAlt*sinAspect**3 + -5.324823379516602*diffAlt*sinAspect**2*cosAngleOff + -0.8921699523925781*diffAlt*sinAspect**2*sinAngleOff + -0.4622955322265625*diffAlt*sinAspect*cosAngleOff**2 + 1.565011978149414*diffAlt*sinAspect*cosAngleOff*sinAngleOff + -0.7846465110778809*diffAlt*sinAspect*sinAngleOff**2 + 1.9264564514160156*diffAlt*cosAngleOff**3 + 0.8517608642578125*diffAlt*cosAngleOff**2*sinAngleOff + 2.2015380859375*diffAlt*cosAngleOff*sinAngleOff**2 + -0.06324005126953125*diffAlt*sinAngleOff**3 + 2.6662445068359375*cosAspect**4 + 0.18377304077148438*cosAspect**3*sinAspect + -3.2440032958984375*cosAspect**3*cosAngleOff + -0.07891845703125*cosAspect**3*sinAngleOff + 5.087287902832031*cosAspect**2*sinAspect**2 + 0.31053924560546875*cosAspect**2*sinAspect*cosAngleOff + 2.5097198486328125*cosAspect**2*sinAspect*sinAngleOff + 7.277862548828125*cosAspect**2*cosAngleOff**2 + 0.3022308349609375*cosAspect**2*cosAngleOff*sinAngleOff + 0.484771728515625*cosAspect**2*sinAngleOff**2 + 0.189453125*cosAspect*sinAspect**3 + -1.2328948974609375*cosAspect*sinAspect**2*cosAngleOff + -0.086639404296875*cosAspect*sinAspect**2*sinAngleOff + 0.15546417236328125*cosAspect*sinAspect*cosAngleOff**2 + -8.634204864501953*cosAspect*sinAspect*cosAngleOff*sinAngleOff + 0.20786285400390625*cosAspect*sinAspect*sinAngleOff**2 + -2.5988311767578125*cosAspect*cosAngleOff**3 + -0.04668426513671875*cosAspect*cosAngleOff**2*sinAngleOff + -1.8989105224609375*cosAspect*cosAngleOff*sinAngleOff**2 + -0.1175994873046875*cosAspect*sinAngleOff**3 + 1.8147430419921875*sinAspect**4 + -0.16738128662109375*sinAspect**3*cosAngleOff + 1.3438568115234375*sinAspect**3*sinAngleOff + 1.111419677734375*sinAspect**2*cosAngleOff**2 + -0.07708740234375*sinAspect**2*cosAngleOff*sinAngleOff + 5.795036315917969*sinAspect**2*sinAngleOff**2 + 0.08251953125*sinAspect*cosAngleOff**3 + 1.8575210571289062*sinAspect*cosAngleOff**2*sinAngleOff + 0.09781646728515625*sinAspect*cosAngleOff*sinAngleOff**2 + 1.9542999267578125*sinAspect*sinAngleOff**3 + 3.478057861328125*cosAngleOff**4 + 0.12640380859375*cosAngleOff**3*sinAngleOff + 4.924713134765625*cosAngleOff**2*sinAngleOff**2 + 0.09942626953125*cosAngleOff*sinAngleOff**3 + 1.395294189453125*sinAngleOff**4"	
@@ -80,7 +80,7 @@ class SimConfig:
 		
 	var agents_config = { "blue_agents": 
 			{                        
-				"init_position": {"x": 0.0, "y": 50000.0,"z": 40.0},
+				"init_position": {"x": 0.0, "y": 25000.0,"z": 40.0},
 				"offset_pos": {	"x": 0.0, "y": 0.0, "z": 0.0},
 				"init_hdg": 0.0,                        
 				"target_position": {"x": 0.0,"y": 25000.0,"z": 30.0},
@@ -112,8 +112,7 @@ class SimConfig:
 		self.enemies_behavior 	= config.get("enemies_behavior", DEFAULT_ENEMIES_BEHAVIOR)
 		self.agents_behavior 	= config.get("agents_behavior", DEFAULT_AGENTS_BEHAVIOR)
 		self.agents_config 		= config.get("agents_config" , self.agents_config)
-		
-		
+				
 class SimGroups:
 	
 	var BLUE
@@ -158,37 +157,54 @@ class Track:
 	var radial
 	var aspect_angle
 	var angle_off
-	var last_know_pos	
+	var inv_aspect_angle
+	var inv_angle_off
+	var last_know_pos
+	var detected
 	var own_missile_RMax
 	var own_missile_Nez
-	var own_missile_6h	
 	var enemy_missile_RMax
-	var enemy_missile_Nez
-	var enemy_missile_6h
-	var detected
-
+	var enemy_missile_Nez	
+	
 	func _init(_id, fighter, track_obj):
 		self.id = _id		
 		self.obj = track_obj
 		self.last_know_pos = fighter.position
 		
-		update_track(fighter, track_obj)
+		update_track(fighter, track_obj, [-1,-1, -1, -1])
 					
-	func update_track(fighter, track_obj, _detected = true):
+	func update_track(fighter, track_obj, wezRanges, _detected = true):
 		
-		self.dist = fighter.global_transform.origin.distance_to(track_obj.global_transform.origin)
-		self.radial = Calc.get_hdg_2d(fighter.position, track_obj.position)        								
-		self.angle_off = deg_to_rad(Calc.get_2d_angle_off(fighter.current_hdg,track_obj.current_hdg))
-		self.aspect_angle = deg_to_rad(Calc.get_2d_aspect_angle(fighter.current_hdg, self.radial))
-		self.detected = _detected		
+		dist 			= fighter.global_transform.origin.distance_to(track_obj.global_transform.origin)
+		radial 			= Calc.get_hdg_2d(fighter.position, track_obj.position)        								
+		
+		angle_off 		= deg_to_rad(Calc.get_2d_angle_off(fighter.current_hdg,track_obj.current_hdg))
+		aspect_angle 	= deg_to_rad(Calc.get_2d_aspect_angle(fighter.current_hdg, radial))
+		
+		inv_angle_off 	= deg_to_rad(Calc.get_2d_angle_off(track_obj.current_hdg, fighter.current_hdg))
+		inv_aspect_angle= deg_to_rad(Calc.get_2d_aspect_angle(track_obj.current_hdg, radial - 180))
+		
+		print([angle_off,inv_angle_off,aspect_angle, inv_aspect_angle])
+		
+		detected = _detected		
 		if _detected:
-			self.last_know_pos = track_obj.position
+			last_know_pos = track_obj.position
+			
+		own_missile_RMax 	= wezRanges[0]
+		own_missile_Nez		= wezRanges[1]
+		enemy_missile_RMax	= wezRanges[2]
+		enemy_missile_Nez	= wezRanges[3]	
 	
-	func update_track_not_detected(fighter):
-		self.dist = fighter.global_transform.origin.distance_to(self.last_know_pos)
-		self.radial = Calc.get_hdg_2d(fighter.position, self.last_know_pos)        								
-		self.angle_off = deg_to_rad(Calc.get_2d_aspect_angle(fighter.current_hdg, self.radial))
-		self.aspect_angle = deg_to_rad(Calc.get_2d_aspect_angle(fighter.current_hdg, self.radial))
+	func update_track_not_detected(fighter, wezRanges):
+		dist = fighter.global_transform.origin.distance_to(last_know_pos)
+		radial = Calc.get_hdg_2d(fighter.position, last_know_pos)        								
+		
+		#Consider worst case for angle_off since the no update track info
+		angle_off =   deg_to_rad(Calc.get_2d_angle_off(fighter.current_hdg, radial - 180))
+		aspect_angle = deg_to_rad(Calc.get_2d_aspect_angle(fighter.current_hdg, radial))
+		
+		inv_angle_off 	= deg_to_rad(Calc.get_2d_angle_off(radial - 180, fighter.current_hdg))
+		inv_aspect_angle= 0.0#deg_to_rad(Calc.get_2d_aspect_angle(tradial - 180, radial - 180))
 		
 					
 	#func update_missile_ranges():
