@@ -5,6 +5,7 @@ const Track   = preload("res://Sim_assets.gd").Track
 const SConv   = preload("res://Sim_assets.gd").SConv
 const RewardsControl = preload("res://Sim_assets.gd").RewardsControl
 
+
 const Calc = preload("res://Calc.gd")
 
 var ownRewards = RewardsControl.new(self)
@@ -64,7 +65,7 @@ var min_pitch = deg_to_rad(-15.0)
 var pitch_speed = 0.5
 
 func altitude_speed_factor (alt):
-	return -0.3 * alt / 76.2 + 1.3 #25000ft is base alt for speed
+	return 0.2 * alt / 76.2 + 0.8 #25000ft is base alt for speed
 
 func altitude_g_factor (alt):
 	return -0.5 * alt / 76.2 + 1.5 #25000ft is base alt for max_g
@@ -138,10 +139,16 @@ var test_executed = false
 var simGroups
 var init_config = null
 
+var rMax_model
+var rMax_calc
+
+var rNez_model
+var rNez_calc
+
 func is_type(type): return type == "Fighter" 
 func get_type(): return "Fighter"	
 
-func _ready():
+func _ready():	
 	pass
 
 func update_init_config(config):
@@ -170,6 +177,17 @@ func update_init_config(config):
 	strike_line_z = target_pos.z - (sign(target_pos.z) * 10 * SConv.NM2GDM )
 	
 	max_shoot_range_var = init_config['rnd_shot_dist_var']
+	
+	#Prepare WEZ models	
+	var input_data = ["blue_alt","diffAlt" ,"cosAspect" ,"sinAspect" ,"cosAngleOff", "sinAngleOff"]
+	
+	rMax_model = config['rmax_model']
+	rMax_calc = Expression.new()
+	rMax_calc.parse(rMax_model, input_data)	
+	
+	rNez_model = config['rnez_model']
+	rNez_calc = Expression.new()
+	rNez_calc.parse(rNez_model, input_data)	
 	
 
 func set_behavior(_behavior):	
@@ -211,10 +229,11 @@ func reset():
 	current_level 	= init_position.y
 	level_input 	= current_level
 	
-	velocity = Vector3(0,0,-max_speed * altitude_speed_factor(current_level) * SConv.NM2GDM)	
+	current_speed = max_speed * altitude_speed_factor(current_level)		
+	velocity = -transform.basis.z.normalized()* current_speed
+	
 	position = init_position + 	local_offset		
-	rotation_degrees = init_rotation#Vector3(0, 0, 0) # Adjust as necessary		
-		
+	rotation_degrees = init_rotation#Vector3(0, 0, 0) # Adjust as necessary			
 	dist2go = Calc.distance2D_to_pos(position, target_position)			
 	
 	n_steps = 0
@@ -292,6 +311,7 @@ func get_done():
 func set_done_false():
 	done = false
 	
+
 func get_obs(with_labels = false):			
 	
 	var own_info = [ global_transform.origin.x / 3000.0,
@@ -515,17 +535,23 @@ func process_tracks():
 			if track.dist < min_dist: # and track.obj.get_meta('id') == 1:
 				min_dist = track.dist
 				new_sec_target = new_HPT
-				new_HPT = id																		
+				new_HPT = id
+			
+			
+			var angle_off = 0  / 180.0 * PI
+			var aspect = 180.0 / 180.0 * PI
+			
+			print(get_wez_for_track(track))
+			
+																	
 			#print("own_id: ", get_meta('id'), " t_td", track.id, " track_dist: ", dist, " rad:", radial)	
 		else:
-			
-			var radial = Calc.get_hdg_2d(position, track.last_know_pos)
-			var dist = to_local(track.last_know_pos).length()		
+						
 			track.update_track_not_detected(self)	
 				
 	HPT = new_HPT	
 	SPT = new_sec_target
-		#print("HPT_set ", get_meta('id') , " - ", HPT)
+	
 		
 func process_behavior(delta_s):
 			
@@ -688,7 +714,23 @@ func reacquired_track(track_id):
 	if is_instance_valid(in_flight_missile):			
 		if not in_flight_missile.pitbull and in_flight_missile != null:
 			in_flight_missile.recover_support()			
-				
+
+func get_wez_for_track(track):
+	
+	print(get_meta("id"))
+	var input_data = ["blue_alt","diffAlt" ,"cosAspect" ,"sinAspect" ,"cosAngleOff", "sinAngleOff"]
+	print(track.angle_off)
+	print(track.aspect_angle)
+	print(rNez_calc.execute([current_level/152.4/3,
+							(current_level - track.obj.current_level)/152.4/3,
+							cos(track.aspect_angle),sin(track.aspect_angle), 
+							cos(track.angle_off),sin(track.angle_off)]))
+							
+	print([current_level/152.4/3,
+							(current_level - track.obj.current_level)/152.4/3,
+							cos(track.aspect_angle),sin(track.aspect_angle), 
+							cos(track.angle_off),sin(track.angle_off)])
+					
 		
 func _physics_process(delta: float) -> void:
 
@@ -720,8 +762,8 @@ func _physics_process(delta: float) -> void:
 	$RenderModel.rotation.z = lerp($RenderModel.rotation.z, -float(turn_input) , turn_speed)
 	$RenderModel.rotation.x = lerp($RenderModel.rotation.x, -float(pitch_input), turn_speed )
 
-	current_speed = max_speed * altitude_speed_factor(current_level)
-	# Movement is always forward
+	current_speed = max_speed * altitude_speed_factor(current_level)	
+	
 	velocity = -transform.basis.z.normalized() * current_speed	
 	
 	# Handle landing/taking unchecked
@@ -864,8 +906,12 @@ func reactivate():
 	killed = false
 	done = false
 	ownRewards.get_total_rewards_and_reset()
-	missiles = 6
+	missiles = 6	
 	
+func update_scale(_factor):
+	var current_scale =get_node("RenderModel").get_scale()
+	get_node("RenderModel").set_scale(current_scale * _factor)
+
 # Recursively traverses the node tree to find MeshInstance nodes and changes their material color.
 func change_mesh_instance_colors(node: Node, new_color: Color) -> void:
 	# Iterate through all children of the current node.

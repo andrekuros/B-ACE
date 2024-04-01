@@ -3,6 +3,7 @@
 [ext_resource type="Script" path="res://Missile.gd" id="1_i3wbj"]
 
 [sub_resource type="SphereShape3D" id="SphereShape3D_16o7b"]
+radius = 3.0
 
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_ibwa0"]
 albedo_color = Color(1, 0.0901961, 0.0901961, 1)

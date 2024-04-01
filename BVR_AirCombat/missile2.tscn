@@ -26,7 +26,7 @@ rings = 1
 [node name="Missile" type="RigidBody3D"]
 collision_layer = 0
 collision_mask = 0
-mass = 5.06
+mass = 22.26
 script = ExtResource("1_ty5vv")
 
 [node name="MeshInstance3D" type="MeshInstance3D" parent="."]

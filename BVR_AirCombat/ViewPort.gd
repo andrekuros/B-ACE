@@ -12,7 +12,7 @@ var mouse_sens = 0.1
 var camera_angle_v = 0
 var camera_angle_h = 0
 var zoom_level = 1500
-var move_speed = 5
+var move_speed = 25
 var fighterObj = preload("res://Fighter.tscn")
 var rng = RandomNumberGenerator.new()
 var numTasksDone = 0
@@ -33,18 +33,22 @@ func _input(event):
 		
 		if event.pressed and event.keycode == KEY_C:
 			# Reset camera view
+			cameraGlobal.make_current()
 			cameraGlobal.rotation_degrees = Vector3(-90, 0, 0)
 			cameraGlobal.position = Vector3(0, 2500, 0)
 			camera_angle_v = 0
 			camera_angle_h = 0
 			
-		if event.pressed and event.keycode == KEY_I:
-			zoom_level = 25			
-			cameraGlobal.position.y += zoom_level
+		if event.pressed and event.keycode == KEY_W:			
+			#cameraGlobal.position.y += zoom_level
+			for sim in get_node("SimManager").get_children():				
+				sim.update_scale(2.0)
 		
-		if event.pressed and event.keycode == KEY_K:
-			zoom_level = -25			
-			cameraGlobal.position.y += zoom_level
+		if event.pressed and event.keycode == KEY_S:
+			#cameraGlobal.position.y += zoom_level
+			for sim in get_node("SimManager").get_children():				
+				sim.update_scale(0.5)
+		
 
 	if event is InputEventMouseMotion:
 		var cam = get_camera_3d()
@@ -87,7 +91,12 @@ func _process(delta):
 		move_vec.z -= move_speed
 	elif Input.is_action_pressed("ui_down"):
 		move_vec.z += move_speed
+	elif Input.is_action_pressed("ui_page_up"):
+		move_vec.y += move_speed
+	elif Input.is_action_pressed("ui_page_down"):
+		move_vec.y -= move_speed
 
 	# Adjust the camera movement vector based on the camera's orientation
 	move_vec = move_vec.rotated(Vector3.UP, cam.global_transform.basis.get_euler().y)
 	cam.global_position += move_vec * delta
+	
