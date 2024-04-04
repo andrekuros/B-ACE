@@ -23,12 +23,11 @@ var action_repeat = 20
 
 # AIR COMBAT DATA
 var team_id = 1 # Example: 0 or 1 for two different teams
-var radar_range = 60.0 * SConv.NM2GDM  # Detection range for the radar
+var id
+var radar_range = 50.0 * SConv.NM2GDM  # Detection range for the radar
+var radar_hfov = [-60.0, 60.0] # degrees
+var radar_vfov = [-20.0, 40.0] # degrees
 var enemies_in_range = [] # List to store detected enemies
-
-var radar_fov = 45 # degrees
-var radar_near_range = 10.0 * SConv.NM2GDM # minimum distance to detect
-var radar_far_range = 60.0 * SConv.NM2GDM # maximum distance to detect
 
 var fullView = false
 var actions_2d = false
@@ -38,9 +37,11 @@ var missiles = 6 # Adjust the number of missiles as needed
 var model = "Simple" 
 
 # State variables
+var current_time 
 var current_speed
 var current_level
-var current_hdg 
+var current_hdg
+var current_pitch 
 
 var action_type = "Low_Level_Discrete"# "Low_Level_Discrete" 
 
@@ -60,8 +61,8 @@ var min_level = 1000  * SConv.FT2GDM
 
 const max_g = 9.0
 
-var max_pitch = deg_to_rad(35.0)
-var min_pitch = deg_to_rad(-15.0)
+var max_pitch = 35.0
+var min_pitch = -15.0
 var pitch_speed = 0.5
 
 func altitude_speed_factor (alt):
@@ -97,12 +98,14 @@ var team_color
 var team_color_group
 
 #Heuristic Behavior Params
-var max_shoot_range = 30 *  SConv.NM2GDM
-var max_shoot_range_var = 0.0
-var max_shoot_range_adjusted = -1
+#var max_shoot_range = 30 *  SConv.NM2GDM
+var shoot_range_variation = 0.0
+var shoot_range_error = 0.0
 var defense_side = 1
 
 var tatic_status = "Search" #"MissileSupport / Commit / Evade / Recommit
+var sub_tatic = "None" #"Crank
+var do_crank = false
 var tatic_time = 0.0
 var tatic_start = 0.0
 var last_beh_proc = 0.0
@@ -119,9 +122,9 @@ var action_g_len = len(g_conv)
 var action_turn_len = len(turn_conv) 
 var action_level_len = len(level_conv) 
 
-var radar_track_list = {}
-var HPT = -1
-var SPT = -1
+var radar_track_list = []
+var HPT 	= null
+var HRT 	= null
 var data_link_list = []
 var in_flight_missile = null
 
@@ -149,6 +152,7 @@ func is_type(type): return type == "Fighter"
 func get_type(): return "Fighter"	
 
 func _ready():	
+	#$Radar/CollisionShape3D.disabled = true 
 	pass
 
 func update_init_config(config):
@@ -159,8 +163,8 @@ func update_init_config(config):
 	var init_pos = init_config["init_position"]	
 	init_position = Vector3((offset_pos.x + init_pos["x"]) * SConv.NM2GDM , 
 							(offset_pos.y + init_pos["y"]) * SConv.FT2GDM , 
-							(offset_pos.z + init_pos["z"]) * SConv.NM2GDM )
-	
+							(offset_pos.z + init_pos["z"]) * SConv.NM2GDM )	
+		
 	var _init_hdg = init_config["init_hdg"]												
 	init_rotation = Vector3(0, _init_hdg, 0)				
 	init_hdg = _init_hdg
@@ -176,7 +180,7 @@ func update_init_config(config):
 	#10NM before target 
 	strike_line_z = target_pos.z - (sign(target_pos.z) * 10 * SConv.NM2GDM )
 	
-	max_shoot_range_var = init_config['rnd_shot_dist_var']
+	shoot_range_error = init_config['rnd_shot_dist_var']
 	
 	#Prepare WEZ models	
 	var input_data = ["blue_alt","diffAlt" ,"cosAspect" ,"sinAspect" ,"cosAngleOff", "sinAngleOff"]
@@ -223,18 +227,26 @@ func reset():
 		var y_offset = randf_range(-rnd_offset.y * SConv.FT2GDM, rnd_offset.y * SConv.FT2GDM)		
 		local_offset = Vector3(x_offset,y_offset, z_offset)			
 		
-	hdg_input 		= init_rotation.y
+	position = init_position + 	local_offset
+	
+	if position.y < min_level:
+		position.y = min_level
+	elif position.y > max_level:
+		position.y = max_level
+	
+	hdg_input 		= -init_rotation.y
 	last_hdg_input 	= hdg_input	
-	current_hdg 	= init_hdg
-	current_level 	= init_position.y
+	current_hdg 	= hdg_input
+	current_level 	= position.y
 	level_input 	= current_level
+	current_pitch 	= 0.0
+	current_time    = 0.0
 	
 	current_speed = max_speed * altitude_speed_factor(current_level)		
 	velocity = -transform.basis.z.normalized()* current_speed
-	
-	position = init_position + 	local_offset		
+
 	rotation_degrees = init_rotation#Vector3(0, 0, 0) # Adjust as necessary			
-	dist2go = Calc.distance2D_to_pos(position, target_position)			
+	dist2go = Calc.distance2D_to_pos(global_transform.origin, target_position)			
 	
 	n_steps = 0
 	done = false
@@ -251,47 +263,46 @@ func reset():
 	tatic_status = "Search" #"MissileSupport / Commit / Evade / Recommit
 	tatic_time = 0.0	
 		
-	HPT = -1
-	SPT = -1
+	HPT = null
+	HRT = null
+	
 	data_link_list = {}
-	in_flight_missile = null
+	in_flight_missile = null					
 				
-	len_allieds_data_obs = 1 if len(alliesList) >= 1 else 0
-	len_tracks_data_obs = 2 if len(tree.get_nodes_in_group(simGroups.ENEMY)) > 1 else 1
-				
-	if fullView:
-		$Radar/CollisionShape3D.disabled = true    
-	else:
+	#if fullView:
+	#	$Radar/CollisionShape3D.disabled = true    
+	#else:
 		#TODO Reeset Colision detection
-		$Radar/CollisionShape3D.disabled = true    		
-		$Radar/CollisionShape3D.disabled = false 		
-		radar_track_list = {} 	
+	#	$Radar/CollisionShape3D.disabled = true
+		#await(0.05)
+		#$Radar/CollisionShape3D.disabled = false
+	radar_track_list = []	
 	
 func update_scene(_tree):
-		
-	tree = _tree
-	if fullView:		
-		var track_view_list
-		if is_in_group(simGroups.ENEMY):
-			track_view_list = manager.agents
-		elif is_in_group(simGroups.AGENT):
-			track_view_list = manager.enemies
-		else:
-			print("FIGTHER::WARNING::COMPONENT IN UNKNOW GROUP ", get_groups())						
-		
-		for enemy in track_view_list:			
-			var new_track = Track.new(enemy.get_meta("id"), self, enemy)					
-			radar_track_list[enemy.get_meta("id")] = new_track#Track.new(enemy.get_meta("id"), enemy, dist, radial, true)	
+				
+	tree = _tree		
+	var track_view_list
+	if is_in_group(simGroups.ENEMY):
+		track_view_list = manager.agents
+	elif is_in_group(simGroups.AGENT):
+		track_view_list = manager.enemies
+	else:
+		print("FIGTHER::WARNING::COMPONENT IN UNKNOW GROUP ", get_groups())								
+	
+	radar_track_list = []
+	for comp in track_view_list:		
+		var new_track = Track.new(comp.id, self, comp)					
+		radar_track_list.append(new_track)
 								
 	alliesList = []		
 	for agent in tree.get_nodes_in_group(team_color_group):
-		if agent.get_meta("id") != get_meta("id"):
+		if agent.id != id:
 			alliesList.append(agent)
 	len_allieds_data_obs = 1 if len(alliesList) >= 1 else 0
-	reset()				
-#func reset_if_done():
-	#if done:
-		#reset()
+	
+	len_allieds_data_obs = 1 if len(alliesList) >= 1 else 0
+	len_tracks_data_obs = 2 if len(tree.get_nodes_in_group(simGroups.ENEMY)) > 1 else 1
+				
 				
 func set_fullView(_def):
 	if _def == 1:
@@ -318,7 +329,7 @@ func get_obs(with_labels = false):
 					 global_transform.origin.z / 3000.0,
 					 global_transform.origin.y / 150.0,
 					 dist2go / 3000.0,					 
-					 Calc.get_2d_aspect_angle(current_hdg, Calc.get_hdg_2d(position, target_position)) / 180.0,
+					 Calc.get_2d_aspect_angle(current_hdg, Calc.get_hdg_2d(global_transform.origin, target_position)) / 180.0,
 					 #cos(Calc.get_relative_radial(current_hdg, Calc.get_hdg_2d(position, target_position)) / 180.0),
 					 #sin(current_hdg / 180.0),
 					 current_hdg / 180.0,
@@ -339,7 +350,7 @@ func get_obs(with_labels = false):
 							 allied.global_transform.origin.z / 3000.0,
 							 allied.global_transform.origin.y / 150.0,
 							 allied.dist2go / 3000.0,							 
-							 Calc.get_2d_aspect_angle(allied.current_hdg, Calc.get_hdg_2d(allied.position, allied.target_position)) / 180.0, 
+							 Calc.get_2d_aspect_angle(allied.current_hdg, Calc.get_hdg_2d(allied.global_transform.origin, allied.target_position)) / 180.0, 
 							 #fmod(aspect_to_obj(allied.target_position) + allied.current_hdg, 360),
 							 allied.current_hdg / 180.0,
 							 #allied.current_speed / max_speed,
@@ -347,24 +358,31 @@ func get_obs(with_labels = false):
 							 1 if is_instance_valid(allied.in_flight_missile) else 0,
 			]			
 		
-	#for track in radar_track_list.values():		
-			
 	var tracks_info = []	
+	
 	#HPT info
-	if HPT != -1:
-		var track = radar_track_list[HPT]
+	var tracks_added = 0
+	if HPT != null:
+		var track = HPT
 		tracks_info.append_array([ 
 					 (global_transform.origin.y - track.obj.global_transform.origin.y) / 150.0,					 
 					 track.aspect_angle / 180.0,					 
 					 track.angle_off / 180.0,					 										 
-					 track.dist / 3000.0,
+					 track.dist / 3000.0,					 
 					 track.obj.dist2go / 3000.0,
+					 track.own_missile_RMax / 50.0,
+					 track.own_missile_Nez  / 50.0,
+					 track.enemy_missile_RMax / 50.0,
+					 track.enemy_missile_Nez / 50.0,	
+					 track.threat_factor,
+					 track.offensive_factor,
 					 1,
 					 1 if track.detected else 0
-				])			
+				])
+		tracks_added += 1			
 	#SPT info
-	if SPT != -1:
-		var track = radar_track_list[SPT]
+	if HRT != null and len_tracks_data_obs > 1:
+		var track = HRT
 		tracks_info.append_array([ 
 					(global_transform.origin.y - track.obj.global_transform.origin.y) / 150.0,					 
 					 Calc.get_desired_heading(current_hdg, track.radial) / 180.0,
@@ -373,9 +391,10 @@ func get_obs(with_labels = false):
 					 0,
 					 1 if track.detected else 0
 				])	
+		tracks_added += 1	
 	#print("bef:",  tracks_info, len(own_info))
 	
-	for track in range(len_tracks_data_obs - len(tracks_info) / 6):
+	for track in range(len_tracks_data_obs - tracks_added):
 		#tracks_info.append_array([0.0, 0.0 , 0.0, 0.0, 0.0 , 0.0, 0.0  ])
 		var ref_enemy = manager.enemies[0]
 		tracks_info.append_array([ 
@@ -384,8 +403,7 @@ func get_obs(with_labels = false):
 					 -1.0,					 										 
 					 0.5,
 					 0.2,
-					 0.0,
-					 0.0
+					 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 #8
 				])	
 	#print( tracks_info, len(own_info))
 	
@@ -512,43 +530,61 @@ func set_action(action):
 
 func get_current_inputs():
 	return [hdg_input, level_input, desiredG_input, shoot_input]
+
 	
 func process_tracks():	
+
+	var max_treat = 0.0
+	var max_offensive = 0.0
+	var new_HPT = null
+	var new_HRT = null
 	
-	print(team_id)
-	var min_dist = 100000
-	var new_HPT = -1
-	var new_sec_target = -1
-		
-	for id in radar_track_list.keys():
-		var track = radar_track_list[id]							
-		
-		if track.obj.activated == false:
-				track.detected = false						
-				continue
+	for track in radar_track_list:						
+								
+		if track.obj.activated:
+			track.update_track(self, track.obj, current_time)
+			
+			if track.just_detected:			
+				track.just_detected = false
 				
-		if track.detected:
+				if track.is_missile_support:
+					if is_instance_valid(in_flight_missile):			
+						if not in_flight_missile.pitbull and in_flight_missile != null:
+							in_flight_missile.recover_support() 
+						HPT = track
+				
+			if track.just_lost:
+				ownRewards.add_detect_loss_rew()				
+				track.just_lost = false				
+								
+				if track.is_missile_support:					
+					if is_instance_valid(in_flight_missile):			
+						if not in_flight_missile.pitbull and in_flight_missile != null:
+							in_flight_missile.lost_support() 
+						
+			if track.is_alive:				
+								
+				if track.detected: 
+					
+					track.update_wez_data(get_wez_for_track(track))						
+					
+					if track.threat_factor > max_offensive: # and track.obj.get_meta('id') == 1:
+						max_offensive = track.offensive_factor					
+						new_HPT = track
+					
+					ownRewards.add_keep_track_rew()
+										
+					if track.threat_factor > max_treat: # and track.obj.get_meta('id') == 1:
+						max_treat = track.threat_factor					
+						new_HRT = track
 												
-			ownRewards.add_keep_track_rew()
-									
-			track.update_track(self, track.obj, get_wez_for_track(track))			
-									
-			if track.dist < min_dist: # and track.obj.get_meta('id') == 1:
-				min_dist = track.dist
-				new_sec_target = new_HPT
-				new_HPT = id
-						
-			var angle_off = 0  / 180.0 * PI
-			var aspect = 180.0 / 180.0 * PI						
-																	
-			#print("own_id: ", get_meta('id'), " t_td", track.id, " track_dist: ", dist, " rad:", radial)	
-		else:
-						
-			track.update_track_not_detected(self, get_wez_for_track(track))	
-				
-	HPT = new_HPT	
-	SPT = new_sec_target
-	
+	if HPT != null:			
+		if not HPT.is_missile_support:
+			HPT = new_HPT
+	else:
+		HPT = new_HPT
+			
+	HRT = new_HRT	
 		
 func process_behavior(delta_s):
 			
@@ -556,14 +592,14 @@ func process_behavior(delta_s):
 	
 	if behavior == "duck":
 		if 	tatic_status != "Strike": 
-			if (sign(strike_line_z) > 0 and position.z > strike_line_z) or\
-			   	(sign(strike_line_z) < 0 and position.z < strike_line_z):				
+			if (sign(strike_line_z) > 0 and global_transform.origin.z > strike_line_z) or\
+			   	(sign(strike_line_z) < 0 and global_transform.origin.z < strike_line_z):				
 				desiredG_input = 3.0	
 				tatic_status = "Strike"							
 				tatic_time = 0.0
 		
 		else :									
-			hdg_input = Calc.get_hdg_2d(position, target_position )			
+			hdg_input = Calc.get_hdg_2d(global_transform.origin, target_position )			
 		return
 		
 	elif behavior == "test" or behavior == "wez_eval_target_max":		
@@ -572,7 +608,7 @@ func process_behavior(delta_s):
 	elif behavior == "wez_eval_target_nez":		
 								
 		if manager.agents[0].in_flight_missile and not test_executed:			
-			hdg_input = Calc.clamp_hdg(Calc.get_hdg_2d(position, manager.enemies[0].position) + 180.0)
+			hdg_input = Calc.clamp_hdg(Calc.get_hdg_2d(global_transform.origin, manager.enemies[0].global_transform.origin) + 180.0)
 			#hdg_input = Calc.clamp_hdg(current_hdg + 180 )#fmod(oposite_hdg + 180.0, 360.0) - 180.0
 			desiredG_input = 6.0
 			test_executed = true														
@@ -580,32 +616,46 @@ func process_behavior(delta_s):
 	
 	elif behavior == "wez_eval_shooter" :
 		if not test_executed:
-			launch_missile_at_target(manager.enemies[0])	
+			launch_missile_at_target(radar_track_list[0])	
 			test_executed = true
 			return
 					
 	elif behavior == "baseline1":
 		
-		if tatic_status == "Search" or tatic_status == "Return":
+		#print(id, " : " ,tatic_status)
+		if HPT != null and HPT.threat_factor > (0.85 + 0.10*int(HPT.is_missile_support)):
+			tatic_time = 0.0					
+			tatic_status = "Evade"        
+			AP_mode = "FlyHdg"				
+			tatic_time = 0.0						
+			hdg_input = Calc.clamp_hdg(HPT.radial + 180)#fmod(oposite_hdg + 180.0, 360.0) - 180.0
+			desiredG_input = 6.0		
+
+		elif tatic_status == "Search" or tatic_status == "Return":
 			
-			if HPT != -1:				
+			if HPT != null:				
 				
-				#Define new shotdistance with randominess
-				max_shoot_range_adjusted = max_shoot_range  + randf_range(-max_shoot_range_var * max_shoot_range, max_shoot_range_var * max_shoot_range)						
+				#Define new shot distance with randominess
+				shoot_range_error =  1 + randf_range(-shoot_range_variation , shoot_range_variation)						
 				
-				tatic_status = "Engage"        
+				tatic_status = "Engage"
+				defense_side = 1 - randi_range(0,1) * 2 #Choose defence side        
 				AP_mode = "FlyHdg"				
 				desiredG_input = 3.0
 				tatic_time = 0.0
 				
 			elif tatic_status == "Search":				
 				
-				if (sign(strike_line_z) > 0 and position.z > strike_line_z) or\
-			   		(sign(strike_line_z) < 0 and position.z < strike_line_z):					
+				if (sign(strike_line_z) > 0 and global_transform.origin.z > strike_line_z) or\
+			   		(sign(strike_line_z) < 0 and global_transform.origin.z < strike_line_z):					
 					desiredG_input = 3.0	
 					tatic_status = "Strike"							
 					tatic_time = 0.0
 					#print(tatic_status)
+				
+				if tatic_time >= 120.0:
+					hdg_input = Calc.get_hdg_2d(global_transform.origin, target_position )
+					
 				
 			elif tatic_status == "Return" and tatic_time >= 80.0:			
 				hdg_input = init_hdg
@@ -613,47 +663,50 @@ func process_behavior(delta_s):
 				tatic_status = "Search"							
 				tatic_time = 0.0
 			
-		if tatic_status == "Strike":									
-			hdg_input = Calc.get_hdg_2d(position, target_position )
+		elif tatic_status == "Strike":									
+			hdg_input = Calc.get_hdg_2d(global_transform.origin, target_position )
+						
+		elif tatic_status == "Engage":
 			
-			
-		if tatic_status == "Engage":
-			
-			if HPT != -1:							
-				#print(radar_track_list[HPT].dist, "Shot: ", max_shoot_range_adjusted)	
-				hdg_input = radar_track_list[HPT].radial
-												
-				if radar_track_list[HPT].dist < max_shoot_range_adjusted:
-					if abs(radar_track_list[HPT].aspect_angle) < 15:					
-						if launch_missile_at_target(radar_track_list[HPT].obj): 
+			if HPT != null:							
+				#print(id, " : " , [HPT.offensive_factor, HPT.threat_factor])
+				#print(id, " : " , [HPT.own_missile_RMax*SConv.GDM2NM, HPT.own_missile_Nez*SConv.GDM2NM])																											
+				do_crank 	= HPT.threat_factor > 0.5					
+				
+				hdg_input 	= Calc.clamp_hdg(HPT.radial + 50* int(do_crank) * defense_side)
+														
+				
+				if HPT.offensive_factor > 0.80:					
+					#print( id, "(" ,current_time, " ) :", [HPT.offensive_factor, HPT.threat_factor,abs(HPT.aspect_angle)])					
+					if abs(HPT.aspect_angle) < 15.0:					
+						if launch_missile_at_target(HPT):							
 							tatic_status = "MissileSupport"			
 							tatic_time = 0.0							
-							max_shoot_range_adjusted = -1
-							defense_side = 1 - randi_range(0,1) * 2 #Choose defence side
+							shoot_range_error = -1							
+							HPT.is_missile_support = true
 							#print(tatic_status, tatic_time)
-												
-				
-				if (sign(strike_line_z) > 0 and position.z > strike_line_z) or\
-			   		(sign(strike_line_z) < 0 and position.z < strike_line_z):															
+																
+				if (sign(strike_line_z) > 0 and global_transform.origin.z > strike_line_z) or\
+			   		(sign(strike_line_z) < 0 and global_transform.origin.z < strike_line_z):															
 					
 					desiredG_input = 3.0	
 					tatic_status = "Strike"							
 					tatic_time = 0.0
 					#print(tatic_status)
 			else:			
-				tatic_time = 0.0	
-				#print(tatic_status, tatic_time)
+				tatic_time = 0.0					
 				tatic_status = "Evade"        
 				AP_mode = "FlyHdg"				
 				tatic_time = 0.0		
 													
 				hdg_input = Calc.clamp_hdg(current_hdg + 180)#fmod(oposite_hdg + 180.0, 360.0) - 180.0
-				desiredG_input = max_g								
+				desiredG_input = 6.0								
 				#print("ID:", get_meta("id"), ":" ,tatic_status, tatic_time, " / ", hdg_input)				
 			
-		if tatic_status == "MissileSupport": 
+		elif tatic_status == "MissileSupport": 
 			
 			if is_instance_valid(in_flight_missile):			
+				
 				if in_flight_missile.pitbull or in_flight_missile == null:
 				
 					tatic_status = "Evade"        
@@ -661,23 +714,27 @@ func process_behavior(delta_s):
 					tatic_time = 0.0		
 									
 					#var oposite_hdg = rad_to_deg(global_transform.basis.get_euler().y) + 180.0				
-					hdg_input = Calc.clamp_hdg(current_hdg + 180- defense_side * 45.0)#fmod(oposite_hdg + 180.0, 360.0) - 180.0
+					#hdg_input = Calc.clamp_hdg(current_hdg + 180 - defense_side * 50.0)#fmod(oposite_hdg + 180.0, 360.0) - 180.0
+					if HPT != null:
+						hdg_input = Calc.clamp_hdg(HPT.radial + 180)						
+					else:
+						hdg_input = Calc.clamp_hdg(current_hdg + 180 - defense_side * 50.0)#fmod(oposite_hdg + 180.0, 360.0) - 180.0							
+					
 					desiredG_input = 6.0								
 					#print(tatic_status, tatic_time, " / ", hdg_input)
 				else:
-					if HPT != -1:
-						hdg_input = Calc.clamp_hdg(radar_track_list[HPT].radial + defense_side * 45.0) 										
+					if HPT != null:
+						hdg_input = Calc.clamp_hdg(HPT.radial + defense_side * 50.0) 										
 			else:								
 				tatic_status = "Evade"        
 				AP_mode = "FlyHdg"				
 				tatic_time = 0.0		
 													
-				hdg_input = Calc.clamp_hdg(current_hdg + 180- defense_side * 45.0)#fmod(oposite_hdg + 180.0, 360.0) - 180.0
+				hdg_input = Calc.clamp_hdg(current_hdg + 180- defense_side * 50.0)#fmod(oposite_hdg + 180.0, 360.0) - 180.0
 				desiredG_input = max_g			
 				#print(tatic_status, tatic_time)
 				
-
-		if tatic_status == "Evade" and tatic_time >= 50.0:
+		elif tatic_status == "Evade" and tatic_time >= 50.0:
 			
 			tatic_status = "Search"		
 			AP_mode = "FlyHdg"
@@ -690,22 +747,12 @@ func process_behavior(delta_s):
 	else:
 		print("FIGHTER::ERROR:: Unknow behavior selected ", behavior)		
 		
-func remove_track(track_id):
-	
-	if HPT == track_id:
-		HPT = -1
-		if is_instance_valid(in_flight_missile):			
-			if not in_flight_missile.pitbull and in_flight_missile != null:
-				in_flight_missile.lost_support()
-				
-	if radar_track_list.has(track_id):
-		radar_track_list[track_id].detected_status(false)
-		ownRewards.add_detect_loss_rew()
 		
 func reacquired_track(track_id):
 	
+	print("reacaufpioaudspf")
 	var track = radar_track_list[track_id]
-	track.update_track(self, track.obj)
+	track.update_track(self, track.obj, get_wez_for_track(track))
 	track.detected_status(true)
 	
 	if is_instance_valid(in_flight_missile):			
@@ -714,50 +761,64 @@ func reacquired_track(track_id):
 
 func get_wez_for_track(track):
 		
-	var input_data = ["blue_alt","diffAlt" ,"cosAspect" ,"sinAspect" ,"cosAngleOff", "sinAngleOff"]
-	#print(get_meta("id"))
-	#print(track.angle_off)
-	#print(track.aspect_angle)
+	#var input_data = ["blue_alt","diffAlt" ,"cosAspect" ,"sinAspect" ,"cosAngleOff", "sinAngleOff"]
+			
+	#print(id, "-input_data" ,[current_level,
+	#	(current_level - track.obj.current_level),
+	#						track.aspect_angle, 
 	
-	var ownRMax = rMax_calc.execute([current_level/152.4 * 0.3048,
-							(current_level - track.obj.current_level)/152.4 * 0.3048,
-							cos(track.aspect_angle),sin(track.aspect_angle), 
-							cos(track.angle_off),sin(track.angle_off)])
-	
-	var ownRNez = rNez_calc.execute([current_level/152.4 * 0.3048,
-							(current_level - track.obj.current_level)/152.4 * 0.3048,
-							cos(track.aspect_angle),sin(track.aspect_angle), 
-							cos(track.angle_off),sin(track.angle_off)])
+	var ownData = [	current_level/152.4 * 0.3048,
+					(current_level - track.obj.current_level)/152.4 * 0.3048,
+					cos(track.aspect_angleR),sin(track.aspect_angleR), 
+					cos(track.angle_offR),sin(track.angle_offR)]
+					
+	var ownRMax = rMax_calc.execute(ownData)	
+	var ownRNez = rNez_calc.execute(ownData)
 							
-	var enemyRMax = rMax_calc.execute([track.obj.current_level/152.4 * 0.3048,
-							(track.obj.current_level - current_level)/152.4 * 0.3048,
-							cos(track.inv_angle_off),sin(track.inv_angle_off), 
-							cos(track.inv_aspect_angle),sin(track.inv_aspect_angle)])
+	var enemyData
+	var enemyRMax
+	var enemyRNez
 	
-	var enemyRNez = rNez_calc.execute([current_level/152.4 * 0.3048,
-							(current_level - track.obj.current_level)/152.4 * 0.3048,
-							cos(track.inv_angle_off),sin(track.inv_angle_off), 
-							cos(track.inv_aspect_angle),sin(track.inv_aspect_angle)])
+	if abs(track.inv_aspect_angle) > track.obj.radar_hfov[1]:
+		
+		enemyData = [track.obj.current_level/152.4 * 0.3048,
+								(track.obj.current_level - current_level)/152.4 * 0.3048,							
+								cos(deg_to_rad(track.obj.radar_hfov[1])),sin(deg_to_rad(track.obj.radar_hfov[1])),
+								-1.0, 0.0, -1.0, 0.0 ]	
+		enemyRMax = rMax_calc.execute(enemyData) / (1.0 + abs(track.inv_aspect_angle)/180.0)		
+		enemyRNez = rNez_calc.execute(enemyData) / (1.0 + abs(track.inv_aspect_angle)/180.0)
+													
+	else:
+		enemyData = [track.obj.current_level/152.4 * 0.3048,
+								(track.obj.current_level - current_level)/152.4 * 0.3048,							
+								cos(track.inv_aspect_angleR),sin(track.inv_aspect_angleR),
+								cos(track.inv_angle_offR),sin(track.inv_angle_offR)]		
+		enemyRMax = rMax_calc.execute(enemyData)		
+		enemyRNez = rNez_calc.execute(enemyData)
 									
 	#print([current_level/152.4/3,(current_level - track.obj.current_level)/152.4/3,cos(track.aspect_angle),sin(track.aspect_angle), cos(track.angle_off),sin(track.angle_off)])
-	print([ownRMax, ownRNez, enemyRMax, enemyRNez])
+	#print([ownRMax, ownRNez, enemyRMax, enemyRNez])
 	return [ownRMax, ownRNez, enemyRMax, enemyRNez]
 		
 func _physics_process(delta: float) -> void:
-
-	current_hdg = rad_to_deg(global_transform.basis.get_euler().y)	
+	
+	current_time += delta
+	current_hdg = rad_to_deg(-global_transform.basis.get_euler().y)		
 	current_level = global_transform.origin.y
-				
+	current_pitch = rad_to_deg(global_transform.basis.get_euler().x)
+	
+	#print(id,"| Level: ", current_level / SConv.FT2GDM, " Pitch: ", current_pitch, " HDG: ", current_hdg)
+	
 	if n_steps % action_repeat == 0:
 		
-		dist2go = Calc.distance2D_to_pos(position, target_position)			
+		dist2go = Calc.distance2D_to_pos(global_transform.origin, target_position)			
 		process_tracks()	
 		if behavior != "external":						
 			process_behavior(delta * (n_steps - last_beh_proc))
 			last_beh_proc = n_steps
 		
-	if  behavior == "external"  and shoot_input > 0 and HPT != -1:
-		if launch_missile_at_target(radar_track_list[HPT].obj): 						
+	if  behavior == "external"  and shoot_input > 0 and HPT != null:
+		if launch_missile_at_target(HPT): 									
 			shoot_input = -1	
 	
 	
@@ -768,9 +829,9 @@ func _physics_process(delta: float) -> void:
 	
 	# Rotate the transform based checked the input values
 	transform.basis = transform.basis.rotated(transform.basis.x.normalized(), pitch_input * pitch_speed * delta)
-	transform.basis = transform.basis.rotated(Vector3.UP, turn_input * turn_speed * delta)	
+	transform.basis = transform.basis.rotated(Vector3.UP, -turn_input * turn_speed * delta)	
 		
-	$RenderModel.rotation.z = lerp($RenderModel.rotation.z, -float(turn_input) , turn_speed)
+	$RenderModel.rotation.z = lerp($RenderModel.rotation.z, float(turn_input) , turn_speed)
 	$RenderModel.rotation.x = lerp($RenderModel.rotation.x, -float(pitch_input), turn_speed )
 
 	current_speed = max_speed * altitude_speed_factor(current_level)	
@@ -783,25 +844,9 @@ func _physics_process(delta: float) -> void:
 	move_and_slide()
 	
 	n_steps += 1
-				
-		
-func process_behavior_actions():
-	
-	if shoot_input == 1:
-		
-		if max_shoot_range_adjusted == -1:
-			max_shoot_range_adjusted = max_shoot_range  + randf_range(-max_shoot_range_var * max_shoot_range, max_shoot_range_var * max_shoot_range)
-			
-		#print(radar_track_list[HPT].dist, "Shot: ", max_shoot_range_adjusted)	
-		if radar_track_list[HPT].dist < max_shoot_range_adjusted:
-			if launch_missile_at_target(radar_track_list[HPT].obj): 
-				#tatic_status = "MissileSupport"			
-				#tatic_time = 0
-				max_shoot_range_adjusted = -1
-				#print(tatic_status, tatic_time)
-		shoot_input = 0
 			
 func process_manouvers_action():
+	
 	#print(_heuristic)
 	if _heuristic == "model":
 		return	
@@ -828,32 +873,23 @@ func process_manouvers_action():
 			turn_input = clamp(adjusted_turn_input, -1.0, 1.0)
 #			
 		# -------- Level Adjust ---------- #
-		#
+		#			
+			#Limit Level Inputs
+			if level_input <= min_level:
+				level_input = min_level
+			elif level_input >= max_level:
+				level_input = max_level
+				
+			var level_diff = level_input - current_level			
+			var adjusted_pitch_input = level_diff 			  
 			
-			var level_diff = level_input - current_level
-			
-			var adjusted_pitch_input = level_diff / 10.0			  
-			
-			var desired_pitch = clamp(adjusted_pitch_input, min_pitch, max_pitch)											
-			var current_pitch = global_transform.basis.get_euler().x
-			
+			var desired_pitch = clamp(adjusted_pitch_input, min_pitch, max_pitch)																	
 			var pitch_diff = desired_pitch - current_pitch						
-			pitch_input = pitch_diff
+			pitch_input = deg_to_rad(pitch_diff)
 			
-					
-			#print("Level: ", level_diff, "PitchInput: ", pitch_input)		
-		#if AP_mode == "Hold":
-			#
-			#if holdStatus == 0:
-				#if goal_distance > 10:			
-					#turn_input = (targetHdg / abs(1 if targetHdg == 0 else targetHdg)) * (0.75 + (clamp(20 / goal_distance, 0,1))) * clamp(abs(targetHdg), 0.0 , 1.0)  				
-				#else:
-					#holdStatus = 1
-			#elif holdStatus == 1:
-				#if goal_distance < 50:
-					#turn_input = 0
-				#else:
-					#holdStatus = 0	
+			#if level_diff < 3.0:				
+			#	print(current_time)
+			#	print(id, " LevelDiff: ", level_diff, " PitchInput: ", pitch_input, " Desired:", desired_pitch, " Curr:", current_pitch )				
 
 #func exited_game_area():
 	#done = true
@@ -862,23 +898,24 @@ func process_manouvers_action():
 	#reset()
 									
 
-func launch_missile_at_target(target):
+func launch_missile_at_target(target_track):
 		
-	if missiles > 0 and target:
+	if missiles > 0:
+		
+		#There are already a missile in flight this missile lost support
+		if is_instance_valid(in_flight_missile):			
+			if not in_flight_missile.pitbull and in_flight_missile != null:
+				in_flight_missile.lost_support()
+				in_flight_missile.missile_track.is_missile_support = false																
+				
 		var new_missile = missile.instantiate()
-		change_mesh_instance_colors(new_missile, team_color)
-		
+		#change_mesh_instance_colors(new_missile, team_color)		
 		manager.add_child(new_missile)										
 		new_missile.add_to_group(simGroups.MISSILE)
 		new_missile.global_position = global_position
 		
-		new_missile.launch(self, target)			
-			
-		#There are already a missile in flight this missile lost support
-		if is_instance_valid(in_flight_missile):			
-			if not in_flight_missile.pitbull and in_flight_missile != null:
-				in_flight_missile.lost_support()				
-				ownRewards.add_missile_miss_rew()
+		new_missile.launch(self, target_track)
+		target_track.is_missile_support = true			
 		
 		in_flight_missile = new_missile		
 								
@@ -901,10 +938,8 @@ func own_kill():
 		killed = true	
 		done = true	
 		ownRewards.add_hit_own_rew()		
-		manager.inform_kill(team_id) 
-			
-		
-		
+		manager.inform_kill(team_id) 	
+					
 func reactivate():
 	# Enabling processing
 	set_process(true)
@@ -918,6 +953,15 @@ func reactivate():
 	done = false
 	ownRewards.get_total_rewards_and_reset()
 	missiles = 6	
+	
+func inform_missile_miss(_missile):
+	ownRewards.add_missile_miss_rew()					
+	_missile.missile_track.is_missile_support = false					
+	if in_flight_missile == _missile:
+		in_flight_missile = null
+							
+
+	
 	
 func update_scale(_factor):
 	var current_scale =get_node("RenderModel").get_scale()

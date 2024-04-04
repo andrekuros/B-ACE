@@ -1,17 +1,40 @@
 #%%%
-
+import argparse
+from typing import List
 from benchmarl.environments import VmasTask 
 from benchmarl.environments import PettingZooTask
 import torch
-
+from tensordict import TensorDict, TensorDictBase
 from benchmarl.environments.godotrl import b_ace
-
 from benchmarl.experiment import Experiment, ExperimentConfig
 from benchmarl.models.mlp import MlpConfig
-from benchmarl.algorithms import IppoConfig, IsacConfig, IqlConfig, QmixConfig, VdnConfig, VdnConfig, MappoConfig, MaddpgConfig, IddpgConfig
+from benchmarl.algorithms import IppoConfig, IsacConfig, IqlConfig, IddpgConfig
+from benchmarl.algorithms import QmixConfig, VdnConfig, MappoConfig, MaddpgConfig
 from benchmarl.models.gnn import GnnConfig
+from benchmarl.experiment.callback import Callback
+
+
+class SaveBest(Callback):
+    
+    def __init__(self):
+        self.best_mean_reward = -1000000
+        #self.folder_name_backup = self.experiment.folder_name
+            
+    def on_evaluation_end(self, rollouts: List[TensorDictBase]):
+        
+        if self.experiment.mean_return > self.best_mean_reward:
+            #self.experiment.folder_name = self.folder_name_backup + "/Best"
+            print("New Best Saved ", self.experiment.mean_return)
+            self.experiment._save_experiment()
+
 
 if __name__ == "__main__":
+    
+    parser = argparse.ArgumentParser(description='Run benchmarl experiments.')
+    parser.add_argument('--algorithm', type=str, default='iddpg', choices=['ippo', 'isac', 'iql', 'qmix', 'vdn', 'mappo', 'maddpg', 'iddpg'], help='Algorithm configuration to use.')
+    parser.add_argument('--config', nargs='*', help='Key-value pairs to update the b_ace_config.')
+    saveBest = False
+    args = parser.parse_args()
     
     # Loads from "benchmarl/conf/experiment/base_experiment.yaml"
     experiment_config = ExperimentConfig.get_from_yaml()
@@ -19,13 +42,16 @@ if __name__ == "__main__":
     experiment_config.sampling_device = 'cpu'
     experiment_config.train_device = 'cuda'
     experiment_config.max_n_iters = 250
+    experiment_config.checkpoint_interval = 150000
     
     # Whether to share the parameters of the policy within agent groups
     experiment_config.share_policy_params: True
     experiment_config.prefer_continuous_actions = True  
     experiment_config.evaluation_interval = 18000
     experiment_config.evaluation_episodes = 20   
-    experiment_config.evaluation_deterministic_actions = False           
+    experiment_config.evaluation_deterministic_actions = False  
+    
+             
     
     # experiment_config.exploration_eps_init = 1.0
     # experiment_config.exploration_eps_end = 1.0   
@@ -53,13 +79,12 @@ if __name__ == "__main__":
     #experiment_config.loggers = []
     
     experiment_config.save_folder = "Results"
-    experiment_config.lr = 0.000003
+    experiment_config.lr = 0.00003
     
-    #TASK Config
-    task = b_ace.B_ACE.b_ace.get_from_yaml()  
+    #TASK Config    
     b_ace_config = { 'EnvConfig' : {
                         'task': 'b_ace_v1',
-                        'env_path': 'BVR_AirCombat/bin/B_ACE_v4.exe',
+                        'env_path': 'BVR_AirCombat/bin/B_ACE_v5.exe',
                         'renderize': 1,
                         'experiment_mode'  : 0,
                         'parallel_envs': 1,
@@ -79,11 +104,41 @@ if __name__ == "__main__":
                         'agents_behavior' : 'external'    
                     }
                 }
-      
+    
+    # Update b_ace_config based on the provided key-value pairs
+    for kv_pair in args.config:
+        key, value = kv_pair.split('=')
+        keys = key.split('.')
+        config = b_ace_config
+        for k in keys[:-1]:
+            config = config[k]
+        config[keys[-1]] = type(config[keys[-1]])(value)
+    
+    
+    task = b_ace.B_ACE.b_ace.get_from_yaml()  
     task.config = b_ace_config    
-            
-    algorithm_config = IddpgConfig.get_from_yaml()
-
+    
+    if args.savebest == 'true':
+        saveBest = True
+    
+    # Set the algorithm configuration based on the provided argument
+    if args.algorithm == 'ippo':
+        algorithm_config = IppoConfig.get_from_yaml()
+    elif args.algorithm == 'isac':
+        algorithm_config = IsacConfig.get_from_yaml()
+    elif args.algorithm == 'iql':
+        algorithm_config = IqlConfig.get_from_yaml()
+    elif args.algorithm == 'qmix':
+        algorithm_config = QmixConfig.get_from_yaml()
+    elif args.algorithm == 'vdn':
+        algorithm_config = VdnConfig.get_from_yaml()
+    elif args.algorithm == 'mappo':
+        algorithm_config = MappoConfig.get_from_yaml()
+    elif args.algorithm == 'maddpg':
+        algorithm_config = MaddpgConfig.get_from_yaml()
+    else:  # 'iddpg'
+        algorithm_config = IddpgConfig.get_from_yaml()
+    
     # Loads from "benchmarl/conf/model/layers/mlp.yaml"
     #model_config = GnnConfig.get_from_yaml()
     model_config = MlpConfig.get_from_yaml()
@@ -99,7 +154,8 @@ if __name__ == "__main__":
             model_config=model_config,
             critic_model_config=critic_model_config,
             seed=i,
-            config=experiment_config
+            config=experiment_config,
+            callbacks=[SaveBest() if saveBest else None],
         )
         experiment.run()
 # %%

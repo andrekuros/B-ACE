@@ -38,6 +38,7 @@ var initialized = false
 func initialize(_id, _tree, _envConfig, _simConfigDict):
 		
 	id = _id
+	tree = _tree	
 	
 	envConfig = _envConfig
 	simConfig = SimConfig.new(_simConfigDict)	
@@ -128,6 +129,7 @@ func _physics_process(delta):
 
 func _set_agents(_tree):	
 			
+	
 	#Scale Vectors only for Visualization	
 	const visual_scaleVector = Vector3(4.0,  4.0,  4.0)
 	
@@ -174,13 +176,16 @@ func _set_agents(_tree):
 			
 			newFigther.add_to_group(simGroups.AGENT)							
 			newFigther.add_to_group(simGroups.BLUE)
+			newFigther.id = 100 +  len(agents)
 			newFigther.set_meta('id', 100 +  len(agents))
+			
 			newFigther.team_color = "BLUE"
 			newFigther.team_color_group = simGroups.BLUE
 									
 			blue_config["offset_pos"] = Vector3(offset_x * 6, 0.0, 0.0)			
 			newFigther.update_init_config(blue_config)
 			newFigther.set_behavior(simConfig.agents_behavior)
+			newFigther.reset()
 						
 		else:
 			var red_config = simConfig.agents_config["red_agents"].duplicate(true)
@@ -196,13 +201,15 @@ func _set_agents(_tree):
 						
 			newFigther.add_to_group(simGroups.ENEMY)							
 			newFigther.add_to_group(simGroups.RED)
+			newFigther.id = 200 +  len(agents)
 			newFigther.set_meta('id', 200 +  len(enemies))
 			newFigther.team_color = "RED"
 			newFigther.team_color_group = simGroups.RED
 			
 			red_config["offset_pos"] = Vector3(offset_x * 6, 0.0, 0.0)
 			newFigther.update_init_config(red_config)
-			newFigther.set_behavior(simConfig.enemies_behavior)			
+			newFigther.set_behavior(simConfig.enemies_behavior)
+			newFigther.reset()			
 																										
 		fighters.append(newFigther)
 			
@@ -225,7 +232,7 @@ func _reset_simulation():
 	stop_simulation = false
 	n_action_steps = 0
 
-func _reset_components():
+func _reset_components():	
 	var missiles = tree.get_nodes_in_group(simGroups.MISSILE)
 	for missile in missiles:
 		missile.queue_free()

@@ -9,6 +9,7 @@ const DEFAULT_PORT := "11008"
 @onready var mainViewPort = get_tree().root.get_node("B_ACE/Simulations")
 @onready var mainCanvas = get_tree().root.get_node("B_ACE/CanvasLayer")
 @onready var fps_show = mainView.get_node("CanvasLayer/Control/FPS_Show")
+@onready var phy_show = mainView.get_node("CanvasLayer/Control/PHY_Show")
 @onready var debug_window = mainView.get_node("DebugWindow")
 
 const SimManager = preload("res://SimManager.tscn")
@@ -198,9 +199,15 @@ func _create_simulations(_sim_config_dict, _experiment_cases=null):
 		viewport_container.anchor_bottom = viewport_container.anchor_top + 1.0 / rows
 
 		mainViewPort.add_child(viewport_container)
-
+		#mainViewPort.call_deferred("add_child", viewport_container)
+		
 		var _tree = get_tree()
-		new_simulation.tree = _tree		
+		new_simulation.tree = _tree	
+		
+		# Create a new thread for the simulation
+		#var thread = Thread.new()
+		#thread.start(Callable(self, "_initialize_simulation").bind(new_simulation, i, _tree, envConfig, case_sim_config))				
+		
 		new_simulation.initialize(i, _tree, envConfig, case_sim_config)
 		viewport.uavs = new_simulation.fighters
 
@@ -211,6 +218,8 @@ func _create_simulations(_sim_config_dict, _experiment_cases=null):
 			x = 0
 			y += 1
 							
+func _initialize_simulation(new_simulation, i, _tree, envConfig, case_sim_config):
+	new_simulation.initialize(i, _tree, envConfig, case_sim_config)
 
 func disconnect_from_server():
 	stream.disconnect_from_host()
@@ -221,7 +230,7 @@ func _initialize():
 		
 	envConfig = EnvConfig.new(args)
 	
-	seed = envConfig.seed								
+	seed = envConfig._seed								
 	seed(seed)
 	
 	phy_fps 		= envConfig.phy_fps
@@ -231,10 +240,12 @@ func _initialize():
 	parallel_envs 	= envConfig.parallel_envs  #Will receive default at this point
 	debug_view		= envConfig.debug_view	   #Will receive default at this point
 	experiment_mode	= envConfig.experiment_mode#Will receive default at this point		
-				
+	
+	#phy_fps = 60			
 	Engine.physics_ticks_per_second = speed_up * phy_fps  
 	Engine.time_scale = speed_up * 1.0 		
 	RenderingServer.render_loop_enabled = (renderize == 1)
+	
 	#prints("physics ticks", Engine.physics_ticks_per_second, Engine.time_scale, speed_up)			
 	
 	connected = connect_to_server()
@@ -257,13 +268,14 @@ func _initialize():
 
 func _physics_process(delta): 
 		
-	physics_updates += 1    
-	elapsed_time += delta	
-			
+	physics_updates += 1.0    
+	elapsed_time += delta		
 	var current_time = Time.get_ticks_msec()	
-	if current_time - elapsed_time >= 200:
-		fps_show.text = str(physics_updates / phy_fps * 5 )
-		#print(str(physics_updates / 4))
+	if current_time - elapsed_time >= 100:
+		
+		phy_show.text = str(floor(physics_updates / phy_fps * 10.0 ))
+		fps_show.text = str(Performance.get_monitor(Performance.TIME_FPS))
+		Engine.max_fps = physics_updates * 10.0
 		physics_updates = 0
 		elapsed_time = current_time
 	

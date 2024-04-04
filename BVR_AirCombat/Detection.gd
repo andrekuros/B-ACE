@@ -27,9 +27,9 @@ func _on_radar_area_exited(area):
 func _on_body_entered(body):
 	var track_obj = body
 	var track_id = track_obj.get_meta("id")
-
+	
 	if track_obj.is_type("Fighter") and track_obj.team_color != fighter.team_color:		
-
+		print(" Detected by " ,get_meta("id") ," - ",  track_id)
 		if not fighter.radar_track_list.has(track_id):
 			var new_track = Track.new(track_id, fighter, track_obj)
 			fighter.radar_track_list[track_id] = new_track

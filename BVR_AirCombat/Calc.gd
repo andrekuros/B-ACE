@@ -3,13 +3,25 @@ class_name Calc
 
 static func get_hdg_2d(from_pos, to_pos) -> float:
 	var direction_vector = to_pos - from_pos
-	var angle_radians = atan2( -direction_vector.x , -direction_vector.z,)			
+	var angle_radians = atan2( direction_vector.x , -direction_vector.z,)			
 	return clamp_hdg(rad_to_deg(angle_radians))
 
 
 static func get_2d_aspect_angle(object_heading_deg: float, target_direction_deg: float) -> float:	
 	return clamp_hdg(target_direction_deg - object_heading_deg)
 	
+static func get_vertical_aspect_angle(ref_obj, target_obj):			
+	var direction_vector = ref_obj.global_transform.origin - target_obj.global_transform.origin
+	var angle_degress = rad_to_deg(atan2(-direction_vector.y, direction_vector.length()))
+		
+	#var direction_vector = ref_obj.position - target_obj.position
+	#var angle_radians = atan2(direction_vector.y, direction_vector.length()) * 180.0 / PI
+	#var angle_radians = atan2( -direction_vector.y , -direction_vector.z,)	
+	#print(ref_obj.current_pitch)		
+	return clamp_hdg(ref_obj.current_pitch + angle_degress)
+	
+
+
 static func get_2d_aspect_angle_from_objs(shooter, target):	
 	return get_2d_aspect_angle(shooter.current_hdg, get_hdg_2d(shooter.position, target.position ))
 

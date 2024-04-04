@@ -10,18 +10,23 @@ var scalar_velocity: float
 
 var turn_speed: float = 2.0
 
-	
+var last_know_target	
+var direction_to_target
+var current_velocity
 
-var pitbull = false
+
 var n_steps = 0
 
 var max_time_of_flight: float = 50.0 
 var time_of_fligth: float =  0.0
 
 var shooter = null
+var missile_track = null
 var upLink_support = true
+var pitbull = false
 
 const visual_scaleVector = Vector3(2.0,  2.0,  2.0)
+var min_offset = Vector3(0.0001, 0.0001, 0.0001)
 
 func is_type(type): return type == "Missile" 
 func get_type(): return "Missile"	
@@ -35,19 +40,16 @@ func _ready():
 	
 		
 # Function to be called when launching the missile, passing the launcher's velocity
-func launch(_shooter, _target):
+func launch(_shooter, _target_track):
 		
 	set_shooter(_shooter)
-	set_target(_target)
+	set_target(_target_track.obj)
+	missile_track = _target_track
 	
 	get_node("RenderModel").set_scale(_shooter.get_node("RenderModel").get_scale()/2)
 	
-	var radial_factor = abs(Calc.get_2d_aspect_angle_from_objs(_shooter, _target) / 180.0)
-	var level_factor  = (_shooter.global_transform.origin.y - _target.global_transform.origin.y) / 150.0
-	
-	#max_time_of_flight = max_time_of_flight * (1 - 0.5 * radial_factor) #lost 50% 180deg fire
-	#speed = speed * (1 + 0.3 * level_factor) #gain 30% speed with 45000ft diff 	
-
+	last_know_target = _target_track.obj.global_transform.origin
+			
 	# Get the shooter's linear velocity
 	var shooter_linear_velocity = shooter.velocity	
 	
@@ -70,7 +72,7 @@ func launch(_shooter, _target):
 	# Set the missile's linear velocity
 	linear_velocity = missile_linear_velocity 
 	#linear_velocity += upward_velocity
-	look_at(global_transform.origin + linear_velocity, Vector3.UP)			
+	look_at(global_transform.origin + linear_velocity + min_offset, Vector3.UP)			
 	ref_speed = linear_velocity.length() 		
 	
 	upLink_support = true
@@ -83,8 +85,12 @@ func _integrate_forces(state: PhysicsDirectBodyState3D) -> void:
 	time_of_fligth += state.step
 	
 	if target:
-		var direction_to_target: Vector3 = (target.global_transform.origin - global_transform.origin).normalized()		
-		var current_velocity: Vector3 = linear_velocity.normalized()
+		
+		if pitbull or upLink_support:
+			last_know_target = target.global_transform.origin		
+		
+		direction_to_target = (last_know_target - global_transform.origin).normalized()		
+		current_velocity = linear_velocity.normalized()
 		scalar_velocity = linear_velocity.length()
 
 		turn_speed = 0.1 + 5.0 * (1 - exp(-0.02* (time_of_fligth))) #get_turn_speed_fator()
@@ -110,9 +116,9 @@ func _integrate_forces(state: PhysicsDirectBodyState3D) -> void:
 					
 				
 		# Update the missile's velocity to move towards the target.
-		if true:#time_of_fligth < 15.0:
-			var initial_thust_force = -global_transform.basis.z * 130  / (turn_speed)#*turn_speed)#/ turn_speed*turn_speed#* 150 / time_of_fligth
-			apply_central_force(initial_thust_force)
+	
+		var initial_thust_force = -global_transform.basis.z * 130  / (turn_speed)#*turn_speed)#/ turn_speed*turn_speed#* 150 / time_of_fligth
+		apply_central_force(initial_thust_force)
 			#print(initial_thust_force)
 			#linear_velocity = new_velocity	+ upward_velocity			
 		#else:
@@ -122,12 +128,12 @@ func _integrate_forces(state: PhysicsDirectBodyState3D) -> void:
 			var target_vector = to_local(target.position)
 			var target_distance = target_vector.length()
 			#print(target_distance)
-			if target_distance < 10 * SConv.NM2GDM and not pitbull:
-				pitbull = true
-				#print("Pitbull")
+			if target_distance < 10 * SConv.NM2GDM and not pitbull and upLink_support:
+				pitbull = true				
 		
-		#if linear_velocity.length() > 0.01 and (upLink_support or pitbull):
-	look_at(global_transform.origin + linear_velocity, Vector3.UP)
+		#if linear_velocity.length() > 0.01 and (upLink_support or pitbull):	
+	
+	look_at(global_transform.origin + linear_velocity + min_offset, Vector3.UP)
 	
 	n_steps += 1
 
@@ -147,6 +153,7 @@ func recover_support():
 
 func _on_timer_timeout():
 	#print("missile: MISS ")	
+	shooter.inform_missile_miss(self)
 	queue_free()  # Remove the missile from the scene
 
 

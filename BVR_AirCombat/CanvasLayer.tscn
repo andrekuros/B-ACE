@@ -1,52 +1,79 @@
-[gd_scene load_steps=2 format=3 uid="uid://c88ncuvk838mf"]
+[gd_scene load_steps=3 format=3 uid="uid://c88ncuvk838mf"]
 
 [ext_resource type="Script" path="res://btn_speedUp.gd" id="1_agkej"]
+[ext_resource type="Script" path="res://btn_VSync.gd" id="2_1pm7n"]
 
 [node name="CanvasLayer" type="CanvasLayer"]
 
 [node name="Control" type="Control" parent="."]
 layout_mode = 3
 anchors_preset = 0
-offset_left = 1.0
-offset_top = 2.0
-offset_right = 1201.0
-offset_bottom = 802.0
-
-[node name="RichTextLabel" type="RichTextLabel" parent="Control"]
-layout_mode = 1
-anchors_preset = -1
-offset_left = 1.0
-offset_top = 493.0
-offset_right = 197.0
-offset_bottom = 644.0
-scroll_following = true
+offset_top = 1.0
+offset_right = 1200.0
+offset_bottom = 801.0
 
 [node name="btn_speedUp" type="Button" parent="Control"]
 top_level = true
 layout_mode = 0
-offset_right = 43.0
-offset_bottom = 33.0
+offset_left = 7.0
+offset_right = 87.0
+offset_bottom = 31.0
 mouse_default_cursor_shape = 2
-text = "10X"
+text = "-1X"
 script = ExtResource("1_agkej")
-
-[node name="TasksDone" type="RichTextLabel" parent="Control"]
-layout_mode = 1
-anchors_preset = -1
-offset_left = 1008.0
-offset_top = 9.0
-offset_right = 1143.0
-offset_bottom = 50.0
-scroll_following = true
 
 [node name="FPS_Show" type="Label" parent="Control"]
 layout_mode = 0
-offset_left = 1109.0
-offset_top = 1.0
-offset_right = 1149.0
-offset_bottom = 24.0
+offset_left = 3.0
+offset_top = 83.0
+offset_right = 43.0
+offset_bottom = 109.0
 text = "-1"
 horizontal_alignment = 1
 vertical_alignment = 1
 
+[node name="PHY_Show" type="Label" parent="Control"]
+layout_mode = 0
+offset_left = 3.0
+offset_top = 58.0
+offset_right = 43.0
+offset_bottom = 84.0
+text = "-1"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="CheckButton" type="CheckButton" parent="Control"]
+layout_mode = 0
+offset_top = 34.0
+offset_right = 44.0
+offset_bottom = 58.0
+script = ExtResource("2_1pm7n")
+
+[node name="RichTextLabel" type="RichTextLabel" parent="Control"]
+layout_mode = 0
+offset_left = 49.0
+offset_top = 33.0
+offset_right = 102.0
+offset_bottom = 57.0
+text = "VSync"
+
+[node name="RichTextLabel2" type="RichTextLabel" parent="Control"]
+layout_mode = 0
+offset_left = 50.0
+offset_top = 84.0
+offset_right = 103.0
+offset_bottom = 108.0
+text = "FPS
+"
+
+[node name="RichTextLabel3" type="RichTextLabel" parent="Control"]
+layout_mode = 0
+offset_left = 46.0
+offset_top = 60.0
+offset_right = 99.0
+offset_bottom = 84.0
+text = "Speed
+"
+
 [connection signal="button_down" from="Control/btn_speedUp" to="Control/btn_speedUp" method="_on_button_down"]
+[connection signal="button_down" from="Control/CheckButton" to="Control/CheckButton" method="_on_button_down"]
