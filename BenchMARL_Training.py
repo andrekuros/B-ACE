@@ -33,6 +33,8 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Run benchmarl experiments.')
     parser.add_argument('--algorithm', type=str, default='iddpg', choices=['ippo', 'isac', 'iql', 'qmix', 'vdn', 'mappo', 'maddpg', 'iddpg'], help='Algorithm configuration to use.')
     parser.add_argument('--config', nargs='*', help='Key-value pairs to update the b_ace_config.')
+    parser.add_argument('--savebest', typr=bool, default=False, help='Set to save Checkpoint of best rewards')
+    
     saveBest = False
     args = parser.parse_args()
     
@@ -118,7 +120,7 @@ if __name__ == "__main__":
     task = b_ace.B_ACE.b_ace.get_from_yaml()  
     task.config = b_ace_config    
     
-    if args.savebest == 'true':
+    if args.savebest == True:
         saveBest = True
     
     # Set the algorithm configuration based on the provided argument
