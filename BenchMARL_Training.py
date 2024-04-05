@@ -25,6 +25,7 @@ class SaveBest(Callback):
         if self.experiment.mean_return > self.best_mean_reward:
             #self.experiment.folder_name = self.folder_name_backup + "/Best"
             print("New Best Saved ", self.experiment.mean_return)
+            self.best_mean_reward = self.experiment.mean_return
             self.experiment._save_experiment()
 
 
@@ -33,7 +34,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Run benchmarl experiments.')
     parser.add_argument('--algorithm', type=str, default='iddpg', choices=['ippo', 'isac', 'iql', 'qmix', 'vdn', 'mappo', 'maddpg', 'iddpg'], help='Algorithm configuration to use.')
     parser.add_argument('--config', nargs='*', help='Key-value pairs to update the b_ace_config.')
-    parser.add_argument('--savebest', typr=bool, default=False, help='Set to save Checkpoint of best rewards')
+    parser.add_argument('--savebest', type=bool, default=False, help='Set to save Checkpoint of best rewards')
     
     saveBest = False
     args = parser.parse_args()
@@ -73,20 +74,20 @@ if __name__ == "__main__":
     experiment_config.off_policy_memory_size: 1_000_000    
     experiment_config.off_policy_init_random_frames: 0
     
-    experiment_config.off_policy_n_envs_per_worker= 3
-    experiment_config.on_policy_n_envs_per_worker= 3
+    experiment_config.off_policy_n_envs_per_worker= 4
+    experiment_config.on_policy_n_envs_per_worker= 4
      
     #experiment_config.evaluation = True  # Enable evaluation mode
     #experiment_config.restore_file = "D:\Projects\B-ACE\B-ACE\Results\maddpg_b_ace_mlp__14627b2c_24_03_17-21_29_33\checkpoints\checkpoint_2340000.pt"
     #experiment_config.loggers = []
     
     experiment_config.save_folder = "Results"
-    experiment_config.lr = 0.00003
+    experiment_config.lr = 0.000003
     
     #TASK Config    
     b_ace_config = { 'EnvConfig' : {
                         'task': 'b_ace_v1',
-                        'env_path': 'BVR_AirCombat/bin/B_ACE_v5.exe',
+                        'env_path': 'BVR_AirCombat/bin/B_ACE_v5_noSupport.exe',
                         'renderize': 1,
                         'experiment_mode'  : 0,
                         'parallel_envs': 1,
@@ -100,21 +101,21 @@ if __name__ == "__main__":
                         },
                     "SimConfig" : {                        
                         'num_allies': 1,
-                        'num_enemies': 1
-                        ,
-                        'enemies_behavior': 'baseline1',
+                        'num_enemies': 1,
+                        'enemies_behavior': 'duck',
                         'agents_behavior' : 'external'    
                     }
                 }
     
-    # Update b_ace_config based on the provided key-value pairs
-    for kv_pair in args.config:
-        key, value = kv_pair.split('=')
-        keys = key.split('.')
-        config = b_ace_config
-        for k in keys[:-1]:
-            config = config[k]
-        config[keys[-1]] = type(config[keys[-1]])(value)
+    # # Update b_ace_config based on the provided key-value pairs
+    # if args != None:
+    #     for kv_pair in args.config:
+    #         key, value = kv_pair.split('=')
+    #         keys = key.split('.')
+    #         config = b_ace_config
+    #         for k in keys[:-1]:
+    #             config = config[k]
+    #         config[keys[-1]] = type(config[keys[-1]])(value)
     
     
     task = b_ace.B_ACE.b_ace.get_from_yaml()  
@@ -122,6 +123,7 @@ if __name__ == "__main__":
     
     if args.savebest == True:
         saveBest = True
+    
     
     # Set the algorithm configuration based on the provided argument
     if args.algorithm == 'ippo':
@@ -139,6 +141,7 @@ if __name__ == "__main__":
     elif args.algorithm == 'maddpg':
         algorithm_config = MaddpgConfig.get_from_yaml()
     else:  # 'iddpg'
+        #algorithm_config = IddpgConfig.get_from_yaml()
         algorithm_config = IddpgConfig.get_from_yaml()
     
     # Loads from "benchmarl/conf/model/layers/mlp.yaml"
@@ -157,7 +160,7 @@ if __name__ == "__main__":
             critic_model_config=critic_model_config,
             seed=i,
             config=experiment_config,
-            callbacks=[SaveBest() if saveBest else None],
+            callbacks=[SaveBest() ],
         )
         experiment.run()
 # %%

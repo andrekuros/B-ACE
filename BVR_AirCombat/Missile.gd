@@ -10,7 +10,8 @@ var scalar_velocity: float
 
 var turn_speed: float = 2.0
 
-var last_know_target	
+var last_know_target
+var last_know_velocity	
 var direction_to_target
 var current_velocity
 
@@ -87,7 +88,10 @@ func _integrate_forces(state: PhysicsDirectBodyState3D) -> void:
 	if target:
 		
 		if pitbull or upLink_support:
-			last_know_target = target.global_transform.origin		
+			last_know_target = target.global_transform.origin
+			last_know_velocity = target.velocity
+		else:
+			last_know_target = last_know_target + last_know_velocity * state.step		
 		
 		direction_to_target = (last_know_target - global_transform.origin).normalized()		
 		current_velocity = linear_velocity.normalized()
@@ -98,42 +102,25 @@ func _integrate_forces(state: PhysicsDirectBodyState3D) -> void:
 		#print(turn_speed)		
 		if time_of_fligth > 0.0:
 			var new_direction: Vector3 = current_velocity.lerp(direction_to_target, 1.0 * turn_speed * get_physics_process_delta_time())
-			
-			
-			#print(vertical_factor)
-			#vertical_component = 0.0
-			#print((1 + vertical_component * turn_speed/5.0))
-			
+								
 			if ref_speed < max_speed:
-				ref_speed += state.step * 2.0
-			#else:
-			#	print(time_of_fligth, " REf:", ref_speed)			
+				ref_speed += state.step * 2.0			
 			
-			#print(ref_speed)
 			var new_velocity: Vector3 = new_direction * (ref_speed) * vertical_factor * vertical_factor	
 			
 			linear_velocity = new_velocity			
-					
-				
-		# Update the missile's velocity to move towards the target.
-	
+						
 		var initial_thust_force = -global_transform.basis.z * 130  / (turn_speed)#*turn_speed)#/ turn_speed*turn_speed#* 150 / time_of_fligth
 		apply_central_force(initial_thust_force)
-			#print(initial_thust_force)
-			#linear_velocity = new_velocity	+ upward_velocity			
-		#else:
-		#	linear_velocity = new_velocity	
-		#print(scalar_velocity)
+			
 		if n_steps % 10 == 0:
-			var target_vector = to_local(target.position)
-			var target_distance = target_vector.length()
-			#print(target_distance)
+			var target_distance = to_local(target.position).length()
+						
 			if target_distance < 10 * SConv.NM2GDM and not pitbull and upLink_support:
-				pitbull = true				
+				pitbull = true
 		
-		#if linear_velocity.length() > 0.01 and (upLink_support or pitbull):	
-	
-	look_at(global_transform.origin + linear_velocity + min_offset, Vector3.UP)
+	if linear_velocity.length() > 0.01:# and (upLink_support or pitbull):		
+		look_at(global_transform.origin + linear_velocity + min_offset, Vector3.UP)
 	
 	n_steps += 1
 

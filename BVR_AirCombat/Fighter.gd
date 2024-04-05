@@ -178,7 +178,7 @@ func update_init_config(config):
 	target_position = target_pos
 	
 	#10NM before target 
-	strike_line_z = target_pos.z - (sign(target_pos.z) * 10 * SConv.NM2GDM )
+	strike_line_z = target_pos.z - (sign(target_pos.z) * 15 * SConv.NM2GDM )
 	
 	shoot_range_error = init_config['rnd_shot_dist_var']
 	
@@ -325,8 +325,8 @@ func set_done_false():
 
 func get_obs(with_labels = false):			
 	
-	var own_info = [ global_transform.origin.x / 3000.0,
-					 global_transform.origin.z / 3000.0,
+	var own_info = [ #global_transform.origin.x / 3000.0,
+					 #global_transform.origin.z / 3000.0,
 					 global_transform.origin.y / 150.0,
 					 dist2go / 3000.0,					 
 					 Calc.get_2d_aspect_angle(current_hdg, Calc.get_hdg_2d(global_transform.origin, target_position)) / 180.0,
@@ -370,14 +370,14 @@ func get_obs(with_labels = false):
 					 track.angle_off / 180.0,					 										 
 					 track.dist / 3000.0,					 
 					 track.obj.dist2go / 3000.0,
-					 track.own_missile_RMax / 50.0,
-					 track.own_missile_Nez  / 50.0,
-					 track.enemy_missile_RMax / 50.0,
-					 track.enemy_missile_Nez / 50.0,	
-					 track.threat_factor,
-					 track.offensive_factor,
+					 track.own_missile_RMax / 926.0, #50NM * SConv.NM2GDM
+					 track.own_missile_Nez  / 926.0,
+					 track.enemy_missile_RMax / 926.0,
+					 track.enemy_missile_Nez / 926.0,	
+					 track.threat_factor - 1,
+					 track.offensive_factor - 1,
 					 1,
-					 1 if track.detected else 0
+					 1 if track.detected else 0 #13
 				])
 		tracks_added += 1			
 	#SPT info
@@ -403,9 +403,8 @@ func get_obs(with_labels = false):
 					 -1.0,					 										 
 					 0.5,
 					 0.2,
-					 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 #8
-				])	
-	#print( tracks_info, len(own_info))
+					 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 #13
+				])		
 	
 	var obs = own_info + tracks_info 
 	
@@ -561,6 +560,7 @@ func process_tracks():
 					if is_instance_valid(in_flight_missile):			
 						if not in_flight_missile.pitbull and in_flight_missile != null:
 							in_flight_missile.lost_support() 
+							ownRewards.add_detect_loss_rew(5.0)
 						
 			if track.is_alive:				
 								

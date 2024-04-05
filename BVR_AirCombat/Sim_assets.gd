@@ -83,7 +83,7 @@ class SimConfig:
 				"init_position": {"x": 0.0, "y": 25000.0,"z": 30.0},
 				"offset_pos": {	"x": 0.0, "y": 0.0, "z": 0.0},
 				"init_hdg": 0.0,                        
-				"target_position": {"x": 0.0,"y": 25000.0,"z": -30.0},
+				"target_position": {"x": 0.0,"y": 25000.0,"z": 30.0},
 				"rnd_offset_range":{"x": 10.0,"y": 10000.0,"z": 5.0},
 				#"rnd_offset_range":{"x": 0.0,"y": 0.0,"z": 0.0},
 				"rnd_shot_dist_var": 0.0,
@@ -376,8 +376,8 @@ class RewardsControl:
 		if printRewards:
 			print("Figther::Info::missile_miss Rewards -> ", missile_miss )
 	
-	func add_detect_loss_rew():
-		detect_loss += detect_loss_factor
+	func add_detect_loss_rew(multiplier = 1.0):
+		detect_loss += detect_loss_factor * multiplier
 		if printRewards:
 			print("Figther::", Owner.get_meta("id" ), "::Info::detect_loss Rewards -> ", detect_loss )
 	

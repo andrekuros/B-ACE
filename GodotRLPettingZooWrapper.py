@@ -125,6 +125,8 @@ class GodotRLPettingZooWrapper(GodotEnv, ParallelEnv):
             print("GododtPZWrapper::Error:: Unknow Actions Type -> ", self.actions_type)
                                 
         obs, reward, dones, truncs, info = super().step(godot_actions, order_ij=True)
+        
+        #print(obs)
                 
         # Assuming 'obs' is a list of dictionaries with 'obs' keys among others
         for i, agent in enumerate(self.possible_agents):
