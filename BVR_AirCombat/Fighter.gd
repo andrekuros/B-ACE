@@ -4,22 +4,21 @@ const missile = preload("res://missile.tscn")
 const Track   = preload("res://Sim_assets.gd").Track
 const SConv   = preload("res://Sim_assets.gd").SConv
 const RewardsControl = preload("res://Sim_assets.gd").RewardsControl
-
-
 const Calc = preload("res://Calc.gd")
 
-var ownRewards = RewardsControl.new(self)
+
 
 @onready var mainView = get_tree().root.get_node("B_ACE")
 #@onready var sync = get_tree().root.get_node("B_ACE/Sync")
 var manager = null
 var tree = null
+var ownRewards = null
 #@onready var actionsPanel = env.get_node("CanvasLayer/Control/ActionPanel")
 
 var alliesList = []
 # Assume you have a Missile scene set up with its own script for homing in on targets
-var phy_fps = 20
-var action_repeat = 20
+var phy_fps
+var action_repeat
 
 # AIR COMBAT DATA
 var team_id = 1 # Example: 0 or 1 for two different teams
@@ -84,6 +83,12 @@ var target_position = Vector3.ZERO
 var done = false
 var _heuristic = "AP" #"model" / "AP"
 var behavior = "baseline1" # baseline1 / external
+
+var dShot 	= 0.85
+var lCrank 	= 0.6
+var lBreak	= 0.95
+
+
 var AP_mode = "FlyHdg" #"GoTo" / "Hold"
 
 #Simulations config
@@ -155,7 +160,7 @@ func _ready():
 	#$Radar/CollisionShape3D.disabled = true 
 	pass
 
-func update_init_config(config):
+func update_init_config(config, rewConfig = {}):
 		
 	init_config = config
 	
@@ -184,15 +189,21 @@ func update_init_config(config):
 	
 	#Prepare WEZ models	
 	var input_data = ["blue_alt","diffAlt" ,"cosAspect" ,"sinAspect" ,"cosAngleOff", "sinAngleOff"]
+		
+	var wezModels = load_json_file(init_config['wez_models'])	
 	
-	rMax_model = config['rmax_model']
 	rMax_calc = Expression.new()
-	rMax_calc.parse(rMax_model, input_data)	
-	
-	rNez_model = config['rnez_model']
+	rMax_calc.parse(wezModels["RMAX_MODEL"], input_data)	
+		
 	rNez_calc = Expression.new()
-	rNez_calc.parse(rNez_model, input_data)	
+	rNez_calc.parse(wezModels["RNEZ_MODEL"], input_data)	
 	
+	set_behavior(init_config["base_behavior"])
+	dShot  = init_config["beh_config"]["dShot"]
+	lCrank = init_config["beh_config"]["lCrank"]
+	lBreak = init_config["beh_config"]["lBreak"]
+	
+	ownRewards = RewardsControl.new(rewConfig,self)	
 
 func set_behavior(_behavior):	
 	if  _behavior == "baseline1" or _behavior == "duck" or\
@@ -205,8 +216,8 @@ func set_behavior(_behavior):
 
 func reset():
 	
-	if init_config != null:						
-		update_init_config(init_config)
+	#if init_config != null:						
+	#	update_init_config(init_config)
 			
 	needs_reset = false
 	test_executed = false
@@ -255,7 +266,7 @@ func reset():
 		
 	AP_mode = "FlyHdg" #"GoTo" / "Hold"
 		
-	ownRewards.get_total_rewards_and_reset()
+	ownRewards.reset()
 	
 	activated = true
 	killed = false
@@ -376,12 +387,12 @@ func get_obs(with_labels = false):
 					 track.enemy_missile_Nez / 926.0,	
 					 track.threat_factor - 1,
 					 track.offensive_factor - 1,
-					 1,
+					 track.is_missile_support,
 					 1 if track.detected else 0 #13
 				])
 		tracks_added += 1			
 	#SPT info
-	if HRT != null and len_tracks_data_obs > 1:
+	if false: #HRT != null and len_tracks_data_obs > 1:
 		var track = HRT
 		tracks_info.append_array([ 
 					(global_transform.origin.y - track.obj.global_transform.origin.y) / 150.0,					 
@@ -394,7 +405,7 @@ func get_obs(with_labels = false):
 		tracks_added += 1	
 	#print("bef:",  tracks_info, len(own_info))
 	
-	for track in range(len_tracks_data_obs - tracks_added):
+	for track in range(1 - tracks_added):#len_tracks_data_obs - tracks_added):
 		#tracks_info.append_array([0.0, 0.0 , 0.0, 0.0, 0.0 , 0.0, 0.0  ])
 		var ref_enemy = manager.enemies[0]
 		tracks_info.append_array([ 
@@ -408,7 +419,7 @@ func get_obs(with_labels = false):
 	
 	var obs = own_info + tracks_info 
 	
-	if len_allieds_data_obs > 0:
+	if false:#len_allieds_data_obs > 0:
 		obs += allied_info
 	
 	#return {"obs": {"own_info": own_info, "tracks_info" : tracks_info}}	
@@ -432,8 +443,8 @@ func get_obs(with_labels = false):
 		
 		return {"obs": obs, "labels": labels}
 
-func get_reward():	
-	return ownRewards.get_total_rewards_and_reset()
+func get_reward():		
+	return ownRewards.get_step_rewards()
 	
 func set_heuristic(heuristic):
 	self._heuristic = heuristic
@@ -623,7 +634,7 @@ func process_behavior(delta_s):
 	elif behavior == "baseline1":
 		
 		#print(id, " : " ,tatic_status)
-		if HPT != null and HPT.threat_factor > (0.85 + 0.10*int(HPT.is_missile_support)):
+		if HPT != null and HPT.threat_factor > (lBreak + 0.5 * int(HPT.is_missile_support)):
 			tatic_time = 0.0					
 			tatic_status = "Evade"        
 			AP_mode = "FlyHdg"				
@@ -633,8 +644,7 @@ func process_behavior(delta_s):
 
 		elif tatic_status == "Search" or tatic_status == "Return":
 			
-			if HPT != null:				
-				
+			if HPT != null:								
 				#Define new shot distance with randominess
 				shoot_range_error =  1 + randf_range(-shoot_range_variation , shoot_range_variation)						
 				
@@ -650,8 +660,7 @@ func process_behavior(delta_s):
 			   		(sign(strike_line_z) < 0 and global_transform.origin.z < strike_line_z):					
 					desiredG_input = 3.0	
 					tatic_status = "Strike"							
-					tatic_time = 0.0
-					#print(tatic_status)
+					tatic_time = 0.0					
 				
 				if tatic_time >= 120.0:
 					hdg_input = Calc.get_hdg_2d(global_transform.origin, target_position )
@@ -668,15 +677,13 @@ func process_behavior(delta_s):
 						
 		elif tatic_status == "Engage":
 			
-			if HPT != null:							
-				#print(id, " : " , [HPT.offensive_factor, HPT.threat_factor])
-				#print(id, " : " , [HPT.own_missile_RMax*SConv.GDM2NM, HPT.own_missile_Nez*SConv.GDM2NM])																											
-				do_crank 	= HPT.threat_factor > 0.5					
+			if HPT != null:											
 				
+				do_crank 	= HPT.threat_factor > lCrank									
 				hdg_input 	= Calc.clamp_hdg(HPT.radial + 50* int(do_crank) * defense_side)
 														
 				
-				if HPT.offensive_factor > 0.80:					
+				if HPT.offensive_factor > dShot:					
 					#print( id, "(" ,current_time, " ) :", [HPT.offensive_factor, HPT.threat_factor,abs(HPT.aspect_angle)])					
 					if abs(HPT.aspect_angle) < 15.0:					
 						if launch_missile_at_target(HPT):							
@@ -737,13 +744,11 @@ func process_behavior(delta_s):
 		elif tatic_status == "Evade" and tatic_time >= 50.0:
 			
 			tatic_status = "Search"		
-			AP_mode = "FlyHdg"
-			
+			AP_mode = "FlyHdg"			
 			hdg_input = Calc.clamp_hdg(current_hdg + 180)							
-			desiredG_input = 3.0		
-					
+			desiredG_input = 3.0							
 			tatic_time = 0.0		
-			#print(tatic_status, tatic_time, " / ", hdg_input)
+			
 	else:
 		print("FIGHTER::ERROR:: Unknow behavior selected ", behavior)		
 		
@@ -819,8 +824,7 @@ func _physics_process(delta: float) -> void:
 		
 	if  behavior == "external"  and shoot_input > 0 and HPT != null:
 		if launch_missile_at_target(HPT): 									
-			shoot_input = -1	
-	
+			shoot_input = -1		
 	
 	var turn_g = clamp(desiredG_input, 1.0,  max_g * altitude_g_factor(current_level)) * SConv.GRAVITY_GDM
 	var turn_speed =  turn_g / velocity.length() 
@@ -921,6 +925,7 @@ func launch_missile_at_target(target_track):
 								
 		missiles -= 1		
 		ownRewards.add_missile_fire_rew()
+		manager.inform_state(team_id, "missile")
 		return true
 	else:
 		ownRewards.add_missile_no_fire_rew()
@@ -938,7 +943,7 @@ func own_kill():
 		killed = true	
 		done = true	
 		ownRewards.add_hit_own_rew()		
-		manager.inform_kill(team_id) 	
+		manager.inform_state(team_id, "killed") 	
 					
 func reactivate():
 	# Enabling processing
@@ -951,7 +956,7 @@ func reactivate():
 	activated = true
 	killed = false
 	done = false
-	ownRewards.get_total_rewards_and_reset()
+	ownRewards.reset()
 	missiles = 6	
 	
 func inform_missile_miss(_missile):
@@ -987,5 +992,26 @@ func change_mesh_instance_colors(node: Node, new_color: Color) -> void:
 	# Recursively call this function for all children of the current node.
 	for child in node.get_children():
 		change_mesh_instance_colors(child, new_color)
+
+func load_json_file(file_path):
+	var file = FileAccess.open(file_path, FileAccess.READ)
+
+	if file:
+		var json_string = file.get_as_text()
+		file.close()
+
+		var json = JSON.new()
+		var parse_result = json.parse(json_string)
+
+		if parse_result == OK:
+			var data = json.get_data()
+			return data
+		else:
+			print("JSON Parse Error: ", json.get_error_message())
+			return null
+	else:
+		print("File not found: ", file_path)
+		return null
+
 
 

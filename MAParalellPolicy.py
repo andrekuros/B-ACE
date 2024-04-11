@@ -12,31 +12,9 @@ from tianshou.policy import PGPolicy
 import numpy as np
 import torch
 
-# def _new_forward_PG(
-#     self,
-#     batch: Batch,
-#     state: Optional[Union[dict, Batch, np.ndarray]] = None,
-#     **kwargs: Any,
-# ) -> Batch:
-   
-#     logits, hidden = self.actor(batch.obs, state=state, info=batch.info)
-#     if isinstance(logits, tuple):
-#         dist = self.dist_fn(*logits)
-#     else:
-#         dist = self.dist_fn(logits)
-#     if self._deterministic_eval and not self.training:
-#         if self.action_type == "discrete":
-#             act = logits.argmax(-1)
-#         elif self.action_type == "continuous":
-#             act = logits
-#     else:
-#         act = dist.sample()
-#     return Batch(logits=logits, act=act, state=hidden, dist=dist)
-
-
 class MAParalellPolicy(BasePolicy):
     def __init__(self, policies: List[BasePolicy], env: PettingZooParallelEnv, device = None, **kwargs):
-        super().__init__(action_space=env.action_space, **kwargs)
+        super().__init__(action_space=env.action_space(), **kwargs)
         assert len(policies) == len(env.agents), "One policy must be assigned for each agent."
         
         self.policies = {agent: policy for agent, policy in zip(env.agents, policies)}
@@ -50,33 +28,16 @@ class MAParalellPolicy(BasePolicy):
 
     def forward(self, batch: Batch, state: Optional[Union[dict, Batch]] = None, **kwargs):
         action_dict = {}
-        
-        
+                
         for agent_id, policy in self.policies.items():
             agent_data = Batch({key: value[agent_id] if agent_id in value else Batch() for key, value in batch.items()})
-                                 
+
             action_dict[agent_id] = policy(agent_data, state)  # doesn't map to the target action range
             # act = policy.map_action(act, agent_data)
             
-        print("MAPPARL: " , action_dict)
         return action_dict#Batch(action_dict, state=state)
     
-    # def _compute_joint_next_q_values(self, sample_size: int, buffers: Dict[str, ReplayBuffer]) -> torch.Tensor:
-    #     # Compute joint Q-values for the next state for all agents
-    #     with torch.no_grad():
-    #         all_batches = [buffer.sample(sample_size)[0] for buffer in buffers.values()]
-    #         all_next_q_values = [policy(batch).logits.max(dim=1, keepdim=True)[0] 
-    #                              for policy, batch in zip(self.policies.values(), all_batches)]
-    #         joint_next_q_values = sum(all_next_q_values)
-        
-    #     joint_next_q_values_np = joint_next_q_values.squeeze(-1).cpu().numpy() / 3
 
-    #     # if np.mean(joint_next_q_values_np) <  0:
-    #     #     print(np.mean(joint_next_q_values_np))
-                 
-    #     return joint_next_q_values_np  # Remove the last dimension if necessary
-
-       
     def update(self, sample_size: int, buffers: Dict[str, ReplayBuffer], **kwargs: Any) -> Dict[str, Any]:
         """Update the policy network for each agent."""
         results = {}
@@ -128,32 +89,7 @@ class MAParalellPolicy(BasePolicy):
         
         return out
 
-    # def compute_joint_nstep_return(self, batch, buffer, indices, gamma, n_step):
-    #     # Initialize containers for n-step returns and rewards
-    #     n_step_returns = np.zeros(len(indices), dtype=np.float32)
-    #     n_step_rewards = np.zeros(len(indices), dtype=np.float32)
-
-    #     # Loop over each step to accumulate rewards and calculate returns
-    #     for n in range(n_step):
-    #         # Get indices for the nth step
-    #         nth_indices = buffer.next(indices, n)
-
-    #         # Compute and accumulate rewards
-    #         n_step_rewards += (gamma ** n) * buffer.rew[nth_indices]
-
-    #         # Check if nth step is terminal
-    #         is_terminal = buffer.done[nth_indices] | buffer.terminated[nth_indices]
-    #         if n == n_step - 1 or np.any(is_terminal):
-    #             # For the last step or terminal step, compute the joint Q-values
-    #             joint_q_values = self._compute_joint_next_q_values(1, {k: buffer for k in self.policies.keys()})
-    #             # Calculate the n-step return
-    #             n_step_returns[indices] = n_step_rewards + (gamma ** n_step) * joint_q_values * (~is_terminal)
-    #             break
-
-    #     return n_step_returns
-
-
-    
+        
     def exploration_noise(self, act: Union[np.ndarray, Batch],
                           batch: Batch) -> Union[np.ndarray, Batch]:
         """Add exploration noise from sub-policy onto act."""

@@ -15,7 +15,6 @@ var last_know_velocity
 var direction_to_target
 var current_velocity
 
-
 var n_steps = 0
 
 var max_time_of_flight: float = 50.0 
@@ -149,7 +148,7 @@ func _on_area_3d_body_entered(body):
 		# Implement what happens when the missile hits a target				
 		if body.activated:
 			body.own_kill()		
-			#Reward of hitting enemy
+			#Reward of hitting enemy			
 			shooter.ownRewards.add_hit_enemy_rew()
 			# Remove the missile from the scene
 		#print(time_of_fligth)

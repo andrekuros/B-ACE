@@ -2,23 +2,20 @@ extends Node3D
 
 var fighterObj   = preload("res://Fighter.tscn")
 const SConv      = preload("res://Sim_assets.gd").SConv
-const EnvConfig  = preload("res://Sim_assets.gd").EnvConfig
-const SimConfig  = preload("res://Sim_assets.gd").SimConfig
 const SimGroups  = preload("res://Sim_assets.gd").SimGroups
 
 @onready var mainView = get_tree().root.get_node("B_ACE")
 var tree = null
 
-const FinalState = preload("res://Sim_assets.gd").FinalState
-var finalState = FinalState.new()
+#const RewardsControl = preload("res://Sim_assets.gd").RewardsControl
 
-const RewardsControl = preload("res://Sim_assets.gd").RewardsControl
-var refRewards = RewardsControl.new(self)
+var finalState 
 
 var id
 
 var envConfig
-var simConfig
+var agentsConfig
+var rewardsConfig
 var simGroups
 
 var agents = []
@@ -28,6 +25,8 @@ var agents_alive_control
 var enemies_alive_control
 
 var n_action_steps
+var action_repeat
+var max_cycles
 var phy_fps
 var physics_updates = 0
 var elapsed_time = 0.0
@@ -35,15 +34,19 @@ var elapsed_time = 0.0
 var stop_simulation = false
 var initialized = false
 	
-func initialize(_id, _tree, _envConfig, _simConfigDict):
+func initialize(_id, _tree, _envConfig, _agentsConfig):
 		
 	id = _id
 	tree = _tree	
 	
 	envConfig = _envConfig
-	simConfig = SimConfig.new(_simConfigDict)	
+	
+	action_repeat	= int(envConfig["action_repeat"])
+	max_cycles		= int(envConfig["max_cycles"])
+	
+	agentsConfig = _agentsConfig.duplicate(true)
+	
 	simGroups = SimGroups.new(id)
-	finalState.reset()
 	
 	_set_agents(_tree)	 		
 	_set_heuristic("AP")
@@ -56,37 +59,35 @@ func _physics_process(delta):
 	physics_updates += 1    
 	elapsed_time += delta	
 				
-	if agents_alive_control == 0:		
+	if agents_alive_control == 0 and not stop_simulation :		
 		
 		var missiles = tree.get_nodes_in_group(simGroups.MISSILE)
 		if len(missiles) == 0:
 			stop_simulation = true
 			for agent in agents:			
-				agent.ownRewards.add_final_episode_reward("Team_Killed")
-				agents_alive_control = -1		
+				agent.ownRewards.add_final_episode_reward("Team_Killed")				
 			#print("Sync::INFO::TeamKilled" )
 			for enemy in enemies:
 				enemy.done = true
 	
-	if enemies_alive_control == 0:		
+	if enemies_alive_control == 0 and not stop_simulation:		
 		
 		var missiles = tree.get_nodes_in_group(simGroups.MISSILE)		
 		if len(missiles) == 0:
 			stop_simulation = true
 			for agent in agents:
 				agent.done = true
-				agent.ownRewards.add_final_episode_reward("Enemies_Killed")	
-				enemies_alive_control = -1
+				agent.ownRewards.add_final_episode_reward("Enemies_Killed")					
 			#print("Sync::INFO::EnemyKilled" )
-			
-	if n_action_steps % envConfig.action_repeat != 0 and not stop_simulation:
+				
+	if n_action_steps % action_repeat != 0 and not stop_simulation:
 		n_action_steps += 1	
 		return
 			
 	#Reach This part only every ActionRepeat Steps
 	n_action_steps += 1
 		
-	if n_action_steps >= envConfig.max_cycles:
+	if n_action_steps >= max_cycles:
 		for enemy in enemies:
 			enemy.done = true 
 			
@@ -107,7 +108,7 @@ func _physics_process(delta):
 			enemy_goal_reward += -1.0 / enemy.dist2go			
 			if enemy.dist2go < 3.0: #300 meters
 				enemy_on_target = true
-				finalState.red_taget = 1 
+				finalState[1]['mission'] += 1 
 
 	if enemy_on_target:
 		for agent in agents:
@@ -120,25 +121,24 @@ func _physics_process(delta):
 	var own_goal_reward = 0.0
 	for agent in agents:
 		if agent.activated and not agent.get_done():							
-			if agent.dist2go > 185.2 * 2: #20NM
+			if agent.dist2go > 185.2 * 2 and enemies_alive_control > 0: #20NM
 				own_goal_reward -= agent.dist2go / 185200
 							
+			#print([enemy_goal_reward, own_goal_reward, enemies_alive_control])
 			#Add the calculated rews
 			agent.ownRewards.add_mission_rew(enemy_goal_reward)
 			agent.ownRewards.add_mission_rew(own_goal_reward)
 
 func _set_agents(_tree):	
-			
-	
+				
 	#Scale Vectors only for Visualization	
 	const visual_scaleVector = Vector3(4.0,  4.0,  4.0)
 	
-	var listComponents = []
-	
-	for i in range(simConfig.num_allies):
+	var listComponents = []	
+	for i in range(agentsConfig["blue_agents"]["num_agents"]):
 		listComponents.append("Allied_Agent")
 	
-	for i in range(simConfig.num_enemies):
+	for i in range(agentsConfig["red_agents"]["num_agents"]):
 		listComponents.append("Enemy_Agent")
 		
 	for comp in listComponents:
@@ -149,22 +149,21 @@ func _set_agents(_tree):
 		add_child(newFigther)
 		
 		newFigther.manager = self
-		newFigther.get_node("RenderModel").set_scale(visual_scaleVector)		
+		newFigther.get_node("RenderModel").set_scale(visual_scaleVector)
 		
-		newFigther.phy_fps = envConfig.phy_fps
-		newFigther.action_repeat = envConfig.action_repeat
-		newFigther.action_type = envConfig.action_type											
+		newFigther.phy_fps 		 = int(envConfig["phy_fps"])
+		newFigther.action_repeat = int(envConfig["action_repeat"])
+		newFigther.action_type 	 = envConfig["action_type"]
 		
 		newFigther.add_to_group(simGroups.FIGHTER)
-		newFigther.simGroups = simGroups
+		newFigther.simGroups = simGroups		
+		newFigther.set_fullView(envConfig["full_observation"])			
 		
-		newFigther.set_fullView(envConfig.full_observation)	
-		newFigther.set_actions_2d(envConfig.actions_2d)	
-							
+				
 		if comp == "Allied_Agent":
 			
-			var blue_config = simConfig.agents_config["blue_agents"].duplicate(true)
-			newFigther.team_id = 0
+			var blue_config = agentsConfig["blue_agents"].duplicate(true)
+			newFigther.team_id 	= 0
 			agents.append(newFigther)			
 			
 			var offset_x = 0
@@ -183,12 +182,11 @@ func _set_agents(_tree):
 			newFigther.team_color_group = simGroups.BLUE
 									
 			blue_config["offset_pos"] = Vector3(offset_x * 6, 0.0, 0.0)			
-			newFigther.update_init_config(blue_config)
-			newFigther.set_behavior(simConfig.agents_behavior)
+			newFigther.update_init_config(blue_config, envConfig["RewardsConfig"])			
 			newFigther.reset()
 						
 		else:
-			var red_config = simConfig.agents_config["red_agents"].duplicate(true)
+			var red_config = agentsConfig["red_agents"].duplicate(true)
 			newFigther.team_id = 1
 			enemies.append(newFigther)
 									
@@ -206,9 +204,8 @@ func _set_agents(_tree):
 			newFigther.team_color = "RED"
 			newFigther.team_color_group = simGroups.RED
 			
-			red_config["offset_pos"] = Vector3(offset_x * 6, 0.0, 0.0)
-			newFigther.update_init_config(red_config)
-			newFigther.set_behavior(simConfig.enemies_behavior)
+			red_config["offset_pos"] = Vector3(offset_x * 6, 0.0, 0.0)			
+			newFigther.update_init_config(red_config, envConfig["RewardsConfig"])			
 			newFigther.reset()			
 																										
 		fighters.append(newFigther)
@@ -227,7 +224,15 @@ func _reset_simulation():
 	agents_alive_control = len(agents)
 	enemies_alive_control = len(enemies)
 	
-	finalState.reset()
+	finalState = []
+	
+	for i in range(2):
+		finalState.append( {	
+				"killed" 	: 0,
+				"mission"	: 0,
+				"reward"  	: 0.0,
+				"missile"	: 0
+				})
 	
 	stop_simulation = false
 	n_action_steps = 0
@@ -264,6 +269,7 @@ func _get_reward_from_agents():
 	var rewards = [] 
 	for agent in agents:
 		rewards.append(agent.get_reward())		
+		finalState[agent.team_id]["reward"] += rewards[-1]		
 	return rewards    
 	
 func _get_done_from_agents():
@@ -300,31 +306,20 @@ func _set_heuristic(heuristic):
 	for agent in agents:
 		agent.set_heuristic(heuristic)
 
-func _collect_results():
-	
-	var blues_killed = 0
-	var reds_killed   = 0
-	
-	for agent in agents:
-		blues_killed += int(agent.killed)
-	
-	for enemy in enemies:
-		reds_killed += int(enemy.killed)
-	
-	return {
-			"blues_killed": blues_killed,
-			"reds_killed": reds_killed
-		   }
+func _collect_results():	
+	return finalState
 	
 	
-func inform_kill(team_id):
+func inform_state(team_id, condition):	
 	
-	if team_id == 0:
-		agents_alive_control    -= 1
-		finalState.blues_killed += 1		
-	else:
-		enemies_alive_control   -= 1
-		finalState.reds_killed   += 1
-	
-	
+	if condition == "killed":
+		if team_id == 0:
+			agents_alive_control  -= 1
+		else:
+			enemies_alive_control -= 1
+				
+		finalState[team_id]["killed"] 	+= 1
+		
+	elif condition == "missile":
+		finalState[team_id]["missile"] 	+= 1		
 	

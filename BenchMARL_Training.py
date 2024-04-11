@@ -82,40 +82,81 @@ if __name__ == "__main__":
     #experiment_config.loggers = []
     
     experiment_config.save_folder = "Results"
-    experiment_config.lr = 0.000003
+    experiment_config.lr = 0.0003
     
     #TASK Config    
-    b_ace_config = { 'EnvConfig' : {
-                        'task': 'b_ace_v1',
-                        'env_path': 'BVR_AirCombat/bin/B_ACE_v5_noSupport.exe',
-                        'renderize': 1,
-                        'experiment_mode'  : 0,
-                        'parallel_envs': 1,
-                        'seed': 10,
-                        'port': 12500,
-                        'action_repeat': 20,
-                        'speedup': 2000,
-                        'action_type': 'Low_Level_Continuous' ,                        
-                        'full_observation': 0,
-                        'actions_2d': 0
-                        },
-                    "SimConfig" : {                        
-                        'num_allies': 1,
-                        'num_enemies': 1,
-                        'enemies_behavior': 'duck',
-                        'agents_behavior' : 'external'    
-                    }
-                }
-    
-    # # Update b_ace_config based on the provided key-value pairs
-    # if args != None:
-    #     for kv_pair in args.config:
-    #         key, value = kv_pair.split('=')
-    #         keys = key.split('.')
-    #         config = b_ace_config
-    #         for k in keys[:-1]:
-    #             config = config[k]
-    #         config[keys[-1]] = type(config[keys[-1]])(value)
+    b_ace_config = { 	
+                    "EnvConfig" : 
+                    {
+                        "task": "b_ace_v1",
+                        "env_path": "BVR_AirCombat/bin/B_ACE_v6.exe",
+                        "port": 12500,
+                        "renderize": 1,
+                        "debug_view": 0,
+                        "phy_fps": 20,
+                        "speed_up": 50000,
+                        "max_cycles": 36000,
+                        "experiment_mode"  : 0,
+                        "parallel_envs": 1,	
+                        "seed": 1,	
+                        "action_repeat": 20,	
+                        "action_type": "Low_Level_Continuous",                        
+                        "full_observation": 1,
+                        
+                        "RewardsConfig" : {
+                            "mission_factor": 100.0,
+                            "missile_fire_factor": -0.1,
+                            "missile_no_fire_factor": -0.001,
+                            "missile_miss_factor": -0.5,
+                            "detect_loss_factor": -0.1,
+                            "keep_track_factor": 0.005,
+                            "hit_enemy_factor": 3.0,
+                            "hit_own_factor": -5.0,
+                            "situation_factor": 0.1,
+                            "final_team_killed_factor": -5.0,
+                            "final_enemy_on_target_factor": -3.0,
+                            "final_enemies_killed_factor": 5.0,
+                            "final_max_cycles_factor": 3.0
+                        }
+                    },
+
+                    "AgentsConfig" : 
+                    {
+                        "blue_agents": { 
+                            "num_agents" : 1,
+                            "beh_config" : {
+                                "dShot" : 0.85,
+                                "lCrank": 0.60,
+                                "lBreak": 0.95
+                            },
+                            "base_behavior": "external",                  
+                            "init_position": {"x": 0.0, "y": 25000.0,"z": 30.0},
+                            "offset_pos": {	"x": 0.0, "y": 0.0, "z": 0.0},
+                            "init_hdg": 0.0,                        
+                            "target_position": {"x": 0.0,"y": 25000.0,"z": 30.0},
+                            "rnd_offset_range":{"x": 10.0,"y": 10000.0,"z": 5.0},				
+                            "rnd_shot_dist_var": 0.0,
+                            "wez_models" : "res://assets/Default_Wez_params.json"
+                        },	
+                        "red_agents":
+                        { 
+                            "num_agents" : 1, 
+                            "base_behavior": "baseline1",
+                            "beh_config" : {
+                                "dShot" : 0.85,
+                                "lCrank": 0.60,
+                                "lBreak": 0.95
+                            },
+                            "init_position": {"x": 0.0,"y": 25000.0,"z": -30.0},
+                            "offset_pos": {"x": 0.0,"y": 0.0,"z": 0.0},
+                            "init_hdg" : 180.0,                        
+                            "target_position": {"x": 0.0,"y": 25000.0,"z": 30.0},
+                            "rnd_offset_range":{"x": 10.0,"y": 10000.0,"z": 5.0},				
+                            "rnd_shot_dist_var": 0.0,
+                            "wez_models" : "res://assets/Default_Wez_params.json"
+                        }
+                    }	
+}
     
     
     task = b_ace.B_ACE.b_ace.get_from_yaml()  
@@ -142,7 +183,7 @@ if __name__ == "__main__":
         algorithm_config = MaddpgConfig.get_from_yaml()
     else:  # 'iddpg'
         #algorithm_config = IddpgConfig.get_from_yaml()
-        algorithm_config = IddpgConfig.get_from_yaml()
+        algorithm_config = IppoConfig.get_from_yaml()
     
     # Loads from "benchmarl/conf/model/layers/mlp.yaml"
     #model_config = GnnConfig.get_from_yaml()
@@ -160,7 +201,7 @@ if __name__ == "__main__":
             critic_model_config=critic_model_config,
             seed=i,
             config=experiment_config,
-            callbacks=[SaveBest() ],
+            callbacks=None#[SaveBest() ],
         )
         experiment.run()
 # %%

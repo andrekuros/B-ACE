@@ -1,39 +1,80 @@
-from tianshou.data.collector import Collector
-
-import time
-import warnings
 from typing import Any, Callable, Dict, List, Optional, Union
-
-import gymnasium as gym
+import warnings
+import time
 import numpy as np
 import torch
+from tianshou.data.collector import Collector
+from tianshou.data import Batch, ReplayBuffer
+from tianshou.env import BaseVectorEnv
+from tianshou.policy import BasePolicy
+from tianshou.utils.print import DataclassPPrintMixin
+from tianshou.data.types import RolloutBatchProtocol
 
 from tianshou.data import (
     Batch,
+    CachedReplayBuffer,
+    PrioritizedReplayBuffer,
     ReplayBuffer,
-     to_numpy,
+    ReplayBufferManager,
+    SequenceSummaryStats,
+    VectorReplayBuffer,
+    to_numpy,
 )
-#from tianshou.data.batch import _alloc_by_keys_diff
-from tianshou.env import BaseVectorEnv, DummyVectorEnv
-from tianshou.policy import BasePolicy
+
+#@dataclass(kw_only=True)
+class CollectStatsBase(DataclassPPrintMixin):
+    """The most basic stats, often used for offline learning."""
+
+    n_collected_episodes: int = 0
+    """The number of collected episodes."""
+    n_collected_steps: int = 0
+    """The number of collected steps."""
+
+class CollectStats(CollectStatsBase):
+    """A data structure for storing the statistics of rollouts."""
+
+    def __init__(self, agent_stats: Dict[str, Dict[str, Any]]) -> None:
+        self.agent_stats = agent_stats
 
 class CollectorMA(Collector):
     def __init__(
         self,
         policy: BasePolicy,
-        env: Union[gym.Env, BaseVectorEnv],
+        env: BaseVectorEnv,
         buffer: Dict[str, ReplayBuffer],
+        agents: List[str],
         preprocess_fn: Optional[Callable[..., Batch]] = None,
         exploration_noise: bool = False,
     ):
         super().__init__(policy, env, None, preprocess_fn, exploration_noise)
+        self.agents = agents
         self._assign_buffers(buffer)
-    
+        
+        self.data: RolloutBatchProtocol
+        
+        #self.data = Batch()
+        #for agent_id in self.agents:
+        #    self.data[agent_id] = Batch(
+        #        obs={}, act={}, rew={}, terminated={}, truncated={}, done={}, obs_next={}, info={}, policy={}
+        #    )
+        # self.data = Batch()
+        # for agent_id in self.agents:
+        #     self.data[agent_id] = Batch(
+        #         obs={}, act={}, rew={}, terminated={}, truncated={}, done={}, obs_next={}, info={}, policy={}
+        #     )
+        #     for key in self.data[agent_id].keys():
+        #         self.data[agent_id][key] = [None] * self.env_num
+
     def _assign_buffers(self, buffer: Dict[str, ReplayBuffer]):
         if buffer is None:
-            raise ValueError("Buffers cannot be None for CollectorMA")        
+            raise ValueError("Buffers cannot be None for CollectorMA")
+        agent_ids = set(buffer.keys())
+        env_agent_ids = set(self.agents)
+        if agent_ids != env_agent_ids:
+            raise ValueError(
+                f"Buffer agent IDs {agent_ids} do not match environment agent IDs {env_agent_ids}"
+            )
         self.buffer = buffer
-        
 
     def collect(
         self,
@@ -43,8 +84,7 @@ class CollectorMA(Collector):
         render: Optional[float] = None,
         no_grad: bool = True,
         gym_reset_kwargs: Optional[Dict[str, Any]] = None,
-    ) -> Dict[str, Any]:
-        
+    ) -> CollectStats:
         assert not self.env.is_async, "Please use AsyncCollector if using async venv."
         if n_step is not None:
             assert n_episode is None, (
@@ -52,244 +92,173 @@ class CollectorMA(Collector):
                 f"collect, got n_step={n_step}, n_episode={n_episode}."
             )
             assert n_step > 0
-            if not n_step % self.env_num == 0:
+            if n_step % self.env_num != 0:
                 warnings.warn(
                     f"n_step={n_step} is not a multiple of #env ({self.env_num}), "
-                    "which may cause extra transitions collected into the buffer."
+                    "which may cause extra transitions collected into the buffer.",
                 )
             ready_env_ids = np.arange(self.env_num)
         elif n_episode is not None:
             assert n_episode > 0
             ready_env_ids = np.arange(min(self.env_num, n_episode))
-            self.data = self.data[:min(self.env_num, n_episode)]
+            self.data = self.data[: min(self.env_num, n_episode)]
         else:
             raise TypeError(
                 "Please specify at least one (either n_step or n_episode) "
-                "in AsyncCollector.collect()."
+                "in AsyncCollector.collect().",
             )
 
         start_time = time.time()
 
         step_count = 0
         episode_count = 0
-        episode_rews = []
-        episode_lens = []
-        episode_start_indices = []
+        episode_rews = {agent_id: [] for agent_id in self.agents}
+        episode_lens = {agent_id: [] for agent_id in self.agents}
+        episode_start_indices = {agent_id: [] for agent_id in self.agents}
 
-        # Initialize a collective 'done' array for all agents
         collective_done = np.zeros(self.env_num, dtype=bool)
 
         while True:
-            assert len(self.data) == len(ready_env_ids)
-            # restore the state: if the last state is None, it won't store
-            last_state = self.data.policy.pop("hidden_state", None)
+            # restore the state for each agent           
+            
+            # last_state = {
+            #     agent_id: self.data[agent_id].policy.pop("hidden_state", None)
+            #     for agent_id in self.agents
+            # }
+            for agent_id, agent_obs in self.data.obs.items():                
+                    # Process the observation for the current agent and environment                   
+                    last_state = {agent_id : self.data.policy.agent_id.pop("hidden_state", None) if agent_id in self.data.policy else None}
 
-            # get the next action
-            if random:
-                try:
-                    act_sample = [
-                        self._action_space[i].sample() for i in ready_env_ids
-                    ]
-                except TypeError:  # envpool's action space is not for per-env
-                    act_sample = [self._action_space.sample() for _ in ready_env_ids]
-                act_sample = self.policy.map_action_inverse(act_sample)  # type: ignore
-                self.data.update(act=act_sample)
-            else:
-                if no_grad:
-                    with torch.no_grad():  # faster than retain_grad version
-                        # self.data.obs will be used by agent to get result
-                        result = self.policy(self.data, last_state)
+            # get the next action for each agent
+            agent_data = {}
+            for agent_id in self.agents:
+                if random:
+                    act_sample = self._action_space[agent_id].sample()
+                    act_sample = self.policy.map_action_inverse(act_sample)
+                    agent_data[agent_id] = Batch(act=act_sample)
                 else:
-                    result = self.policy(self.data, last_state)
-                print("COLLECTOR_MA (result):", result)
-                # update state / act / policy into self.data
-                policy = result.get("policy", Batch())
-                assert isinstance(policy, Batch)
-                state = result.get("state", None)
-                if state is not None:
-                    policy.hidden_state = state  # save state into buffer
-                print("COLLECTORMA:",  result)
-                act = to_numpy(result['agent_0'].act)
-                if self.exploration_noise:
-                    act = self.policy.exploration_noise(result, self.data)['agent_0'].act
-                self.data.update(policy=policy, act=act)
+                    if no_grad:
+                        with torch.no_grad():
+                            
+                            result = self.policy.policies[agent_id](Batch({"obs": self.data.obs[agent_id], "info" : None}), last_state[agent_id])
+                    else:
+                        result = self.policy.policies[agent_id](self.data.obs[agent_id], last_state[agent_id])
+
+                    policy = result.get("policy", Batch())
+                    assert isinstance(policy, Batch)
+                    state = result.get("state", None)
+                    if state is not None:
+                        policy.hidden_state = state  # save state into buffer
+                    act = to_numpy(result.act)
+                    if self.exploration_noise:
+                        act = self.policy.policies[agent_id].exploration_noise(act, Batch({"obs": self.data.obs[agent_id], "info" : None}))
+                    agent_data[agent_id] = Batch(policy=policy, act=act)
+
+            # combine actions for all agents          
+            self.data.update({
+                agent_id: Batch({
+                    key: value
+                    for key, value in agent_data[agent_id].items()
+                })
+                for agent_id in self.agents
+            })
 
             # get bounded and remapped actions first (not saved into buffer)
-            action_remap = self.policy.map_action(self.data.act)
-            
-            # Step in the environment
+            action_remap = {
+                agent_id: self.policy.map_action(self.data[agent_id].act)
+                for agent_id in self.agents
+            }
+
             # step in env
-            print("CollectorMA:" , action_remap)
-            obs_next, rew, terminated, truncated, info = self.env.step(
-                action_remap,  # type: ignore
-                ready_env_ids
-            )
-            
-            self.data.update(
-                obs_next=obs_next,
-                rew=rew,
-                terminated=terminated,
-                truncated=truncated,
-                #done=done,
-                info=info
-            )
-                        
-            # Initialize containers for episode statistics
-            ep_rews = {agent_id: [] for agent_id in self.buffer.keys()}
-            ep_lens = {agent_id: [] for agent_id in self.buffer.keys()}
-            ep_idxs = {agent_id: [] for agent_id in self.buffer.keys()}
+            obs_next, rew, terminated, truncated, info = self.env.step(action_remap, ready_env_ids)
 
-            # Process step data for each agent
-            for i, agent_id in enumerate(self.buffer.keys()):
-                
-                # Extract and process data for the current agent across all environments                                            
-                agent_step_data = {
-                    key: self.extract_agent_data(self.data[key], agent_id)
-                    for key in self.data.keys()
-                }
+            # update data for each agent
+            for agent_id in self.agents:
+                self.data[agent_id].update(
+                    obs_next=obs_next[agent_id],
+                    rew=rew[agent_id],
+                    terminated=terminated[agent_id],
+                    truncated=truncated[agent_id],
+                    info=info[agent_id],
+                )
+                done = np.logical_or(terminated[agent_id], truncated[agent_id])
+                collective_done = np.logical_or(collective_done, done)
 
-
-                # Update the collective 'done' array for all environments
-                collective_done |= self.check_done_states(agent_step_data)
-
-                # Apply preprocessing if defined
                 if self.preprocess_fn:
-                    preprocessed_data = self.preprocess_fn(agent_step_data)
-                    agent_step_data.update(preprocessed_data)
+                    self.data[agent_id].update(
+                        self.preprocess_fn(
+                            obs_next=self.data[agent_id].obs_next,
+                            rew=self.data[agent_id].rew,
+                            done=done,
+                            info=self.data[agent_id].info,
+                            policy=self.data[agent_id].policy,
+                            env_id=ready_env_ids,
+                            act=self.data[agent_id].act,
+                        ),
+                    )
 
-                # Add data to the agent's buffer
-                ptr, ep_rew, ep_len, ep_idx = self.buffer[agent_id].add(agent_step_data)
-                
-                # if i == 0:
-                #Since agents act in sincrony, just take 1
-                ep_rews[agent_id].append(ep_rew)
-                ep_lens[agent_id].append(ep_len)
-                ep_idxs[agent_id].append(ep_idx)                                                     
-                        
+                # add data into the buffer
+                ptr, ep_rew, ep_len, ep_idx = self.buffer[agent_id].add(
+                    self.data[agent_id], buffer_ids=ready_env_ids
+                )
+
+                episode_rews[agent_id].extend(ep_rew)
+                episode_lens[agent_id].extend(ep_len)
+                episode_start_indices[agent_id].extend(ep_idx)
+
             # collect statistics
             step_count += len(ready_env_ids)
 
-            # Check and handle if any environment is done
+            if render:
+                self.env.render()
+                if render > 0 and not np.isclose(render, 0):
+                    time.sleep(render)
+
             if np.any(collective_done):
-                
                 env_ind_local = np.where(collective_done)[0]
-                collective_done[env_ind_local] = False
                 env_ind_global = ready_env_ids[env_ind_local]
                 episode_count += len(env_ind_local)
 
-                episode_lens.append(ep_len[env_ind_local])
-                episode_rews.append(ep_rew[env_ind_local])
-                episode_start_indices.append(ep_idx[env_ind_local])                
-
-                # Reset finished environments
                 self._reset_env_with_ids(env_ind_local, env_ind_global, gym_reset_kwargs)
-                
-                for i in env_ind_local:
-                    self._reset_state(i)
 
-                # Remove surplus environment IDs
+                for i in env_ind_local:
+                    for agent_id in self.agents:
+                        self.data[agent_id].obs[i] = self.data[agent_id].obs_next[i]
+                        self._reset_state(i)
+
                 if n_episode:
                     surplus_env_num = len(ready_env_ids) - (n_episode - episode_count)
                     if surplus_env_num > 0:
                         mask = np.ones_like(ready_env_ids, dtype=bool)
                         mask[env_ind_local[:surplus_env_num]] = False
                         ready_env_ids = ready_env_ids[mask]
-                        self.data = self.data[mask]
+                        for agent_id in self.agents:
+                            self.data[agent_id] = self.data[agent_id][mask]
 
-            self.data.obs = self.data.obs_next
+                collective_done[env_ind_local] = False
 
-            # Check termination conditions
             if (n_step and step_count >= n_step) or (n_episode and episode_count >= n_episode):
                 break
 
-        # Generate statistics
         self.collect_step += step_count
         self.collect_episode += episode_count
-        self.collect_time += max(time.time() - start_time, 1e-9)
+        collect_time = max(time.time() - start_time, 1e-9)
+        self.collect_time += collect_time
 
-        if n_episode:
-            self.data = Batch(
-                obs={}, act={}, rew={}, terminated={}, truncated={}, done={}, obs_next={}, info={}, policy={}
-            )
-            self.reset_env()
+        agent_stats = {}
+        for agent_id in self.agents:
+            rews = np.array(episode_rews[agent_id])
+            lens = np.array(episode_lens[agent_id], int)
+            agent_stats[agent_id] = {
+                "n_collected_episodes": len(rews),
+                "n_collected_steps": sum(lens),
+                "collect_time": collect_time,
+                "collect_speed": sum(lens) / collect_time,
+                "returns": rews,
+                "returns_stat": SequenceSummaryStats.from_sequence(rews) if len(rews) > 0 else None,
+                "lens": lens,
+                "lens_stat": SequenceSummaryStats.from_sequence(lens) if len(lens) > 0 else None,
+            }
 
-        
-        if episode_count > 0:
-            rews, lens, idxs = list(
-                map(
-                    np.concatenate,
-                    [episode_rews, episode_lens, episode_start_indices]
-                )
-            )
-            rew_mean, rew_std = rews.mean(), rews.std()
-            len_mean, len_std = lens.mean(), lens.std()
-        else:
-            rews, lens, idxs = np.array([]), np.array([], int), np.array([], int)
-            rew_mean = rew_std = len_mean = len_std = 0
-
-        return {
-            "n/ep": episode_count,
-            "n/st": step_count,
-            "rews": rews,
-            "lens": lens,
-            "idxs": idxs,
-            "rew": rew_mean,
-            "len": len_mean,
-            "rew_std": rew_std,
-            "len_std": len_std,
-        }
-
-        # # Aggregate episode statistics
-        # aggregated_rews = [np.concatenate(ep_rews[agent_id]) for agent_id in ep_rews]
-        # aggregated_lens = [np.concatenate(ep_lens[agent_id]) for agent_id in ep_lens]
-        # aggregated_idxs = np.concatenate([ep_idxs[agent_id][0] for agent_id in ep_idxs])
-
-        # # Return aggregated statistics
-        # return {
-        #     "n/ep": episode_count,
-        #     "n/st": step_count,
-        #     "rews": aggregated_rews,
-        #     "lens": aggregated_lens,
-        #     "idxs": aggregated_idxs,
-        #     "rew": aggregated_rews,
-        #     "len": aggregated_lens,
-        #     "rew_std": aggregated_rews,
-        #     "len_std": aggregated_lens,
-        # }
-
-
-    def reset_buffer(self, keep_statistics: bool = False) -> None:
-        """Reset the data buffers for all agents."""
-
-        for agent_id, buffer in self.buffer.items():
-            buffer.reset(keep_statistics=keep_statistics)
-
-    
-    
-    def extract_agent_data(self, batch_data, agent_id):
-        """
-        Extract the relevant data for a specific agent from the batched environment data.
-        """
-        agent_data = Batch()        
-
-        for key, value in batch_data.items():
-            # Check if the key is the specific agent's data
-            if key == agent_id:
-                # Extract data specific to the agent
-                agent_data = value
-                break
-
-        return agent_data
-
-
-    def check_done_states(self, agent_data):
-        """
-        Check whether any of the environments have finished an episode for a specific agent.
-        This function will return an array where each element corresponds to an environment,
-        indicating whether the episode has finished in that environment.
-        """
-        terminated = agent_data.get('terminated', np.array([False] * self.env_num))
-        truncated = agent_data.get('truncated', np.array([False] * self.env_num))
-        return np.logical_or(terminated, truncated)
-
+        return CollectStats(agent_stats)
 

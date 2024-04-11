@@ -39,9 +39,9 @@ class GodotRLPettingZooWrapper(GodotEnv, ParallelEnv):
         self.speedup        = self.env_config.get("speedup", 1000)                          
         self.parallel_envs  = self.env_config.get("parallel_envs", 1)   
         
-        self.sim_config = config_kwargs.get("SimConfig", "")
-        self.num_allies = self.sim_config.get("num_allies", 1)
-                                     
+        self.agents_config = config_kwargs.get("AgentsConfig", "")
+        self._num_agents = self.agents_config["blue_agents"].get("num_agents", 1)
+       
         self.port = GodotRLPettingZooWrapper.DEFAULT_PORT + random.randint(0,3100)                 
         self.proc = None
         
@@ -58,7 +58,7 @@ class GodotRLPettingZooWrapper(GodotEnv, ParallelEnv):
         self.num_envs = None
         
         self._handshake()                
-        self.send_sim_config(self.env_config, self.sim_config)                
+        self.send_sim_config(self.env_config, self.agents_config)                
         self._get_env_info()
         
         # sf2 requires a tuple action space
@@ -68,7 +68,7 @@ class GodotRLPettingZooWrapper(GodotEnv, ParallelEnv):
         atexit.register(self._close)
                                 
         #Initialization for PettingZoo Paralell
-        self.agents = [f'agent_{i}' for i in range(self.num_allies)]  # Initialize agents
+        self.agents = [f'agent_{i}' for i in range(self._num_agents)]  # Initialize agents
         self.possible_agents = self.agents[:]
 
         self.agent_idx = [ {agent : i} for i, agent in enumerate(self.possible_agents)]                 
@@ -85,9 +85,9 @@ class GodotRLPettingZooWrapper(GodotEnv, ParallelEnv):
         self.observations =  {agent : {}  for agent in self.possible_agents}  
         self.info =  {agent : {}  for agent in self.possible_agents}  
                             
-    def send_sim_config(self, _env_config, _sim_config):
+    def send_sim_config(self, _env_config, _agents_config):
         message = {"type": "config"}        
-        message["sim_config"] = _sim_config
+        message["agents_config"] = _agents_config
         message["env_config"] = _env_config
         self._send_as_json(message)
             
@@ -97,13 +97,13 @@ class GodotRLPettingZooWrapper(GodotEnv, ParallelEnv):
         result  = super().reset()
         
         observations = []
-        self.observations = {}
-        
+        self.observations = {}        
         for i, indiv_obs in enumerate(result[0]):
             
             self.observations[self.possible_agents[i]] =  indiv_obs["obs"] 
             self.info[self.possible_agents[i]] = {}                  
         # Assuming the reset method returns a dictionary of observations for each agent        
+                
         return self.observations, self.info  
     
     def _observation_space(self, agent):        
@@ -117,17 +117,23 @@ class GodotRLPettingZooWrapper(GodotEnv, ParallelEnv):
     
     def step(self, actions):
         # Assuming the environment's step function can handle a dictionary of actions for each agent                                      
-        if self.action_type == "Low_Level_Continuous":
+        if self.action_type == "Low_Level_Continuous":            
             godot_actions = [np.array([action]) for agent, action in actions.items()]        
+            #godot_actions = [np.array(action) for agent, action in actions.items()]        
         elif self.action_type == "Low_Level_Discrete": 
             godot_actions = [ self.decode_action(action) for agent, action in actions.items()]
         else:
             print("GododtPZWrapper::Error:: Unknow Actions Type -> ", self.actions_type)
                                 
+        #print("GODOT:", godot_actions)
         obs, reward, dones, truncs, info = super().step(godot_actions, order_ij=True)
         
         #print(obs)
-                
+        #self.terminations = []
+        #self.truncations = []
+        self.terminations = False
+        self.truncations = False
+        self.rewards = 0.0
         # Assuming 'obs' is a list of dictionaries with 'obs' keys among others
         for i, agent in enumerate(self.possible_agents):
             # Convert observations, rewards, etc., to tensors
@@ -135,17 +141,25 @@ class GodotRLPettingZooWrapper(GodotEnv, ParallelEnv):
             #     continue
             # .to('cuda') moves the tensor to GPU if you're using CUDA; remove it if not using GPU
             self.observations[agent] =  obs[i]['obs']            
-            self.rewards[agent] = reward[i],#torch.tensor([reward[i]], dtype=torch.float32).to('cuda')
-            self.terminations[agent] = dones[i],#torch.tensor([False], dtype=torch.bool).to('cuda')  # Assuming False for all
-            self.truncations[agent] = truncs[i],#torch.tensor([False], dtype=torch.bool).to('cuda')  # Assuming False for all
+            #self.rewards[agent] = reward[i]#torch.tensor([reward[i]], dtype=torch.float32).to('cuda')
+            #self.terminations.append(dones[i])#torch.tensor([False], dtype=torch.bool).to('cuda')  # Assuming False for all
+            #self.truncations.append(truncs[i])#torch.tensor([False], dtype=torch.bool).to('cuda')  # Assuming False for all
+            
+            self.terminations = self.terminations and dones[i]
+            self.truncations = self.truncations or truncs[i]
+            #self.terminations[agent] = dones[i]#torch.tensor([False], dtype=torch.bool).to('cuda')  # Assuming False for all
+            #self.truncations[agent] = truncs[i]#torch.tensor([False], dtype=torch.bool).to('cuda')  # Assuming False for all
+            self.rewards += reward[i] #torch.tensor([reward[i]], dtype=torch.float32).to('cuda')
+            
+            
+            
             # For 'info', it might not need to be a tensor depending on its use
             self.info[agent] = info[i]  # Assuming 'info' does not need tensor conversion            
                         
         #  # Update the list of active agents based on the 'dones' information
         #  for agent, done in dones.items():
         #      if done:
-        #          self.agents.remove(agent)
-
+        # 
 
         return self.observations, self.rewards, self.terminations, self.truncations, self.info 
     

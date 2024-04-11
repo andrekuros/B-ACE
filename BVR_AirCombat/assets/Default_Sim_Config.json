@@ -1,0 +1,74 @@
+{ 	"EnvConfig" : 
+	{
+		"task": "b_ace_v1",		
+		"port": 12500,
+		"renderize": 1,
+		"debug_view": 0,
+		"phy_fps": 20,
+		"speed_up": 50000,
+		"max_cycles": 36000,
+		"experiment_mode"  : 0,
+		"parallel_envs": 1,	
+		"seed": 1,	
+		"action_repeat": 20,	
+		"action_type": "Low_Level_Continuous",                        
+		"full_observation": 1,
+		
+		"RewardsConfig" : {
+			"mission_factor": 1.0,				
+			"missile_fire_factor": -0.1,		
+			"missile_no_fire_factor": -0.001,
+			"missile_miss_factor": -0.5,
+			"detect_loss_factor": -0.1,
+			"keep_track_factor": 0.005,
+			"hit_enemy_factor": 3.0,
+			"hit_own_factor": -5.0,
+			"situation_factor": 0.1,
+			"final_team_killed_factor": -5.0,
+			"final_enemy_on_target_factor": -3.0,
+			"final_enemies_killed_factor": 5.0,
+			"final_max_cycles_factor": 3.0
+		}
+	},
+
+	"AgentsConfig" : 
+	{
+		"blue_agents": { 
+			"num_agents" : 1,
+			
+			"base_behavior": "baseline1",
+			"beh_config" : {
+				"dShot" : 0.85,
+				"lCrank": 0.60,
+				"lBreak": 0.95
+			},                  
+			
+			"init_position": {"x": 0.0, "y": 25000.0,"z": 30.0},
+			"offset_pos": {	"x": 0.0, "y": 0.0, "z": 0.0},
+			"init_hdg": 0.0,                        
+			"target_position": {"x": 0.0,"y": 25000.0,"z": -30.0},
+			"rnd_offset_range":{"x": 10.0,"y": 10000.0,"z": 5.0},				
+			"rnd_shot_dist_var": 0.0,
+			"wez_models" : "res://assets/Default_Wez_params.json"
+		},	
+		"red_agents":
+		{ 
+			"num_agents" : 1, 
+						
+			"base_behavior": "baseline1",
+			"beh_config" : {
+				"dShot" : 0.85,
+				"lCrank": 0.60,
+				"lBreak": 0.95
+			},
+			"init_position": {"x": 0.0,"y": 25000.0,"z": -30.0},
+			"offset_pos": {"x": 0.0,"y": 0.0,"z": 0.0},
+			"init_hdg" : 180.0,                        
+			"target_position": {"x": 0.0,"y": 25000.0,"z": 30.0},
+			"rnd_offset_range":{"x": 10.0,"y": 10000.0,"z": 5.0},				
+			"rnd_shot_dist_var": 0.0,
+			"wez_models" : "res://assets/Default_Wez_params.json"
+		}
+	},
+	
+}

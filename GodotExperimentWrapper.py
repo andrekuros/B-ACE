@@ -9,7 +9,7 @@ class GodotExperimentWrapper(GodotEnv):
     def __init__(self, config_kwargs):                               
                         
         self.env_config = config_kwargs.get("EnvConfig", "") 
-        self.sim_config = config_kwargs.get("SimConfig", "")
+        self.agents_config = config_kwargs.get("AgentsConfig", "")
         self.experiment_config = config_kwargs.get("ExperimentConfig", "")    
         
         #Godot Line Parameters Commands
@@ -47,7 +47,7 @@ class GodotExperimentWrapper(GodotEnv):
                             
     def send_sim_config(self, _experiment_config):
         message = {"type": "config"}        
-        message["sim_config"] = self.sim_config
+        message["agents_config"] = self.agents_config
         message["env_config"] = self.env_config
         message["experiment_config"] = _experiment_config
         self._send_as_json(message)

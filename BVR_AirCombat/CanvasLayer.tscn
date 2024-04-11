@@ -51,26 +51,26 @@ script = ExtResource("2_1pm7n")
 
 [node name="RichTextLabel" type="RichTextLabel" parent="Control"]
 layout_mode = 0
-offset_left = 49.0
-offset_top = 33.0
-offset_right = 102.0
-offset_bottom = 57.0
+offset_left = 45.0
+offset_top = 35.0
+offset_right = 98.0
+offset_bottom = 59.0
 text = "VSync"
 
 [node name="RichTextLabel2" type="RichTextLabel" parent="Control"]
 layout_mode = 0
-offset_left = 50.0
+offset_left = 57.0
 offset_top = 84.0
-offset_right = 103.0
+offset_right = 110.0
 offset_bottom = 108.0
 text = "FPS
 "
 
 [node name="RichTextLabel3" type="RichTextLabel" parent="Control"]
 layout_mode = 0
-offset_left = 46.0
+offset_left = 56.0
 offset_top = 60.0
-offset_right = 99.0
+offset_right = 109.0
 offset_bottom = 84.0
 text = "Speed
 "

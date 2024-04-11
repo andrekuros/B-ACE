@@ -4,7 +4,7 @@ from typing import Optional, Any, List, Dict, Union
 from tianshou.utils.net.common import Net
 import numpy as np
 
-class DNN_B_ACE_CRITIC(Net):
+class DNN_B_ACE(Net):
     def __init__(
         self,
         obs_shape: int,        
@@ -28,7 +28,7 @@ class DNN_B_ACE_CRITIC(Net):
             nn.Linear(128, 64)
         ).to(device)
         
-        self.policy_fn = nn.Linear(64, 1)        
+        self.policy_fn = nn.Linear(64, action_shape)        
         
 
     def forward(self, obs: Union[Dict[str, torch.Tensor], torch.Tensor], state: Optional[Any] = None, info: Optional[Any] = None):
@@ -44,6 +44,8 @@ class DNN_B_ACE_CRITIC(Net):
         
         output = self.scene_encoder(obs_tensor)
         output = self.policy_fn(output)
+        
+        print(output)
 
         return output
 

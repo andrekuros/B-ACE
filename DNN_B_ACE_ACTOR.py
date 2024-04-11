@@ -60,7 +60,7 @@ class DNN_B_ACE_ACTOR(Net):
                 max_action = 1.0            
             self.device = device
             self.output_dim = int(np.prod(action_shape))
-            input_dim = 17
+            input_dim = 20
             self.mu = nn.Sequential(
                         nn.Linear(input_dim, 64),
                         nn.ReLU(),
@@ -94,20 +94,20 @@ class DNN_B_ACE_ACTOR(Net):
             info: Dict[str, Any] = {},
         ) -> Tuple[Tuple[torch.Tensor, torch.Tensor], Any]:
             """Mapping: obs -> logits -> (mu, sigma)."""
-            
-            print(obs)
+                                   
             # logits, hidden = self.preprocess(obs, state)
-            obs = torch.tensor(obs, dtype=torch.float32).to(self.device)
-            
-            mu = self.mu(obs)
+            obs_tensor = torch.tensor(obs, dtype=torch.float32).to(self.device)
+            #print("MU:", obs)
+            mu = self.mu(obs_tensor)
             if not self._unbounded:
                 mu = self.max_action * torch.tanh(mu)
             if self._c_sigma:
-                sigma = torch.clamp(self.sigma(obs), min=SIGMA_MIN, max=SIGMA_MAX).exp()
+                sigma = torch.clamp(self.sigma(obs_tensor), min=SIGMA_MIN, max=SIGMA_MAX).exp()
             else:
                 shape = [1] * len(mu.shape)
                 shape[1] = -1
                 sigma = (self.sigma_param.view(shape) + torch.zeros_like(mu)).exp()
+            #print((mu, sigma))
             return (mu, sigma), state
         
      

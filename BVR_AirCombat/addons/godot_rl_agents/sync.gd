@@ -13,12 +13,13 @@ const DEFAULT_PORT := "11008"
 @onready var debug_window = mainView.get_node("DebugWindow")
 
 const SimManager = preload("res://SimManager.tscn")
-const EnvConfig  = preload("res://Sim_assets.gd").EnvConfig
 
 var envConfig
+var simConfig
 #Default line params GodotRL Config
 var action_repeat
 var renderize 
+var sim_speed = 1.0
 var phy_fps
 var speed_up 
 var seed
@@ -36,9 +37,9 @@ var experiment_in_progress = false
 
 var simulation_list 
 
-var n_action_steps = 0
+var n_action_steps : int = 0
 var physics_updates = 0
-var elapsed_time = 0.0
+var last_check = 0.0
 
 var rng = RandomNumberGenerator.new()
 
@@ -65,7 +66,7 @@ func _ready():
 	get_tree().set_pause(false) 
 	
 	physics_updates = 0
-	elapsed_time = 0.0
+	last_check = Time.get_ticks_msec()
 	
 	if not debug_view:
 		debug_window.visible = false
@@ -108,7 +109,7 @@ func _send_dict_as_json_message(dict):
 func _send_env_info():
 	var json_dict = _get_dict_json_message()
 	assert(json_dict["type"] == "env_info")
-	
+		
 	var message = {
 		"type" : "env_info",		
 		"observation_space": simulation_list[0].agents[0].get_obs_space(),
@@ -154,13 +155,12 @@ func _get_port():
 	return args.get("port", DEFAULT_PORT).to_int()
 
 		
-func _create_simulations(_sim_config_dict, _experiment_cases=null):
+func _create_simulations(_agents_config_dict, _experiment_cases=null):
 	
 	for container in mainViewPort.get_children():
-		container.queue_free()
-	
+		container.queue_free()	
 	simulation_list = []
-
+	
 	var main_view_size = mainViewPort.get_rect().size
 	var cols = min(parallel_envs, 5)
 	var rows = ceil(float(parallel_envs) / cols)
@@ -169,21 +169,21 @@ func _create_simulations(_sim_config_dict, _experiment_cases=null):
 	
 	var x = 0
 	var y = 0
-		
+	
 	for i in range(parallel_envs):
 				
-		var case_sim_config = _sim_config_dict
+		var case_config = _agents_config_dict
 		
 		if _experiment_cases != null:
 			assert(len(_experiment_cases)==parallel_envs)
-			case_sim_config = _sim_config_dict.duplicate()
-			update_dict(case_sim_config, _experiment_cases[i])			
+			case_config = _agents_config_dict.duplicate()
+			update_dict(case_config, _experiment_cases[i])			
 						
 		var viewport_container = SimManager.instantiate()
 		var viewport = viewport_container.get_node("SubViewport")
 		var new_simulation = viewport.get_node("SimManager")		
 		# Set the size of the viewport
-		viewport.size = Vector2(sim_width, sim_height)
+		viewport.size = Vector2(sim_width, sim_height)		
 		
 		# Enable "Own World" on the viewport
 		viewport.world_3d = World3D.new()
@@ -204,11 +204,11 @@ func _create_simulations(_sim_config_dict, _experiment_cases=null):
 		var _tree = get_tree()
 		new_simulation.tree = _tree	
 		
-		# Create a new thread for the simulation
+		# Create a new thread for the simulation (TODO: Not workiong)
 		#var thread = Thread.new()
 		#thread.start(Callable(self, "_initialize_simulation").bind(new_simulation, i, _tree, envConfig, case_sim_config))				
 		
-		new_simulation.initialize(i, _tree, envConfig, case_sim_config)
+		new_simulation.initialize(i, _tree, envConfig, case_config)
 		viewport.uavs = new_simulation.fighters
 
 		simulation_list.append(new_simulation)
@@ -218,36 +218,37 @@ func _create_simulations(_sim_config_dict, _experiment_cases=null):
 			x = 0
 			y += 1
 							
-func _initialize_simulation(new_simulation, i, _tree, envConfig, case_sim_config):
-	new_simulation.initialize(i, _tree, envConfig, case_sim_config)
+func _initialize_simulation(new_simulation, i, _tree, envConfig, case_config):
+	new_simulation.initialize(i, _tree, envConfig, case_config)
 
 func disconnect_from_server():
 	stream.disconnect_from_host()
 
 func _initialize():		
 			
-	args = _get_args()	
-		
-	envConfig = EnvConfig.new(args)
+	args = _get_args()			
 	
-	seed = envConfig._seed								
+	#Load Default Configs
+	simConfig = load_json_file('res://assets/Default_Sim_Config.json')	
+	#Update the Default config with the received args
+	update_dict(simConfig['EnvConfig'], args)
+	envConfig = simConfig['EnvConfig']		
+		
+	seed = envConfig["seed"]
 	seed(seed)
 	
-	phy_fps 		= envConfig.phy_fps
-	speed_up 		= envConfig.speed_up
-	renderize 		= envConfig.renderize
-	action_repeat 	= envConfig.action_repeat
-	parallel_envs 	= envConfig.parallel_envs  #Will receive default at this point
-	debug_view		= envConfig.debug_view	   #Will receive default at this point
-	experiment_mode	= envConfig.experiment_mode#Will receive default at this point		
-	
-	#phy_fps = 60			
+	phy_fps 		= envConfig["phy_fps"]
+	speed_up 		= envConfig["speed_up"]
+	renderize 		= envConfig["renderize"]
+	action_repeat 	= int(envConfig["action_repeat"])
+	parallel_envs 	= envConfig["parallel_envs"]  #Will receive default at this point
+	debug_view		= envConfig["debug_view"]  	   #Will receive default at this point
+	experiment_mode	= envConfig["experiment_mode"]#Will receive default at this point		
+		
 	Engine.physics_ticks_per_second = speed_up * phy_fps  
 	Engine.time_scale = speed_up * 1.0 		
 	RenderingServer.render_loop_enabled = (renderize == 1)
-	
-	#prints("physics ticks", Engine.physics_ticks_per_second, Engine.time_scale, speed_up)			
-	
+			
 	connected = connect_to_server()
 	if connected:
 		_handshake()
@@ -256,7 +257,7 @@ func _initialize():
 		if not experiment_mode:
 			_send_env_info()
 	else:		
-		_create_simulations({})
+		_create_simulations(simConfig['AgentsConfig'])
 		initialized = true
 		for sim in simulation_list:
 			sim._reset_simulation()
@@ -269,16 +270,20 @@ func _initialize():
 func _physics_process(delta): 
 		
 	physics_updates += 1.0    
-	elapsed_time += delta		
-	var current_time = Time.get_ticks_msec()	
-	if current_time - elapsed_time >= 100:
+	#elapsed_time += delta		
+	#var current_time = Time.get_ticks_msec()	
+	#print([current_time, elapsed_time])
+	if Time.get_ticks_msec() - last_check >= 100:
 		
-		phy_show.text = str(floor(physics_updates / phy_fps * 10.0 ))
+		#phy_show.text = str(1 / Performance.get_monitor(Performance.TIME_PHYSICS_PROCESS))		
+		sim_speed = physics_updates / phy_fps * 10.0
+		phy_show.text = str(sim_speed)
 		fps_show.text = str(Performance.get_monitor(Performance.TIME_FPS))
-		Engine.max_fps = physics_updates * 10.0
-		physics_updates = 0
-		elapsed_time = current_time
-	
+		if renderize:
+			Engine.max_fps = sim_speed * 4#physics_updates / phy_fps * 10.0
+		physics_updates = 0.0
+		last_check = Time.get_ticks_msec()
+		
 	if n_action_steps % action_repeat != 0 and not stop_simulation:
 		n_action_steps += 1						
 		return
@@ -292,6 +297,10 @@ func _physics_process(delta):
 			get_tree().set_pause(true) 
 			
 			if just_reset:
+								
+				for sim in simulation_list:																		
+					print(sim._collect_results()," - ", phy_show.text, "X" )
+				
 				just_reset = false
 				var obs = _get_obs_from_simulations()
 			
@@ -358,8 +367,10 @@ func _physics_process(delta):
 		if false:
 				var actions = [{"turn_input" : 0, "fire_input" :  0, "level_input" : 2}]#,
 				# {"turn_input": 4, "fire_input" :  0,  "level_input" : 4}] 
-				for sim in simulation_list:
-					sim._set_agent_actions(actions)						
+				#for sim in simulation_list:		
+		
+		#_get_obs_from_simulations()
+		_get_reward_from_simulations()
 		_reset_agents_if_done()	
 		
 	
@@ -384,7 +395,7 @@ func handle_message() -> bool:
 		return true
 		
 	if message["type"] == "reset":		
-				
+						
 		if len(simulation_list) == 1:
 			simulation_list[0]._reset_simulation()
 		else:
@@ -471,10 +482,13 @@ func _reset_agents_if_done():
 				
 		if donesAgents and donesEnemies:
 		#print(_get_reward_from_agents())
-			finalStatus.append(sim.finalState.blues_killed)
+			finalStatus.append(sim._collect_results())
+			print(sim._collect_results(), " - ", phy_show.text, "X" )
 			sim._reset_simulation()
+			
 		else:
 			finalStatus.append(null)
+	
 	return finalStatus		
 					
 
@@ -499,13 +513,13 @@ func _reset_all_sim(sim_index):
 		
 func _get_obs_from_simulations():
 		
-	if len(simulation_list) == 1:
+	if len(simulation_list) == 1:		
 		return simulation_list[0]._get_obs_from_agents()
 	else:
 		var envs_obs = []
 		for sim in simulation_list:
 			var sim_obs = sim._get_obs_from_agents()		
-			envs_obs.append(sim_obs)
+			envs_obs.append(sim_obs)		
 		return envs_obs
 
 
@@ -551,37 +565,41 @@ func _wait_for_configuration():
 		get_tree().quit()
 		get_tree().set_pause(false) 
 		return true		
-	
-	var env_config_msg = config_message['env_config']
-	var sim_config_msg = config_message['sim_config']
 		
-	envConfig.update_config(env_config_msg)	
-	#Aditional Env Config
+	
+	var env_config_msg 	= config_message['env_config']
+	update_dict(envConfig,env_config_msg)
+			
 	parallel_envs 	= envConfig.parallel_envs
 	debug_view		= envConfig.debug_view
 	experiment_mode	= envConfig.experiment_mode	
 	
+	var agents_config_msg 	= config_message['agents_config']	
+	var agents_config = simConfig["AgentsConfig"].duplicate(true)	
+	update_dict(agents_config, agents_config_msg)
+		
+		
 	if experiment_mode == 1:
 			
 		var experiment_config = config_message['experiment_config']
-		_run_experiment(sim_config_msg, experiment_config)
+		_run_experiment(agents_config, experiment_config)
 	
 	else:
-		_create_simulations(sim_config_msg)
+		_create_simulations(agents_config)
 		initialized = true
 		for sim in simulation_list:
 			sim._reset_simulation()
 	
-func _run_experiment(sim_config_msg, experiment_config):
+func _run_experiment(agents_config_msg, experiment_config):
 	
 	print("Running experiment with configuration:", experiment_config)
 	
 	experiment_runs_per_case = experiment_config.get("runs_per_case", 10)
-	envConfig.parallel_envs = len(experiment_config['cases'])
-	parallel_envs 	= envConfig.parallel_envs
+	envConfig["parallel_envs"] = len(experiment_config['cases'])
+	parallel_envs 	= envConfig["parallel_envs"]
 	
 	# Create simulations based on the experiment configuration
-	_create_simulations(sim_config_msg, experiment_config.get("cases", null))
+	_create_simulations(agents_config_msg, experiment_config.get("cases", null))
 	
 	initialized = true
 	experiment_in_progress = true
@@ -625,13 +643,13 @@ func are_all_true(array):
 	return true
 
 func update_dict(org_dict: Dictionary, new_config: Dictionary):
-	# Iterate over the keys in the new_config dictionary
-	for key in new_config:        
-		if org_dict.has(key):            
+	# Iterate over the keys in the new_config dictionary	
+	for key in new_config:  		
+		if org_dict.has(key): 
 			if typeof(new_config[key]) == TYPE_DICTIONARY:
 				update_nested_dict(org_dict[key], new_config[key])
 			# Otherwise, update the value directly
-			else:
+			else:				
 				org_dict[key] = new_config[key]
 
 func update_nested_dict(existing_dict: Dictionary, new_dict: Dictionary):   
@@ -641,3 +659,23 @@ func update_nested_dict(existing_dict: Dictionary, new_dict: Dictionary):
 				update_nested_dict(existing_dict[key], new_dict[key])            
 			else:
 				existing_dict[key] = new_dict[key]
+				
+func load_json_file(file_path):
+	var file = FileAccess.open(file_path, FileAccess.READ)
+
+	if file:
+		var json_string = file.get_as_text()
+		file.close()
+
+		var json = JSON.new()
+		var parse_result = json.parse(json_string)
+
+		if parse_result == OK:
+			var data = json.get_data()
+			return data
+		else:
+			print("JSON Parse Error: ", json.get_error_message())
+			return null
+	else:
+		print("File not found: ", file_path)
+		return null
