@@ -19,13 +19,13 @@ class DNN_B_ACE_CRITIC(Net):
                            
                                                 
         self.scene_encoder = nn.Sequential(
-            nn.Linear(20, 64),
+            nn.Linear(obs_shape, 64),
             nn.ReLU(),
-            nn.Linear(64, 128),
+            nn.Linear(64, 256),
             nn.ReLU(), 
-            nn.Linear(128, 128),
+            nn.Linear(256, 256),
             nn.ReLU(),                   
-            nn.Linear(128, 64)
+            nn.Linear(256, 64)
         ).to(device)
         
         self.policy_fn = nn.Linear(64, 1)        

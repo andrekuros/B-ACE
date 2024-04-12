@@ -255,13 +255,8 @@ func _get_obs_from_agents():
 	
 	var obs = []
 	for agent in agents:
-		if !agent.done:
-			obs.append(agent.get_obs())
-		else:
-			var zero_obs = []
-			for i in range(len(agent.get_obs()["obs"])):
-				zero_obs.append(0)
-			obs.append({"obs": zero_obs})
+		obs.append(agent.get_obs())
+		
 		
 	return obs
 	

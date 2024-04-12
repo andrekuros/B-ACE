@@ -60,15 +60,15 @@ class DNN_B_ACE_ACTOR(Net):
                 max_action = 1.0            
             self.device = device
             self.output_dim = int(np.prod(action_shape))
-            input_dim = 20
+            input_dim = obs_shape
             self.mu = nn.Sequential(
                         nn.Linear(input_dim, 64),
                         nn.ReLU(),
-                        nn.Linear(64, 128),
+                        nn.Linear(64, 256),
                         nn.ReLU(), 
-                        nn.Linear(128, 128),
+                        nn.Linear(256, 256),
                         nn.ReLU(),                   
-                        nn.Linear(128, self.output_dim)
+                        nn.Linear(256, self.output_dim)
                     ).to(device)
             
             self._c_sigma = conditioned_sigma
@@ -76,11 +76,11 @@ class DNN_B_ACE_ACTOR(Net):
                 self.sigma = nn.Sequential(
                         nn.Linear(input_dim, 64),
                         nn.ReLU(),
-                        nn.Linear(64, 128),
+                        nn.Linear(64, 256),
                         nn.ReLU(), 
-                        nn.Linear(128, 128),
+                        nn.Linear(256, 256),
                         nn.ReLU(),                   
-                        nn.Linear(128, self.output_dim)
+                        nn.Linear(256, self.output_dim)
                     ).to(device)
             else:
                 self.sigma_param = nn.Parameter(torch.zeros(self.output_dim, 1))

@@ -82,7 +82,7 @@ if __name__ == "__main__":
     #experiment_config.loggers = []
     
     experiment_config.save_folder = "Results"
-    experiment_config.lr = 0.0003
+    #experiment_config.lr = 0.0003
     
     #TASK Config    
     b_ace_config = { 	
@@ -91,7 +91,7 @@ if __name__ == "__main__":
                         "task": "b_ace_v1",
                         "env_path": "BVR_AirCombat/bin/B_ACE_v6.exe",
                         "port": 12500,
-                        "renderize": 1,
+                        "renderize": 0,
                         "debug_view": 0,
                         "phy_fps": 20,
                         "speed_up": 50000,
@@ -104,7 +104,7 @@ if __name__ == "__main__":
                         "full_observation": 1,
                         
                         "RewardsConfig" : {
-                            "mission_factor": 100.0,
+                            "mission_factor": 1.0,
                             "missile_fire_factor": -0.1,
                             "missile_no_fire_factor": -0.001,
                             "missile_miss_factor": -0.5,
@@ -157,8 +157,7 @@ if __name__ == "__main__":
                         }
                     }	
 }
-    
-    
+        
     task = b_ace.B_ACE.b_ace.get_from_yaml()  
     task.config = b_ace_config    
     

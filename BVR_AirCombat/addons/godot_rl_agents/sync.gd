@@ -112,7 +112,8 @@ func _send_env_info():
 		
 	var message = {
 		"type" : "env_info",		
-		"observation_space": simulation_list[0].agents[0].get_obs_space(),
+		"observation_space" : simulation_list[0].agents[0].get_obs_space(),
+		"observation_labels": simulation_list[0].agents[0].get_obs(true)["labels"],
 		"action_space": simulation_list[0].agents[0].get_action_space(),
 		"n_agents": len(simulation_list[0].agents)
 		}	
@@ -247,12 +248,12 @@ func _initialize():
 		
 	Engine.physics_ticks_per_second = speed_up * phy_fps  
 	Engine.time_scale = speed_up * 1.0 		
-	RenderingServer.render_loop_enabled = (renderize == 1)
+	RenderingServer.render_loop_enabled = (renderize == 1)		
 			
 	connected = connect_to_server()
 	if connected:
 		_handshake()
-		print("HandShake Done")		
+		#print("HandShake Done")		
 		_wait_for_configuration()		
 		if not experiment_mode:
 			_send_env_info()
@@ -270,9 +271,6 @@ func _initialize():
 func _physics_process(delta): 
 		
 	physics_updates += 1.0    
-	#elapsed_time += delta		
-	#var current_time = Time.get_ticks_msec()	
-	#print([current_time, elapsed_time])
 	if Time.get_ticks_msec() - last_check >= 100:
 		
 		#phy_show.text = str(1 / Performance.get_monitor(Performance.TIME_PHYSICS_PROCESS))		
@@ -298,9 +296,8 @@ func _physics_process(delta):
 			
 			if just_reset:
 								
-				for sim in simulation_list:																		
-					print(sim._collect_results()," - ", phy_show.text, "X" )
-				
+				#for sim in simulation_list:																		
+				#	print(sim._collect_results()," - ", phy_show.text, "X" )				
 				just_reset = false
 				var obs = _get_obs_from_simulations()
 			
@@ -430,8 +427,8 @@ func handle_message() -> bool:
 #		return handle_message()
 	
 	if message["type"] == "action":
-		var actions = message["action"]				
 		
+		var actions = message["action"]						
 		var index = 0
 		if len(simulation_list) == 1:
 			simulation_list[0]._set_agent_actions(actions)

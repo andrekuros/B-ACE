@@ -13,6 +13,7 @@ config_version=5
 config/name="B_ACE"
 run/main_scene="res://B_ACE.tscn"
 config/features=PackedStringArray("4.1")
+run/low_processor_mode_sleep_usec=1
 config/icon="res://icon.png"
 
 [display]

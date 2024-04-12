@@ -6,10 +6,12 @@ import numpy as np
 import torch
 from gymnasium.spaces import Box, Discrete
 
+import random
+
 from torch.distributions import Normal, Distribution
 
 from tianshou.data import Collector, VectorReplayBuffer, PrioritizedVectorReplayBuffer
-from tianshou.env import DummyVectorEnv
+from tianshou.env import SubprocVectorEnv, DummyVectorEnv
 from tianshou.env.pettingzoo_env_parallel import PettingZooParallelEnv
 from tianshou.env.pettingzoo_env import PettingZooEnv
 
@@ -51,8 +53,8 @@ test_num  =  "_B_ACE01"
 policyModel  =  "PPO"
 name = model + test_num
 
-train_env_num = 1
-test_env_num = 1
+train_env_num = 20
+test_env_num = 10
 
 now = datetime.datetime.now().strftime("%y%m%d-%H%M%S")
 log_name = name + str(now)
@@ -80,7 +82,7 @@ B_ACE_Config = {
                         "task": "b_ace_v1",
                         "env_path": "BVR_AirCombat/bin/B_ACE_v6.console.exe",
                         "port": 12500,
-                        "renderize": 1,
+                        "renderize": 0,
                         "debug_view": 0,
                         "phy_fps": 20,
                         "speed_up": 50000,
@@ -90,7 +92,7 @@ B_ACE_Config = {
                         "seed": 1,	
                         "action_repeat": 20,	
                         "action_type": "Low_Level_Continuous",                        
-                        "full_observation": 0,
+                        "full_observation": 0,                        
                         
                         "RewardsConfig" : {
                             "mission_factor": 1.0,
@@ -113,24 +115,24 @@ B_ACE_Config = {
                     {
                         "blue_agents": { 
                             "num_agents" : 1,
+                            "base_behavior": "external", 
                             "beh_config" : {
                                 "dShot" : 0.85,
                                 "lCrank": 0.60,
                                 "lBreak": 0.95
-                            },
-                            "base_behavior": "external",                  
+                            },                                             
                             "init_position": {"x": 0.0, "y": 25000.0,"z": 30.0},
                             "offset_pos": {	"x": 0.0, "y": 0.0, "z": 0.0},
                             "init_hdg": 0.0,                        
                             "target_position": {"x": 0.0,"y": 25000.0,"z": 30.0},
-                            "rnd_offset_range":{"x": 10.0,"y": 10000.0,"z": 5.0},				
+                            "rnd_offset_range":{"x": 0.0,"y": 0.0,"z": 0.0},				
                             "rnd_shot_dist_var": 0.0,
                             "wez_models" : "res://assets/Default_Wez_params.json"
                         },	
                         "red_agents":
                         { 
                             "num_agents" : 1, 
-                            "base_behavior": "baseline1",
+                            "base_behavior": "duck",
                             "beh_config" : {
                                 "dShot" : 0.85,
                                 "lCrank": 0.60,
@@ -140,7 +142,7 @@ B_ACE_Config = {
                             "offset_pos": {"x": 0.0,"y": 0.0,"z": 0.0},
                             "init_hdg" : 180.0,                        
                             "target_position": {"x": 0.0,"y": 25000.0,"z": 30.0},
-                            "rnd_offset_range":{"x": 10.0,"y": 10000.0,"z": 5.0},				
+                            "rnd_offset_range":{"x": 0.0,"y": 0.0,"z": 0.0},				
                             "rnd_shot_dist_var": 0.0,
                             "wez_models" : "res://assets/Default_Wez_params.json"
                         }
@@ -149,27 +151,56 @@ B_ACE_Config = {
 #max_cycles = B_ACE_Config["max_cycles"]
 n_agents = 1#B_ACE_Config["n_pursuers"]
 
-dqn_params = {"discount_factor": 0.98, 
-              "estimation_step": 20, 
-              "target_update_freq": 3000,#max_cycles * n_agents,
-              "optminizer": "Adam",
-              "lr": 0.00016 }
+dqn_params =    {
+                "discount_factor": 0.98, 
+                "estimation_step": 20, 
+                "target_update_freq": 3000,#max_cycles * n_agents,
+                "optminizer": "Adam",
+                "lr": 0.00016 
+                }
+
+PPO_params= {    
+                'action_scaling': True,
+                'discount_factor': 0.98,
+                'max_grad_norm': 0.5,
+                'eps_clip': 0.2,
+                'vf_coef': 0.5,
+                'ent_coef': 0.01,
+                'gae_lambda': 0.95,
+                'reward_normalization': False, 
+                'dual_clip': None,
+                'value_clip': False,   
+                'deterministic_eval': True,
+                'advantage_normalization': False,
+                'recompute_advantage': False,
+                'action_bound_method': "clip",
+                'lr_scheduler': None,
+            }
+
 
 trainer_params = {"max_epoch": 500,
-                  "step_per_epoch": 10000,#5 * (150 * n_agents),
-                  "step_per_collect": 1000,# * (10 * n_agents),
-                  "episode_per_test": 20,
-                  "batch_size" : 64 * n_agents,
-                  "update_per_step": 1 / 100, #Only run after close a Collect (run many times as necessary to meet the value)
-                  "tn_eps_max": 0.95,
+                  "step_per_epoch": 60000,#5 * (150 * n_agents),
+                  "step_per_collect": 6000,# * (10 * n_agents),
+                  
+                  "batch_size" : 300,
+                  
+                  "update_per_step": 1 / 100, #Off-Policy Only (run after close a Collect (run many times as necessary to meet the value))
+                  
+                  "repeat_per_collect":64, #On-Policy Only
+                  
+                  "episode_per_test": 30,                  
+                  "tn_eps_max": 0.80,
                   "ts_eps_max": 0.01,
                   "warmup_size" : 0
                   }
+#agent_learn = PPOPolicy(**policy_params)
+
 
 runConfig = dqn_params
 runConfig.update(Policy_Config)
-runConfig.update(trainer_params) 
 runConfig.update(B_ACE_Config)
+runConfig.update(trainer_params) 
+runConfig.update(PPO_params)
 
 
 def _get_agents(
@@ -183,10 +214,12 @@ def _get_agents(
     agent_observation_space = env.observation_space("agent_0")
    
     #print(env.action_space)
-    action_shape = 50#env.action_space.shape
+    #action_shape = 50#env.action_space.shape
     
-    print("ActionSPACE: ", env.action_space())
+    print("ActionSPACE: ", env.action_space)
+    action_space = env.action_space
     device="cuda" if torch.cuda.is_available() else "cpu"  
+    print(device)
 
     agents = []        
     
@@ -197,9 +230,10 @@ def _get_agents(
 
     for _ in range(policies_number):      
         
+        print(agent_observation_space)
         if model == "DNN_B_ACE":
             net = DNN_B_ACE(
-                obs_shape=agent_observation_space,                
+                obs_shape=agent_observation_space.shape,                
                 action_shape=4,                
                 device="cuda" if torch.cuda.is_available() else "cpu"
                 
@@ -221,13 +255,13 @@ def _get_agents(
         if model == "PPO_DNN":
             
             actor = DNN_B_ACE_ACTOR(
-                obs_shape=agent_observation_space.shape,                
+                obs_shape=agent_observation_space.shape[0],                
                 action_shape=4,                
                 device="cuda" if torch.cuda.is_available() else "cpu"                
             ).to(device)
 
             critic = DNN_B_ACE_CRITIC(
-                obs_shape=agent_observation_space.shape,                
+                obs_shape=agent_observation_space.shape[0],                
                 action_shape=4,                
                 device="cuda" if torch.cuda.is_available() else "cpu"                
             ).to(device)
@@ -254,23 +288,21 @@ def _get_agents(
                 actor=actor,
                 critic=critic,
                 optim=optim,
-                dist_fn=dist,
-                action_scaling=True,#isinstance(Discrete(50), Box),
-                discount_factor=0.99,
-                max_grad_norm= None, #0.5,
-                eps_clip=0.2,
-                vf_coef=0.5,
-                ent_coef=0.01,
-                gae_lambda=0.95,
-                reward_normalization=False, #
-                dual_clip=None,
-                value_clip=0,
-                action_space=env.action_space(),
-                deterministic_eval=False,
-                advantage_normalization=False,
-                recompute_advantage=False,
-                action_bound_method = "clip", #Literal["clip", "tanh"] | None = "clip",
-                lr_scheduler = None, # TLearningRateScheduler | None = None,
+                dist_fn=dist,                
+                action_scaling  =       PPO_params['action_scaling'],
+                discount_factor =       PPO_params['discount_factor'],
+                max_grad_norm   =       PPO_params['max_grad_norm'],
+                eps_clip        =       PPO_params['eps_clip'],
+                vf_coef         =       PPO_params['vf_coef'],
+                ent_coef        =       PPO_params['ent_coef'],
+                gae_lambda      =       PPO_params['gae_lambda'],
+                reward_normalization=   PPO_params['reward_normalization'],
+                action_space    =  action_space,
+                deterministic_eval=     PPO_params['deterministic_eval'],
+                advantage_normalization=PPO_params['advantage_normalization'],
+                recompute_advantage=    PPO_params['recompute_advantage'],
+                action_bound_method=    PPO_params['action_bound_method'],
+                lr_scheduler=None
             )
             
             if Policy_Config["load_model"] is True:
@@ -295,11 +327,13 @@ def _get_agents(
 def _get_env():
     """This function is needed to provide callables for DummyVectorEnv."""   
     
+    B_ACE_Config["EnvConfig"]["seed"] = random.randint(0, 1000000)
     
     env = GodotRLPettingZooWrapper( convert_action_space = True,
                                     device = 'cpu',
                                     **B_ACE_Config)
     
+    env.action_space = env.action_space()
     #env = PettingZooEnv(env)  
     
     return env  
@@ -311,8 +345,8 @@ if __name__ == "__main__":
     torch.set_grad_enabled(True) 
    
     # ======== Step 1: Environment setup =========
-    train_envs = DummyVectorEnv([_get_env for _ in range(train_env_num)])
-    test_envs = DummyVectorEnv([_get_env for _ in range(test_env_num)]) 
+    train_envs = SubprocVectorEnv([_get_env for _ in range(train_env_num)])#, share_memory = True )
+    test_envs = SubprocVectorEnv([_get_env for _ in range(test_env_num)])#, share_memory = True) 
 
     # seed
     seed = 100
@@ -473,8 +507,8 @@ if __name__ == "__main__":
     def reward_metric(rews):       
                 
         global_step_holder[0] +=1 
-        print(rews)
-        return np.sum(rews, axis = 1)
+        #print(rews)
+        return rews#np.sum(rews)
 
 
 
@@ -485,13 +519,19 @@ if __name__ == "__main__":
         train_collector=train_collector,
         test_collector=test_collector,
         max_epoch=trainer_params['max_epoch'],
+        
         step_per_epoch=trainer_params['step_per_epoch'],
-        repeat_per_collect=20, #TODO: understand
-        episode_per_test=trainer_params['episode_per_test'],
+                        
         batch_size=trainer_params['batch_size'],
         step_per_collect=trainer_params['step_per_collect'],
+        repeat_per_collect=trainer_params['repeat_per_collect'],
+        
+        episode_per_test=trainer_params['episode_per_test'],
         stop_fn=stop_fn,
         save_best_fn=save_best_fn,
+        reward_metric=reward_metric,
+        test_in_train=True,
+        show_progress = True,
         logger=logger,
     )
     

@@ -334,114 +334,102 @@ func set_done_false():
 	done = false
 	
 
-func get_obs(with_labels = false):			
+func get_obs(with_labels = false):
 	
-	var own_info = [ #global_transform.origin.x / 3000.0,
-					 #global_transform.origin.z / 3000.0,
-					 global_transform.origin.y / 150.0,
-					 dist2go / 3000.0,					 
-					 Calc.get_2d_aspect_angle(current_hdg, Calc.get_hdg_2d(global_transform.origin, target_position)) / 180.0,
-					 #cos(Calc.get_relative_radial(current_hdg, Calc.get_hdg_2d(position, target_position)) / 180.0),
-					 #sin(current_hdg / 180.0),
-					 current_hdg / 180.0,
-					 current_speed / max_speed,
-					 missiles / 6.0,
-					 1 if is_instance_valid(in_flight_missile) else 0,
-					 #last_desiredG_input,
-					 #last_hdg_input,
-					 #last_level_input,
-					 #last_fire_input										
-					]	
-	var allied_info = [ 0.0, 0.0 , 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 ]
-		
+	var own_info = [
+		["own_x_pos", global_transform.origin.x / 3000.0],
+		["own_z_pos", global_transform.origin.z / 3000.0],
+		["own_altitude", global_transform.origin.y / 150.0],
+		["own_dist_target", dist2go / 3000.0],
+		["own_aspect_angle_target", Calc.get_2d_aspect_angle(current_hdg, Calc.get_hdg_2d(global_transform.origin, target_position)) / 180.0],
+		["own_current_hdg", current_hdg / 180.0],
+		["own_current_speed", current_speed / max_speed],
+		["own_missiles", missiles / 6.0],
+		["own_in_flight_missile", 1 if is_instance_valid(in_flight_missile) else 0]
+	]
+
+	var allied_info = [
+		["allied_x_pos", 0.0],
+		["allied_z_pos", 0.0],
+		["allied_y_pos", 0.0],
+		["allied_dist2go", 0.0],
+		["allied_aspect_angle", 0.0],
+		["allied_current_hdg", 0.0],
+		["allied_current_speed", 0.0],
+		["allied_missiles", 0.0],
+		["allied_in_flight_missile", 0.0]
+	]
+
 	if len_allieds_data_obs > 0:
 		var allied = alliesList[0]
 		if allied.activated:
-			allied_info = [  allied.global_transform.origin.x / 3000.0,
-							 allied.global_transform.origin.z / 3000.0,
-							 allied.global_transform.origin.y / 150.0,
-							 allied.dist2go / 3000.0,							 
-							 Calc.get_2d_aspect_angle(allied.current_hdg, Calc.get_hdg_2d(allied.global_transform.origin, allied.target_position)) / 180.0, 
-							 #fmod(aspect_to_obj(allied.target_position) + allied.current_hdg, 360),
-							 allied.current_hdg / 180.0,
-							 #allied.current_speed / max_speed,
-							 allied.missiles / 6.0,							 
-							 1 if is_instance_valid(allied.in_flight_missile) else 0,
-			]			
-		
-	var tracks_info = []	
-	
-	#HPT info
+			allied_info = [
+				["allied_x_pos", allied.global_transform.origin.x / 3000.0],
+				["allied_z_pos", allied.global_transform.origin.z / 3000.0],
+				["allied_altitude_pos", allied.global_transform.origin.y / 150.0],
+				["allied_dist2go", allied.dist2go / 3000.0],
+				["allied_aspect_angle", Calc.get_2d_aspect_angle(allied.current_hdg, Calc.get_hdg_2d(allied.global_transform.origin, allied.target_position)) / 180.0],
+				["allied_current_hdg", allied.current_hdg / 180.0],
+				["allied_current_speed", allied.current_speed / max_speed],
+				["allied_missiles", allied.missiles / 6.0],
+				["allied_in_flight_missile", 1 if is_instance_valid(allied.in_flight_missile) else 0]
+			]
+
+	var tracks_info = []
 	var tracks_added = 0
+
 	if HPT != null:
 		var track = HPT
-		tracks_info.append_array([ 
-					 (global_transform.origin.y - track.obj.global_transform.origin.y) / 150.0,					 
-					 track.aspect_angle / 180.0,					 
-					 track.angle_off / 180.0,					 										 
-					 track.dist / 3000.0,					 
-					 track.obj.dist2go / 3000.0,
-					 track.own_missile_RMax / 926.0, #50NM * SConv.NM2GDM
-					 track.own_missile_Nez  / 926.0,
-					 track.enemy_missile_RMax / 926.0,
-					 track.enemy_missile_Nez / 926.0,	
-					 track.threat_factor - 1,
-					 track.offensive_factor - 1,
-					 track.is_missile_support,
-					 1 if track.detected else 0 #13
-				])
-		tracks_added += 1			
-	#SPT info
-	if false: #HRT != null and len_tracks_data_obs > 1:
-		var track = HRT
-		tracks_info.append_array([ 
-					(global_transform.origin.y - track.obj.global_transform.origin.y) / 150.0,					 
-					 Calc.get_desired_heading(current_hdg, track.radial) / 180.0,
-					 track.dist / 3000.0,
-					 track.obj.dist2go / 3000.0,
-					 0,
-					 1 if track.detected else 0
-				])	
-		tracks_added += 1	
-	#print("bef:",  tracks_info, len(own_info))
-	
-	for track in range(1 - tracks_added):#len_tracks_data_obs - tracks_added):
-		#tracks_info.append_array([0.0, 0.0 , 0.0, 0.0, 0.0 , 0.0, 0.0  ])
+		tracks_info.append_array([
+			["track_alt_diff", (global_transform.origin.y - track.obj.global_transform.origin.y) / 150.0],
+			["track_aspect_angle", track.aspect_angle / 180.0],
+			["track_angle_off", track.angle_off / 180.0],
+			["track_dist", track.dist / 3000.0],
+			["track_dist2go", track.obj.dist2go / 3000.0],
+			["track_own_missile_RMax", track.own_missile_RMax / 926.0],
+			["track_own_missile_Nez", track.own_missile_Nez / 926.0],
+			["track_enemy_missile_RMax", track.enemy_missile_RMax / 926.0],
+			["track_enemy_missile_Nez", track.enemy_missile_Nez / 926.0],
+			["track_threat_factor", track.threat_factor - 1],
+			["track_offensive_factor", track.offensive_factor - 1],
+			["track_is_missile_support", track.is_missile_support],
+			["track_detected", 1 if track.detected else 0]
+		])
+		tracks_added += 1
+
+	for track in range(1 - tracks_added):
 		var ref_enemy = manager.enemies[0]
-		tracks_info.append_array([ 
-					 0.0,					 
-					 Calc.get_2d_aspect_angle(current_hdg, 0.0) / 180.0,					 
-					 -1.0,					 										 
-					 0.5,
-					 0.2,
-					 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 #13
-				])		
-	
-	var obs = own_info + tracks_info 
-	
-	if false:#len_allieds_data_obs > 0:
+		tracks_info.append_array([
+			["track_y_diff", 0.0],
+			["track_aspect_angle", Calc.get_2d_aspect_angle(current_hdg, 0.0) / 180.0],
+			["track_angle_off", 0.0],
+			["track_dist", -1.0],
+			["track_dist2go", 0.5],
+			["track_own_missile_RMax", 0.0],
+			["track_own_missile_Nez", 0.0],
+			["track_enemy_missile_RMax", 0.0],
+			["track_enemy_missile_Nez", 0.0],
+			["track_threat_factor", 0.0],
+			["track_offensive_factor", 0.0],
+			["track_is_missile_support", 0.0],
+			["track_detected", 0.0]
+		])
+
+	var obs = own_info + tracks_info
+	if false:
 		obs += allied_info
+
 	
-	#return {"obs": {"own_info": own_info, "tracks_info" : tracks_info}}	
-	if not with_labels:
-		return {"obs": obs}
-	else:
-		var labels_own = ['pos_x', 'pos_z', 'alt', 'dist2go' ,'radial2go', 'hdg', 'speed', 'missiles', 'fly_mis', 
-					  'last_g', 'last_hdg', 'last_level', ' last_fire_input' ]
-		var labels_allied = ['DL_pos_x', 'DL_pos_z', 'DL_alt', 'DL_dist2go', 'DL_radial2go', 'DL_hdg', 'DL_speed', 'DL_missiles', 'DL_fly_mis']
-		var labels_t1 = ['t1_alt', 't1_rad', 't1_dist', 'dist2go', 't1_hpt', 't1_active']
-		var labels_t2 = ['t2_alt', 't2_rad', 't2_dist', 'dist2go', 't2_hpt', 't2_active']		
-		
-		var labels = labels_own
-		if len_allieds_data_obs > 0:
-			labels += labels_allied 
-		
-		if len_tracks_data_obs == 2:
-			labels += labels_t1 + labels_t2		
-		else:
-			labels += labels_t1 
-		
-		return {"obs": obs, "labels": labels}
+	
+	
+	var obs_values = obs.map(func(item): return item[1])
+	
+	if with_labels:
+		var obs_labels = obs.map(func(item): return item[0])    	
+		return {"obs": obs_values, "labels": obs_labels}
+	else:		
+		return {"obs": obs_values}
+	
 
 func get_reward():		
 	return ownRewards.get_step_rewards()
