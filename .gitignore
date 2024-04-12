@@ -9,6 +9,7 @@ BenchMARL
 iql*/
 Results
 BVR_AirCombat/android/
+BVR_AirCombat/bin/
 Logs/dqn_sisl/*
 ppo_B_ACE/*
 wandb/*
