@@ -2,6 +2,9 @@
 *.TMP
 *.tmp
 *.log
+*.pck
+*.x86_64
+*.apk
 ippo*/
 maddpg*/
 mappo*/
@@ -13,3 +16,4 @@ Logs/dqn_sisl/*
 ppo_B_ACE/*
 wandb/*
 BVR_AirCombat/bin/
+
