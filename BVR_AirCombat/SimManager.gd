@@ -135,10 +135,10 @@ func _set_agents(_tree):
 	const visual_scaleVector = Vector3(4.0,  4.0,  4.0)
 	
 	var listComponents = []	
-	for i in range(agentsConfig["blue_agents"]["num_agents"]):
+	for i in range(int(agentsConfig["blue_agents"]["num_agents"])):
 		listComponents.append("Allied_Agent")
 	
-	for i in range(agentsConfig["red_agents"]["num_agents"]):
+	for i in range(int(agentsConfig["red_agents"]["num_agents"])):
 		listComponents.append("Enemy_Agent")
 		
 	for comp in listComponents:

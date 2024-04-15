@@ -32,16 +32,16 @@ class GodotRLPettingZooWrapper(GodotEnv, ParallelEnv):
         self.env_config = config_kwargs.get("EnvConfig", "")     
         #Godot Line Parameters Commands
         self.env_path       = self.env_config.get("env_path", "./bin/BVR.exe")  
-        self.show_window    = self.env_config.get("renderize", 1)  
-        self._seed          = self.env_config.get("seed", 1)  
-        self.action_repeat  = self.env_config.get("action_repeat", 20)  
+        self.show_window    = int(self.env_config.get("renderize", 1))  
+        self._seed          = int(self.env_config.get("seed", 1))  
+        self.action_repeat  = int(self.env_config.get("action_repeat", 20))  
         self.action_type    = self.env_config.get("action_type", "Low_Level_Continuous")  
-        self.speedup        = self.env_config.get("speedup", 1000)                          
-        self.parallel_envs  = self.env_config.get("parallel_envs", 1)  
+        self.speedup        = int(self.env_config.get("speedup", 1000))                          
+        self.parallel_envs  = int(self.env_config.get("parallel_envs", 1))  
          
         
         self.agents_config = config_kwargs.get("AgentsConfig", "")
-        self._num_agents = self.agents_config["blue_agents"].get("num_agents", 1)
+        self._num_agents = int(self.agents_config["blue_agents"].get("num_agents", 1))
        
         self.port = GodotRLPettingZooWrapper.DEFAULT_PORT + random.randint(0,3100)                 
         self.proc = None

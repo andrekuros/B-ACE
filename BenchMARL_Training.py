@@ -1,5 +1,6 @@
 #%%%
 import argparse
+import sys
 from typing import List
 from benchmarl.environments import VmasTask 
 from benchmarl.environments import PettingZooTask
@@ -12,6 +13,19 @@ from benchmarl.algorithms import IppoConfig, IsacConfig, IqlConfig, IddpgConfig
 from benchmarl.algorithms import QmixConfig, VdnConfig, MappoConfig, MaddpgConfig
 from benchmarl.models.gnn import GnnConfig
 from benchmarl.experiment.callback import Callback
+
+def update_dict(config_dict, key_path, value):
+    keys = key_path.split('.')
+    current_dict = config_dict
+    for key in keys[:-1]:
+        if key not in current_dict:
+            print(f"Error: Key '{key}' not found in the configuration.")
+            sys.exit(1)
+        current_dict = current_dict[key]
+    if keys[-1] not in current_dict:
+        print(f"Error: Key '{keys[-1]}' not found in the configuration.")
+        sys.exit(1)
+    current_dict[keys[-1]] = value
 
 
 class SaveBest(Callback):
@@ -33,7 +47,7 @@ if __name__ == "__main__":
     
     parser = argparse.ArgumentParser(description='Run benchmarl experiments.')
     parser.add_argument('--algorithm', type=str, default='iddpg', choices=['ippo', 'isac', 'iql', 'qmix', 'vdn', 'mappo', 'maddpg', 'iddpg'], help='Algorithm configuration to use.')
-    parser.add_argument('--config', nargs='*', help='Key-value pairs to update the b_ace_config.')
+    parser.add_argument('--config', nargs='*', action='append', help='Key-value pairs to update the b_ace_config.')
     parser.add_argument('--savebest', type=bool, default=False, help='Set to save Checkpoint of best rewards')
     
     saveBest = False
@@ -44,7 +58,7 @@ if __name__ == "__main__":
 
     experiment_config.sampling_device = 'cpu'
     experiment_config.train_device = 'cuda'
-    experiment_config.max_n_iters = 250
+    experiment_config.max_n_iters = 500
     experiment_config.checkpoint_interval = 150000
     
     # Whether to share the parameters of the policy within agent groups
@@ -82,7 +96,7 @@ if __name__ == "__main__":
     #experiment_config.loggers = []
     
     experiment_config.save_folder = "Results"
-    #experiment_config.lr = 0.0003
+    experiment_config.lr = 0.000005
     
     #TASK Config    
     b_ace_config = { 	
@@ -91,7 +105,7 @@ if __name__ == "__main__":
                         "task": "b_ace_v1",
                         "env_path": "BVR_AirCombat/bin/B_ACE_v6.exe",
                         "port": 12500,
-                        "renderize": 0,
+                        "renderize": 1,
                         "debug_view": 0,
                         "phy_fps": 20,
                         "speed_up": 50000,
@@ -158,9 +172,26 @@ if __name__ == "__main__":
                     }	
 }
         
-    task = b_ace.B_ACE.b_ace.get_from_yaml()  
-    task.config = b_ace_config    
+    task = b_ace.B_ACE.b_ace.get_from_yaml()
+ 
+ 
+    # Update the configuration dictionary based on command-line input
+    if args.config:
+        for config_arg in args.config:
+            for param in config_arg:
+                key_value = param.split('=')
+                if len(key_value) != 2:
+                    print(f"Error: Invalid configuration argument format: {param}")
+                    sys.exit(1)
+                key_path, value = key_value
+                update_dict(b_ace_config, key_path, value)
+
+    # Print the updated configuration dictionary
+    print("Updated configuration:")
+    print(b_ace_config)
+    task.config = b_ace_config
     
+    task.config = b_ace_config       
     if args.savebest == True:
         saveBest = True
     
@@ -189,8 +220,9 @@ if __name__ == "__main__":
     model_config = MlpConfig.get_from_yaml()
     critic_model_config = MlpConfig.get_from_yaml()
 
-    model_config.layers = [256,256]
-
+    model_config.layers = [256,512,256]
+    
+    
     for i in range (3):
 
         experiment = Experiment(

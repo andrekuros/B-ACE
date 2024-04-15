@@ -567,12 +567,13 @@ func _wait_for_configuration():
 	var env_config_msg 	= config_message['env_config']
 	update_dict(envConfig,env_config_msg)
 			
-	parallel_envs 	= envConfig.parallel_envs
-	debug_view		= envConfig.debug_view
-	experiment_mode	= envConfig.experiment_mode	
+	parallel_envs 	= int(envConfig.parallel_envs)
+	debug_view		= int(envConfig.debug_view)
+	experiment_mode	= int(envConfig.experiment_mode)
 	
 	var agents_config_msg 	= config_message['agents_config']	
 	var agents_config = simConfig["AgentsConfig"].duplicate(true)	
+	
 	update_dict(agents_config, agents_config_msg)
 		
 		
