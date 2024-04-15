@@ -18,8 +18,7 @@ class GodotRLPettingZooWrapper(GodotEnv, ParallelEnv):
     metadata = {'render.modes': [], 'name': "godot_rl_multi_agent"}
 
     def __init__(self,
-                env_path: str = None,
-                
+                env_path: str = None,                
                 show_window: bool = True,
                 seed: int = 0,
                 framerate: Optional[int] = None,                

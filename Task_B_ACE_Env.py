@@ -56,23 +56,14 @@ class Task:
         # print(self.id, " - ", task_type)
         Task._id_counter += 1
         self.type = task_type
-        self.target_object = target_object        
-
-        self.forced_action = forced_action
-        #self.distance = distance
+        self.target_object = target_object                                
         
-        self.slot_offset = np.array([[-1,0], [1,0], [0,1], [0,-1]])
-        self.slots = [0, 0, 0, 0]
-
-        self.refExp = np.array([[3, 3], [3, 13], [13, 3], [13, 13]])
-            
 
     def calculate_default_action(self):
         # Return a default action (e.g., stay)
         return 4  # Stay    
 
 
-    
     def find_closest_point(self, my_position, points_array):
         
         # Calculate the differences between each point and your position
@@ -112,9 +103,9 @@ class Task:
             if agent_position[0] <= 3: 
                 
                 if agent_position[1] < 13:
-                     exp_pos = np.array([3,13])
+                    exp_pos = np.array([3,13])
                 else:
-                     exp_pos = np.array([13,13])
+                    exp_pos = np.array([13,13])
             
             if agent_position[0] >= 13: 
                 
@@ -142,45 +133,6 @@ class Task:
             # Default action (e.g., 'stay')
             return self.calculate_default_action()
     
-    
-    #Randonly select an more empty slot
-    def get_newSlot(self, agent_position, current_slot, exclusion = 99):
-                                
-        
-        #exclusions = self.check_slots(wall_channel)
-        
-        slots = [slot if idx != exclusion else 999 for idx,slot in enumerate(self.slots)]
-                            
-        minV = min(slots) 
-        
-        dists = [self.get_dist(agent_position, self.target_object.current_pos + self.slot_offset[i]) if slot == minV else 999 for i,slot in enumerate(slots)]
-        
-        #occurs = [index for index, element in enumerate(self.slots) if element == minV]                
-        #idxMin = np.random.choice(occurs)
-        idxMin = dists.index(min(dists))
-
-        if exclusion == 99:
-            self.slots[idxMin] += 1
-
-        return idxMin
-    
-    def update_slots(self):        
-        
-        return 0
-    
-    def check_slots(self, wall_layer):
-                
-        #need to invert slots considering wall is inverted x,y
-        wall_check = [wall_layer[ 1, 0] == 1, # Above center
-                      wall_layer[ 1, 2] == 1, # Below center
-                      wall_layer[ 2, 1] == 1, # Left of center
-                      wall_layer[ 0, 1] == 1  # Right of center
-                    ]
-
-        
-        return wall_check
-
-
     
     def calculate_direction_to_target(self, agent_position, target_position):
         """
@@ -241,13 +193,12 @@ class Task:
         # Assuming actions 0, 1, 2, 3 correspond to Up, Down, Left, Right
         return np.random.choice([0, 1, 2, 3])
 
-class TaskPursuitEnv(GodotRLPettingZooWrapper):
+class B_ACE_TaskEnv(GodotRLPettingZooWrapper):
     
     def __init__(self, *args, **kwargs):
                 
         super.__init__(self, *args, **kwargs)
                 
-
         self.agent_name_mapping = dict(zip(self.agents, list(range(self.num_agents))))                
         
         #Env modification for Task based policy
@@ -256,9 +207,7 @@ class TaskPursuitEnv(GodotRLPettingZooWrapper):
         self.action_space = [self.env.act_space for _ in range(self.env.n_pursuers)]
         self.action_spaces = dict(zip(self.agents, self.env.action_space))
 
-        # Spaces
-                
-        
+        # Spaces                        
         self.refGeneric = refPoint([0,0])        
         self.exploreRefs = [refPoint(pos) for pos in  np.array([[-2,0], [2,0], [0,2], [0,-2]])]
                 
@@ -289,7 +238,7 @@ class TaskPursuitEnv(GodotRLPettingZooWrapper):
     def reset(self, seed=0, options = None):
         # Call the base environment's reset
         super().reset(self, seed=seed, options=options)
-         
+
         # tasks
         self.tasks_evaders = []
         self.tasks_allies = []
@@ -391,8 +340,7 @@ class TaskPursuitEnv(GodotRLPettingZooWrapper):
             last_tasks = self.last_tasks[agent][:self.max_tasks]
 
         self.last_tasks[agent] = last_tasks
-        # Convert tasks to tensor
-                      
+        # Convert tasks to tensor                             
         task_features = [self.get_feature_vector(pusuer_idx, current_obs,  agent_position, task) for task in last_tasks]
         
         # task_tensor = torch.tensor(task_features, dtype=torch.float32).to("cuda")
@@ -402,8 +350,7 @@ class TaskPursuitEnv(GodotRLPettingZooWrapper):
         
         
         return observation 
-    
-    
+        
     def get_one_hot(self, task):
         return TASK_TYPES[task.type]
     
@@ -438,119 +385,92 @@ class TaskPursuitEnv(GodotRLPettingZooWrapper):
         
         
         return feature_vector
-
     
-    def calculate_statistics(self, observation, channel):
-        # Supondo que a observação seja uma matriz NumPy ou tensor PyTorch de forma [7, 7, 3]
-        stats = []
+    def step(self, actions):
         
-        # Exemplo: suponha que o primeiro canal representa inimigos
-        selected_channel = observation[..., channel]
-        #print(enemy_channel)
-
-        # Contagem de inimigos
-        enemy_count = np.sum(selected_channel) / 4
-
-        # Densidade de inimigos
-        enemy_density = enemy_count / (7 * 7) * 7
-
-        # Centro de massa dos inimigos (média da posição)
-        enemy_positions = np.argwhere(selected_channel)
-#         print(enemy_positions)
-        if len(enemy_positions) > 0:
-            center_of_mass = np.mean(enemy_positions, axis=0)
+        # Assuming the environment's step function can handle a dictionary of actions for each agent                                      
+        if self.action_type == "Low_Level_Continuous":            
+            godot_actions = [np.array([action]) for agent, action in actions.items()]        
+            #godot_actions = [np.array(action) for agent, action in actions.items()]        
+        elif self.action_type == "Low_Level_Discrete": 
+            godot_actions = [ self.decode_action(action) for agent, action in actions.items()]
         else:
-            center_of_mass = [3, 3]  # Ou outro valor representativo quando não houver inimigos
-
-        dist = self.distance(center_of_mass, [3,3])
-        # Adicionando as estatísticas à lista
-        stats.extend([center_of_mass[0], center_of_mass[1], dist, enemy_density])
-
-        return stats
-    
-    def step(self, action):
-                                
-        if (
-            self.terminations[self.agent_selection]
-            or self.truncations[self.agent_selection]
-        ):
-            self._was_dead_step(action)
-            return
-        agent = self.agent_selection
-
-        pusuer_idx = agent.split("_")[-1]
-        pusuer_idx = int(pusuer_idx)
-
-                   
-        wall_channel = self.raw_observations[pusuer_idx][..., 0]  # Assuming the first channel represents walls        
-        # allies_channel = current_obs[...,1]  # Assuming the first channel represents walls        
-        # enemies_channel = current_obs[...,2]  # Assuming the first channel represents walls    
+            print("GododtPZWrapper::Error:: Unknow Actions Type -> ", self.actions_type)
+                                        
+        obs, reward, dones, truncs, info = super().step(godot_actions, order_ij=True)
         
-        agent_position = self.env.pursuer_layer.get_position(pusuer_idx)        
-               
-        task = self.last_tasks[agent][action]
-
-        last_task_data = self.last_actions[pusuer_idx]                                          
         
-        if task != self.last_actions[pusuer_idx][0]:                                                                                    
+        # Assuming 'obs' is a list of dictionaries with 'obs' keys among others
+        for agent, action in actions.items():
                                     
-            last_task_data[0].slots[last_task_data[2]] -= 1
-
-            slot = task.get_newSlot(agent_position, last_task_data[2])
-            self.last_actions[pusuer_idx] = [task, action, slot, self.last_len_tasks[agent], 1]
-            self.task_historic[pusuer_idx] = 1
-        
-        else:
-                                                
-            #self.last_actions[pusuer_idx][2] = slot            
-            self.task_historic[pusuer_idx] += 1
-            self.last_actions[pusuer_idx][4] += 1
-              
-        
-        action = self.convert_task2action(self.last_tasks[agent], action , agent_position, self.last_actions[pusuer_idx][2], wall_channel) 
-                        
-        self.env.step(
-            action, self.agent_name_mapping[agent], self._agent_selector.is_last()
-        )
-
-        #Acreate a memory of actions
-        self.action_historic[pusuer_idx][action] += 1         
-        for a in range(5):
-            if a != action:
-                self.action_historic[pusuer_idx][a] /= 2
-                                             
             
-        for k in self.terminations:
-            if self.env.frames >= self.env.max_cycles:
-                self.truncations[k] = True
-            else:
-                self.terminations[k] = self.env.is_terminal
-        for k in self.agents:
-            self.rewards[k] = self.env.latest_reward_state[self.agent_name_mapping[k]]
-        self.steps += 1
-
+            action = self.convert_task2action(self.last_tasks[agent], action , agent_position, self.last_actions[pusuer_idx][2], wall_channel) 
+            
+            last_task_data = self.last_actions[pusuer_idx]                                          
         
-        self._cumulative_rewards[self.agent_selection] = 0
-        self.agent_selection = self._agent_selector.next()
-        self._accumulate_rewards()
+            if task != self.last_actions[pusuer_idx][0]:                                                                                    
+                                        
+                last_task_data[0].slots[last_task_data[2]] -= 1
 
-        if self._agent_selector.is_last() and self.render_mode == "html":
-            self.print_grid()  
+                slot = task.get_newSlot(agent_position, last_task_data[2])
+                self.last_actions[pusuer_idx] = [task, action, slot, self.last_len_tasks[agent], 1]
+                self.task_historic[pusuer_idx] = 1
+            
+            else:
+                                                    
+                #self.last_actions[pusuer_idx][2] = slot            
+                self.task_historic[pusuer_idx] += 1
+                self.last_actions[pusuer_idx][4] += 1
+                
+        
+            # Convert observations, rewards, etc., to tensors
+            # if dones[i] == True:
+            #     continue
+            # .to('cuda') moves the tensor to GPU if you're using CUDA; remove it if not using GPU
+            self.observations[agent] =  obs[i]['obs']            
+            self.rewards[agent] = reward[i]#torch.tensor([reward[i]], dtype=torch.float32).to('cuda')
+            #self.terminations.append(dones[i])#torch.tensor([False], dtype=torch.bool).to('cuda')  # Assuming False for all
+            #self.truncations.append(truncs[i])#torch.tensor([False], dtype=torch.bool).to('cuda')  # Assuming False for all
+            
+            self.terminations[agent] = dones[i]#torch.tensor([False], dtype=torch.bool).to('cuda')  # Assuming False for all
+            self.truncations[agent] = truncs[i]#torch.tensor([False], dtype=torch.bool).to('cuda')  # Assuming False for all
+            
+            #self.terminations = self.terminations and dones[i]
+            #self.truncations = self.truncations or truncs[i]
+            #self.rewards += reward[i] #torch.tensor([reward[i]], dtype=torch.float32).to('cuda')
+            
+            
+            
+            
+            
+            # For 'info', it might not need to be a tensor depending on its use
+            self.info[agent] = info[i]  # Assuming 'info' does not need tensor conversion            
+                        
+        #  # Update the list of active agents based on the 'dones' information
+        #  for agent, done in dones.items():
+        #      if done:
+        # 
+        
+                                
+        
+        
 
-        if self.render_mode == "human":
-            self.render()
+        return self.observations, self.rewards, self.terminations, self.truncations, self.info 
+
 
     
     def generate_tasks(self):
                         
         for agent in self.agents:
 
-            for i in range(self.envConfig["AgentsConfig"]["redAgents"]["numAgents"]):
-            new_task = Task('track_enemy', evader)
-            self.tasks_enemy.append(new_task)
-            self.tasks_map[new_task.id] = new_task           
-    
-                            
+            for i in range(self.envConfig["AgentsConfig"]["redAgents"]["numAgents"]):                
+                
+                self.enemies.append(i)
+                
+                new_task = Task('track_enemy', self.enemies[i])
+                self.tasks_enemy.append(new_task)
+                self.tasks_map[new_task.id] = new_task           
+                                    
 
     def distance(self, pos1, pos2):
         """Calculate Euclidean distance between two points."""
@@ -577,47 +497,9 @@ class TaskPursuitEnv(GodotRLPettingZooWrapper):
         # self.tasks = active_evaders + self.tasks_basic 
         # self.tasks = self.tasks_basic.copy()
 
-    def print_grid(self):
-        clear_output(wait=True)  # Clear the output of the current cell
-
-        grid = [[' ' for _ in range(self.env.x_size)] for _ in range(self.env.y_size)]
-
-        # Place evaders and pursuers on the grid    
-        for evader in self.env.evaders:            
-            x, y = evader.current_pos
-            # Color evaders in red
-            grid[y][x] = f'<span style="color: red;">O</span>'
-
-        # Place pursuers on the grid
-        for i, pursuer in enumerate(self.env.pursuers):
-            x, y = pursuer.current_pos
-            # Color pursuers in blue
-            grid[y][x] = f'<span style="color: blue;">{i}</span>'
-
-        # Convert the grid to an HTML table with enhanced visibility
-        grid_html = '<table style="border-collapse: collapse;">'
-        for row in grid:
-            grid_html += '<tr>' + ''.join([f'<td style="width: 16px; height: 16px; text-align: center; border: 1px solid black;">{cell if cell.strip() != "" else "&nbsp;"}</td>' for cell in row]) + '</tr>'
-        grid_html += '</table>'
-
-        # Convert last_actions to an HTML table
-        actions_html = ''
-        if hasattr(self, 'last_actions'):
-            # Extract task type, action, and slot from each entry in last_actions
-            formatted_actions = [(task.type, task.id, action, len_last, task.slots,  hist) for task, action, slot, len_last, hist in self.last_actions]
-            
-            # Create a DataFrame from the formatted list
-            actions_df = pd.DataFrame(formatted_actions, columns=['Task Type', 'id', 'action', 'nTasks', 'Slots' , 'Hist'])
-            actions_html = '<td>' + actions_df.to_html(index=True, border=0) + '</td>'
-
-        # Display grid and actions table side by side within a parent table
-        parent_table_html = f'<table><tr><td style="vertical-align: top;">{grid_html}</td>{actions_html}</tr></table>'
-        display(HTML(parent_table_html))
-        time.sleep(1/self.fps)
-        
-        
+                
 def env(**kwargs):
-    environment = TaskPursuitEnv(**kwargs)
+    environment = B_ACE_TaskEnv(**kwargs)
     environment = wrappers.AssertOutOfBoundsWrapper(environment)
     environment = wrappers.OrderEnforcingWrapper(environment)
     return environment
