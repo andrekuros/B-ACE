@@ -116,7 +116,7 @@ func _send_env_info():
 		"observation_labels": simulation_list[0].agents[0].get_obs(true)["labels"],
 		"action_space": simulation_list[0].agents[0].get_action_space(),
 		"n_agents": len(simulation_list[0].agents)
-		}	
+		}		
 	_send_dict_as_json_message(message)
 
 func connect_to_server():

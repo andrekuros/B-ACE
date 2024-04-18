@@ -400,7 +400,7 @@ func get_obs(with_labels = false):
 	for track in range(1 - tracks_added):
 		var ref_enemy = manager.enemies[0]
 		tracks_info.append_array([
-			["track_y_diff", 0.0],
+			["track_alt_diff", 0.0],
 			["track_aspect_angle", Calc.get_2d_aspect_angle(current_hdg, 0.0) / 180.0],
 			["track_angle_off", 0.0],
 			["track_dist", -1.0],

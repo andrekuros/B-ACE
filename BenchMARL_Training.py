@@ -56,7 +56,7 @@ if __name__ == "__main__":
     # Loads from "benchmarl/conf/experiment/base_experiment.yaml"
     experiment_config = ExperimentConfig.get_from_yaml()
 
-    experiment_config.sampling_device = 'cpu'
+    experiment_config.sampling_device = 'cuda'
     experiment_config.train_device = 'cuda'
     experiment_config.max_n_iters = 500
     experiment_config.checkpoint_interval = 150000
@@ -96,7 +96,7 @@ if __name__ == "__main__":
     #experiment_config.loggers = []
     
     experiment_config.save_folder = "Results"
-    experiment_config.lr = 0.000005
+    experiment_config.lr = 0.0005
     
     #TASK Config    
     b_ace_config = { 	
@@ -105,7 +105,7 @@ if __name__ == "__main__":
                         "task": "b_ace_v1",
                         "env_path": "BVR_AirCombat/bin/B_ACE_v6.exe",
                         "port": 12500,
-                        "renderize": 1,
+                        "renderize": 0,
                         "debug_view": 0,
                         "phy_fps": 20,
                         "speed_up": 50000,
@@ -217,11 +217,10 @@ if __name__ == "__main__":
     
     # Loads from "benchmarl/conf/model/layers/mlp.yaml"
     #model_config = GnnConfig.get_from_yaml()
-    model_config = MlpConfig.get_from_yaml()
+    model_config = GnnConfig.get_from_yaml()
     critic_model_config = MlpConfig.get_from_yaml()
 
-    model_config.layers = [256,512,256]
-    
+    model_config.layers = [256,256]
     
     for i in range (3):
 

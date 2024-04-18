@@ -63,6 +63,8 @@ class GodotRLPettingZooWrapper(GodotEnv, ParallelEnv):
         env_info = self._get_env_info()        
         self.observation_labels = env_info["observation_labels"]
         
+        self.obs_map= {label: index for index, label in enumerate(self.observation_labels)}
+        
         
         # sf2 requires a tuple action space
         self._tuple_action_space = spaces.Tuple([v for _, v in self._action_space.items()])
@@ -118,7 +120,8 @@ class GodotRLPettingZooWrapper(GodotEnv, ParallelEnv):
     def seed(self, _seed):
         self.seed = _seed
     
-    def step(self, actions):
+    def step(self, actions, order_ij=True):
+                
         # Assuming the environment's step function can handle a dictionary of actions for each agent                                      
         if self.action_type == "Low_Level_Continuous":            
             godot_actions = [np.array([action]) for agent, action in actions.items()]        
@@ -129,7 +132,7 @@ class GodotRLPettingZooWrapper(GodotEnv, ParallelEnv):
             print("GododtPZWrapper::Error:: Unknow Actions Type -> ", self.actions_type)
                                 
         #print("GODOT:", godot_actions)
-        obs, reward, dones, truncs, info = super().step(godot_actions, order_ij=True)
+        obs, reward, dones, truncs, info = super().step(godot_actions, order_ij=order_ij)
         
         #print(obs)
         #self.terminations = {}

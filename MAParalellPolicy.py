@@ -26,9 +26,10 @@ class MAParalellPolicy(BasePolicy):
         #         policy.forward = _new_forward_PG 
 
 
-    def forward(self, batch: Batch, state: Optional[Union[dict, Batch]] = None, **kwargs):
+    def forward(self, batch: Batch, state: Optional[Union[dict, Batch]] = None, info=None, **kwargs):
         action_dict = {}
-                
+        print("PARALALINFO:", info)     
+        print("KFKAKGA", kwargs)
         for agent_id, policy in self.policies.items():
             agent_data = Batch({key: value[agent_id] if agent_id in value else Batch() for key, value in batch.items()})
 
