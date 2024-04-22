@@ -16,4 +16,5 @@ Logs/dqn_sisl/*
 ppo_B_ACE/*
 wandb/*
 BVR_AirCombat/bin/
-
+MHA_task_B_ACE/*
+__pycache__/*

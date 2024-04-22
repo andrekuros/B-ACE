@@ -54,8 +54,8 @@ test_num  =  "_B_ACE02"
 policyModel  =  "DQN"
 name = model + test_num
 
-train_env_num = 5
-test_env_num = 5
+train_env_num = 20
+test_env_num = 10
 
 now = datetime.datetime.now().strftime("%y%m%d-%H%M%S")
 log_name = name + str(now)
@@ -83,7 +83,7 @@ B_ACE_Config = {
                         "task": "b_ace_v1",
                         "env_path": "BVR_AirCombat/bin/B_ACE_v6.console.exe",
                         "port": 12500,
-                        "renderize": 1,
+                        "renderize": 0,
                         "debug_view": 0,
                         "phy_fps": 20,
                         "speed_up": 50000,
@@ -97,9 +97,9 @@ B_ACE_Config = {
                         
                         "RewardsConfig" : {
                             "mission_factor": 1.0,
-                            "missile_fire_factor": -0.3,
+                            "missile_fire_factor": -0.1,
                             "missile_no_fire_factor": -0.001,
-                            "missile_miss_factor": -0.8,
+                            "missile_miss_factor": -0.5,
                             "detect_loss_factor": -0.1,
                             "keep_track_factor": 0.005,
                             "hit_enemy_factor": 3.0,
@@ -133,7 +133,7 @@ B_ACE_Config = {
                         "red_agents":
                         { 
                             "num_agents" : 1, 
-                            "base_behavior": "duck",
+                            "base_behavior": "baseline1",
                             "beh_config" : {
                                 "dShot" : 0.85,
                                 "lCrank": 0.60,
@@ -154,10 +154,10 @@ n_agents = 1#B_ACE_Config["n_pursuers"]
 
 dqn_params =    {
                 "discount_factor": 0.99, 
-                "estimation_step": 60, 
-                "target_update_freq": 900 * train_env_num,#max_cycles * n_agents,
+                "estimation_step": 180, 
+                "target_update_freq": 400 * train_env_num,#max_cycles * n_agents,
                 "optminizer": "Adam",
-                "lr": 0.00001 
+                "lr": 0.000005 
                 }
 
 PPO_params= {    
@@ -180,20 +180,20 @@ PPO_params= {
 
 
 trainer_params = {"max_epoch": 500,
-                  "step_per_epoch": 10 * 300 * train_env_num,#5 * (150 * n_agents),
-                  "step_per_collect": 300 * train_env_num,# * (10 * n_agents),
+                  "step_per_epoch": 10 * 100 * train_env_num,#5 * (150 * n_agents),
+                  "step_per_collect": 100 * train_env_num,# * (10 * n_agents),
                   
-                  "batch_size" : 250,
+                  "batch_size" : 600,
                   
-                  "update_per_step": 1 / (50 * train_env_num), #Off-Policy Only (run after close a Collect (run many times as necessary to meet the value))
+                  "update_per_step": 1 / (200), #Off-Policy Only (run after close a Collect (run many times as necessary to meet the value))
                   
                   "repeat_per_collect":64, #On-Policy Only
                   
                   "episode_per_test": 30,                  
-                  "tn_eps_max": 0.30,
+                  "tn_eps_max": 0.15,
                   "ts_eps_max": 0.01,
                   "warmup_size" : 5
-                  }
+}
 #agent_learn = PPOPolicy(**policy_params)
 
 
@@ -237,8 +237,8 @@ def _get_agents(
             if model == "Task_MHA_B_ACE":
                 net = Task_MHA_B_ACE(
                     #obs_shape=agent_observation_space.shape,                                                  
-                    num_tasks = 10,
-                    num_features_per_task= 11,                    
+                    num_tasks = 6,
+                    num_features_per_task= 12,                    
                     nhead = 4,
                     device="cuda" if torch.cuda.is_available() else "cpu"
                     

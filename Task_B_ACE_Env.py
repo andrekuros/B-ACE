@@ -21,11 +21,11 @@ __all__ = ["ManualPolicy", "env", "parallel_env", "raw_env"]
 # identification and
 
 TASK_TYPES = {
-    'null'         :  [0, 0, 0],#, 0, 0, 0, 0, 0, 0, 0],
-    'track_enemy'  :  [1, 0, 0],#, 0, 0, 0, 0, 0, 0, 0],
-    'fly_direction':  [0, 1, 0],#, 0, 0, 0, 0, 0, 0, 0],
-    'fire_missile' :  [0, 0, 1],#, 0, 0, 0, 0, 0, 0, 0],
-#     'break':        [0, 0, 0, 1, 0, 0, 0, 0, 0, 0],
+    'null'         :  [0, 0, 0, 0],#, 0, 0, 0, 0, 0, 0, 0],
+    'track_enemy'  :  [1, 0, 0, 0],#, 0, 0, 0, 0, 0, 0, 0],
+    'fly_direction':  [0, 1, 0, 0],#, 0, 0, 0, 0, 0, 0, 0],
+    'fire_missile' :  [0, 0, 1, 0],#, 0, 0, 0, 0, 0, 0, 0],
+    'missile_support':[0, 0, 0, 1]#, 0, 0, 0, 0, 0, 0],
 #     'search':       [0, 0, 0, 0, 1, 0, 0, 0, 0, 0],
 #     'fly_direction':[0, 0, 0, 0, 0, 1, 0, 0, 0, 0],
 #     'turn':         [0, 0, 0, 0, 0, 0, 1, 0, 0, 0],
@@ -97,6 +97,22 @@ class Task:
                             current_obs[self.obs_map["track_enemy_missile_Nez"]]     #8                                                    #8                      
 
                         ] #+ self.action_historic[pusuer_idx]#+ stats
+            
+        elif self.type == "missile_support":  
+                        
+            task_specific_info =[                            
+                            current_obs[self.obs_map["track_alt_diff"]],              #1                            
+                            current_obs[self.obs_map["track_aspect_angle"]],          #2
+                            current_obs[self.obs_map["track_angle_off"]],             #3
+                            current_obs[self.obs_map["track_dist"]],                  #4
+                            
+                            current_obs[self.obs_map["own_in_flight_missile"]],       #5
+                            current_obs[self.obs_map["own_missiles"]],                #6
+                            current_obs[self.obs_map["own_in_flight_missile"]],       #7
+                            current_obs[self.obs_map["track_is_missile_support"]]     #8                                                    #8                      
+
+                        ] #
+            
         elif self.type == "null":
             task_specific_info =[                            
                             current_obs[self.obs_map["own_altitude"]],              #1                            
@@ -130,7 +146,7 @@ class B_ACE_TaskEnv(GodotRLPettingZooWrapper):
         self.agent_name_mapping = dict(zip(self.agents, list(range(self.num_agents))))                
         
         #Env modification for Task based policy
-        self.max_tasks = 10  # Maximum number of tasks
+        self.max_tasks = 6  # Maximum number of tasks
         self.act_space = spaces.Discrete(self.max_tasks)
         self.action_space = spaces.Discrete(self.max_tasks)
         #self.action_spaces = dict(zip(self.agents, self.action_space))
@@ -199,7 +215,7 @@ class B_ACE_TaskEnv(GodotRLPettingZooWrapper):
 
         godot_actions = {}
         actions = {}
-        
+                
         for agent, action_selected in task_actions.items():
                                                             
             task = self.last_tasks[agent][action_selected]            
@@ -298,12 +314,18 @@ class B_ACE_TaskEnv(GodotRLPettingZooWrapper):
                 
                 new_task = Task('fire_missile', i, self.obs_map)
                 self.tasks_enemies[agent].append(new_task)
-                self.tasks_map[new_task.id] = new_task           
+                self.tasks_map[new_task.id] = new_task    
+
+                new_task = Task('missile_support', i, self.obs_map)            
+                self.tasks_enemies[agent].append(new_task)
+                self.tasks_map[new_task.id] = new_task        
             
             #Main Target-based Task            
             new_task = Task('fly_direction', 101, self.obs_map)            
             self.tasks_positioning[agent].append(new_task)
             self.tasks_map[new_task.id] = new_task      
+            
+    
             
             #Main null Task            
             new_task = Task('null', 100, self.obs_map)            
@@ -316,10 +338,24 @@ class B_ACE_TaskEnv(GodotRLPettingZooWrapper):
         """
         Determine the action to take based on the task type and agent's data.
         """            
+        #task.type = 'missile_support'
+        
         if task.type == 'track_enemy':
             
             # Task to             
             hdg2target  =   agent_observation[self.obs_map["track_aspect_angle"]]
+            level       =   agent_observation[self.obs_map["own_altitude"]]
+            turn_g      =   2.5 * (-1.0/8.0) #result is 2.5g input for max_g = 9
+            fire        =   0 
+                        
+            action = [hdg2target, level, turn_g, fire]            
+            self.last_actions[agent] = action
+            return action
+        
+        elif task.type == 'missile_support':
+            
+            # Task to             
+            hdg2target  =   agent_observation[self.obs_map["track_aspect_angle"]] - (50.0/180.0) * np.sign(agent_observation[self.obs_map["track_aspect_angle"]])            
             level       =   agent_observation[self.obs_map["own_altitude"]]
             turn_g      =   2.5 * (-1.0/8.0) #result is 2.5g input for max_g = 9
             fire        =   0 
@@ -345,7 +381,7 @@ class B_ACE_TaskEnv(GodotRLPettingZooWrapper):
             # Task to 
             hdg2target = agent_observation[self.obs_map["own_aspect_angle_target"]]
             level  = agent_observation[self.obs_map["own_altitude"]]
-            turn_g = 2.5 * (-1.0/8.0) #result is 2.5g input for max_g = 9
+            turn_g = 1.0 * (-1.0/8.0) #result is 2.5g input for max_g = 9
             fire = 1 
                         
             action = [hdg2target, level, turn_g, fire]            
