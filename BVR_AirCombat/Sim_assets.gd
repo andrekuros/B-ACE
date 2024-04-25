@@ -132,7 +132,7 @@ class Track:
 			if not detected:
 				just_detected = true			
 				detected = true
-		else:
+		else:			
 			if time_detected - last_detection > 20.0:
 				is_alive = false
 			
@@ -184,19 +184,15 @@ class Track:
 			return hdg
 		
 class RewardsControl:
-	const DEFAULT_MISSION_FACTOR := 1.0
+	const DEFAULT_MISSION_FACTOR := 0.001
 	const DEFAULT_MISSILE_FIRE_FACTOR := -0.1
 	const DEFAULT_MISSILE_NO_FIRE_FACTOR := -0.001
 	const DEFAULT_MISSILE_MISS_FACTOR := -0.5
 	const DEFAULT_DETECT_LOSS_FACTOR := -0.1
 	const DEFAULT_KEEP_TRACK_FACTOR := 0.001
 	const DEFAULT_HIT_ENEMY_FACTOR := 3.0
-	const DEFAULT_HIT_OWN_FACTOR := -5.0
-	const DEFAULT_SITUATION_FACTOR := 0.1
-	const DEFAULT_FINAL_TEAM_KILLED_FACTOR := -5.0
-	const DEFAULT_FINAL_ENEMY_ON_TARGET_FACTOR := -3.0
-	const DEFAULT_FINAL_ENEMIES_KILLED_FACTOR := 5.0
-	const DEFAULT_FINAL_MAX_CYCLES_FACTOR := 3.0
+	const DEFAULT_HIT_OWN_FACTOR := -5.0	
+	const DEFAULT_MISSION_ACCOMPLISHED_FACTOR := 10.0
 	
 	var printRewards = false
 	var cumulated_rewards = 0.0
@@ -204,7 +200,7 @@ class RewardsControl:
 	var	missile_fire = 0.0
 	var	missile_miss = 0.0
 	var	detect_loss = 0.0
-	var	keep_track = 0
+	var	keep_track = 0.0
 	var	hit_enemy = 0.0
 	var	hit_own = 0.0		
 	var	final_reward = 0.0
@@ -215,13 +211,10 @@ class RewardsControl:
 	var detect_loss_factor: float
 	var keep_track_factor: float
 	var hit_enemy_factor: float
-	var hit_own_factor: float
-	var situation_factor: float
-	var final_team_killed_factor: float
-	var final_enemy_on_target_factor: float
-	var final_enemies_killed_factor: float
-	var final_max_cycles_factor: float
+	var hit_own_factor: float	
+	var mission_accomplished_factor: float
 	var Owner_obj = null
+	var max_cycles = 36000.0 / 20.0
 
 	func _init(config, _owner_obj):
 						
@@ -234,16 +227,13 @@ class RewardsControl:
 		self.keep_track_factor = config.get("keep_track_factor", DEFAULT_KEEP_TRACK_FACTOR)
 		self.hit_enemy_factor = config.get("hit_enemy_factor", DEFAULT_HIT_ENEMY_FACTOR)
 		self.hit_own_factor = config.get("hit_own_factor", DEFAULT_HIT_OWN_FACTOR)
-		self.situation_factor = config.get("situation_factor", DEFAULT_SITUATION_FACTOR)
-		self.final_team_killed_factor = config.get("final_team_killed_factor", DEFAULT_FINAL_TEAM_KILLED_FACTOR)
-		self.final_enemy_on_target_factor = config.get("final_enemy_on_target_factor", DEFAULT_FINAL_ENEMY_ON_TARGET_FACTOR)
-		self.final_enemies_killed_factor = config.get("final_enemies_killed_factor", DEFAULT_FINAL_ENEMIES_KILLED_FACTOR)
-		self.final_max_cycles_factor = config.get("final_max_cycles_factor", DEFAULT_FINAL_MAX_CYCLES_FACTOR)		
+		self.mission_accomplished_factor = config.get("mission_accomplished_factor", DEFAULT_MISSION_ACCOMPLISHED_FACTOR)		
 		
-		self.Owner_obj = _owner_obj
+		self.Owner_obj = _owner_obj		
+		max_cycles = _owner_obj.max_cycles
 	
 	func add_mission_rew(ref_value):
-		mission += mission_factor * ref_value
+		mission += mission_factor * ref_value 
 		
 	func add_missile_fire_rew():
 		missile_fire += missile_fire_factor
@@ -280,7 +270,7 @@ class RewardsControl:
 		missile_fire = 0.0
 		missile_miss = 0.0
 		detect_loss = 0.0
-		keep_track = 0
+		keep_track = 0.0
 		hit_enemy = 0.0
 		hit_own = 0.0		
 		final_reward = 0.0
@@ -294,7 +284,7 @@ class RewardsControl:
 		missile_fire = 0.0
 		missile_miss = 0.0
 		detect_loss = 0.0
-		keep_track = 0
+		keep_track = 0.0
 		hit_enemy = 0.0
 		hit_own = 0.0		
 		final_reward = 0.0
@@ -303,19 +293,22 @@ class RewardsControl:
 		return cumulated_rewards
 		
 	
-	func add_final_episode_reward(condition):
+	func add_final_episode_reward(condition, missing_cycles, missiles_remaining = 0):
 						
 		if condition == "Enemy_Achieved_Target":
-			final_reward += final_enemy_on_target_factor			
+			final_reward -= mission_accomplished_factor
 			#print("Figther::Info::Enemies_On Target Rewards -> ", final_reward )			
 		elif condition == "Enemies_Killed":
-			final_reward += final_enemies_killed_factor  + final_max_cycles_factor			
+			final_reward += mission_accomplished_factor
+			final_reward += (keep_track_factor + mission_factor) * missing_cycles
 			
 		elif condition == "Team_Killed":
-			final_reward += final_team_killed_factor + final_enemy_on_target_factor
+			final_reward -= mission_accomplished_factor
+			final_reward += (missile_miss_factor * missiles_remaining)
 			#print("Figther::Info::TEAM_Killed Rewards -> ", final_reward )			
+		
 		elif condition == "Max_Cycles":
-			final_reward += final_reward
+			final_reward += mission_accomplished_factor
 			#print("Figther::Info::Rewards Added Max_Cycles -> ", final_reward )
 		else:
 			print("Figther::Warning Trying to add unknow final reward (", condition , ")")			

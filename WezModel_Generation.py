@@ -53,13 +53,10 @@ from sklearn.preprocessing import StandardScaler, MinMaxScaler
 from sklearn.model_selection import KFold
 from numpy import sqrt
 
-
-
 #Force the Working Directory for the file directory
 abspath = os.path.abspath(__file__)
 dname = os.path.dirname(abspath)
 os.chdir(dname)
-
 
 import warnings
 warnings.filterwarnings("ignore")
@@ -77,6 +74,94 @@ feet2m = 0.3048
 pi = math.pi
 refCols = ["A","B","C","D","E",'Fcos',"Fsen","H","I","J","K"] 
 rangeEval = 1 # 1-> RMAX / 2->RNEZ
+
+def prepareDataFromASA(fileName, altInMeters = False, relativeRedHdg = True,\
+                        normalize = True, argumentation = True, size = -1,  \
+                        sinCos = True):
+        
+    fulldataDf = pd.read_csv(fileName)   
+    
+    if size > 0:
+        fulldataDf = fulldataDf.sample(size)
+        
+    dataDf = fulldataDf[['BL_Speed', 'RD_Speed', 'rad', 'RD_Hdg', 'BL_Alt', 'RD_Alt']]
+    
+    dataDf['maxRange'] = fulldataDf['maxRange']
+    dataDf['maxRange'].replace(-1,0)
+    dataDf = dataDf[dataDf['maxRange'] > 1] 
+     
+    if argumentation:                
+        #dataDf = dataDf[dataDf['rad'] <= 0]        
+        dataDf_Arg = dataDf.copy()
+        dataDf_Arg['rad'] = dataDf_Arg.apply(lambda x: -1 * x.rad , axis=1)  
+        dataDf_Arg['RD_Hdg'] = dataDf_Arg.apply(lambda x: -1 * x.RD_Hdg , axis=1)         
+        dataDf = pd.concat([dataDf, dataDf_Arg], axis=0, ignore_index=True)        
+        
+    if altInMeters:
+        dataDf['diffAlt'] = dataDf.apply(lambda x: x.BL_Alt - x.RD_Alt, axis=1)      
+    else:    
+        dataDf['diffAlt'] = dataDf.apply(lambda x: (x.BL_Alt - x.RD_Alt)*feet2m, axis=1)  
+        dataDf['BL_Alt'] = dataDf.apply(lambda x: (x.BL_Alt)*feet2m, axis=1)          
+                
+    if relativeRedHdg:
+        #dataDf['relRedHdg'] = dataDf.apply(lambda x: (x.RD_Hdg-x.rad) * ( 1 if x.rad < 0 else -1), axis=1) 
+        dataDf['relRedHdg'] = dataDf.apply(lambda x: (x.RD_Hdg-x.rad) , axis=1) 
+        if sinCos:
+            dataDf['cosRel'] = dataDf.apply(lambda x: math.cos(x.relRedHdg*math.pi/180), axis=1)
+            dataDf['sinRel'] = dataDf.apply(lambda x: math.sin(x.relRedHdg*math.pi/180), axis=1) 
+            #dataDf['cosRel2'] = dataDf.apply(lambda x: math.cos(x.rad*math.pi/180), axis=1)
+            #dataDf['sinRel2'] = dataDf.apply(lambda x: math.sin(x.rad*math.pi/180), axis=1)        
+    
+    else:     
+        dataDf['relRedHdg'] = dataDf.apply(lambda x: 0-x.RD_Hdg , axis=1)
+        if sinCos:
+            dataDf['cosRel'] = dataDf.apply(lambda x: math.cos(x.relRedHdg*math.pi/180), axis=1)
+            dataDf['sinRel'] = dataDf.apply(lambda x: math.sin(x.relRedHdg*math.pi/180), axis=1)
+            dataDf['cosRel2'] = dataDf.apply(lambda x: math.cos(x.rad*math.pi/180), axis=1)
+            dataDf['sinRel2'] = dataDf.apply(lambda x: math.sin(x.rad*math.pi/180), axis=1)
+            #dataDf = dataDf.drop(['rad'], axis =1)                                                          
+    
+    dataDf = dataDf.drop(['RD_Hdg'], axis =1)     
+    dataDf = dataDf.drop(['RD_Alt'], axis =1) 
+    
+    if sinCos:
+        dataDf = dataDf.drop(['relRedHdg'], axis=1)                          
+    
+    
+    
+    #dataDf = dataDf[dataDf['cosRel'] > 0.80 ]
+    #dataDf = dataDf[dataDf['cosRel'] < -0.90]
+    
+    #dataDf = dataDf[dataDf['sinRel'] > 0.90 ]
+    #dataDf = dataDf[dataDf['sinRel'] < -0.90]
+    
+    #dataDf = dataDf[dataDf['rad'] <= 0]
+    #dataDf = dataDf[dataDf['BL_Speed'] > 450]
+    #dataDf = dataDf[dataDf['BL_Speed'] < 750]
+    
+    #dataDf = dataDf[dataDf['RD_Hdg'] <= 0]
+    #dataDf = dataDf[dataDf['RD_Hdg'] > 450]
+    #dataDf = dataDf[dataDf['RD_Hdg'] < 750]     
+    
+    #dataDf = dataDf[dataDf['RD_Speed'] > 450]
+    #dataDf = dataDf[dataDf['RD_Speed'] < 750]
+    
+    #dataDf = dataDf[dataDf['diffAlt'] < 5000]
+    #dataDf = dataDf[dataDf['diffAlt'] > -5000]
+    
+    #dataDf = dataDf[dataDf['BL_Alt'] > 1000 * utils.feet2m ]
+    #dataDf = dataDf[dataDf['BL_Alt'] < 45000* utils.feet2m ]
+    
+    if normalize:        
+        dataDf['BL_Alt'] = dataDf['BL_Alt'] / max(abs(dataDf['BL_Alt']))
+        dataDf['diffAlt']  = dataDf['diffAlt'] / max(abs(dataDf['diffAlt']))
+        dataDf['BL_Speed'] = dataDf['BL_Speed'] / max(abs(dataDf['BL_Speed']))
+        dataDf['RD_Speed']  = dataDf['RD_Speed'] / max(abs(dataDf['RD_Speed']))
+        dataDf['rad']  = dataDf['rad'] / max(abs(dataDf['rad']))
+        if not sinCos:
+            dataDf['relRedHdg'] = dataDf['relRedHdg'] / max(abs(dataDf['relRedHdg']))     
+    
+    return dataDf
 
 def prepareDataFromGodot(fileName, altInMeters = False, relativeRedHdg = True, normalize = True):
         
@@ -247,21 +332,35 @@ def computeDnn():
     #metrics.append(evalData("Test Data", "DNN",model, X_testS, Y_test, printPartial)+ [tSize])                    
     #mean_residual.append(Y_test -' metrics[-1][-1])  
 
+
 #%%%
 # Run or Complete a Batch Experiment for WEZ validation
-tagName = "DeepSpaceIA"
+tagName = "ASA_WEZ"
 rangeType = "Rmax"
 
-dataFile = "./Data/Rmax_5000_v3.csv"
+dir = './Data/Wez_Paper/'
+#dataFile = "RandomExperiment_1000_cases__7392.csv" #fileName
+#dataFile = 'FactorialExperiment_333334_7397.csv'
+#dataFile = 'RandomExperiment_RNez_2800_cases_toASA__7403.csv'
+#dataFile = 'RandomExperiment_RMax_2800_cases_toASA__7402.csv'
+#dataFile = 'RandomExperiment_1000_cases__7396_Rad-60_60.csv'
+dataFile = 'RandomExperiment_1000_cases__7399.csv'
+#AlternateTestData = 'RandomExperiment_1000_cases__7396_Rad-60_60.csv'
+#dataFile = 'wez_out.csv'
+#dataFile = 'wez_out.csv'#'RandomExperiment_1000_cases__7396_Rad-60_60.csv'
+
+#dataFile = "./Data/Rmax_5000_v3.csv"
 
 AlternateTestData = 'wez_out.csv'
 testSplitMode = "RandomSplit" # FixedTestSize / RandomSplit / AlternateTest
 dataSplitRatio = 0.30
 trainSize = [0]#x for x in range (50,650,50)] #only for alternate
 metricsBySize = []
-
-dataSet = prepareDataFromGodot(dataFile, relativeRedHdg=True)
-dataSet = dataSet[dataSet["maxRange"] != 1]
+#dataSet = prepareDataFromASA(dataFile, relativeRedHdg=True)
+dataSet = prepareDataFromASA(dir + dataFile, relativeRedHdg=False, argumentation = False, size =-1, sinCos = True)#500)
+#print(dataSet.describe())
+#dataSet = prepareDataFromGodot(dir + dataFile, relativeRedHdg=True)
+#dataSet = dataSet[dataSet["maxRange"] != 1]
 
 #dataSet = dataSet.drop([4340, 1304, 940,2190, 3711,2089,4003,2401,2158,218])
 X = dataSet.drop(["maxRange"], axis=1)
@@ -275,12 +374,12 @@ metricsSummary = []
 regressorsDict = {1:"MLP", 2:"RBF", 3:"PR", 4:"Linear", 5:"DNN", 6:"LinReg", 7:"ANOVA", 8:"RandomForest"}
 regressors = [regressorsDict[6]]#],regressorsDict[6],regressorsDict[1]]
 
-interactionsDegrees = [4]
+interactionsDegrees = [3]
 limitLevel = -1
 limitOrder = -1
 polRegDegree = 1
 reductionsFactors = [-1]#[100]#[100,90,80,70,50,40,30,20,10,5]
-folds = 1
+folds = 5
 printPartial = False
 normalizeAll = False
 

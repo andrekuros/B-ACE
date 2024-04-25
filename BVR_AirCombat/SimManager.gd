@@ -5,6 +5,7 @@ const SConv      = preload("res://Sim_assets.gd").SConv
 const SimGroups  = preload("res://Sim_assets.gd").SimGroups
 
 @onready var mainView = get_tree().root.get_node("B_ACE")
+@onready var mainCanvas = mainView.get_node("CanvasLayer")
 var tree = null
 
 #const RewardsControl = preload("res://Sim_assets.gd").RewardsControl
@@ -64,8 +65,10 @@ func _physics_process(delta):
 		var missiles = tree.get_nodes_in_group(simGroups.MISSILE)
 		if len(missiles) == 0:
 			stop_simulation = true
+			finalState[0]["end_cond"] = "Blue_Killed"
+			finalState[1]["end_cond"] = "Blue_Killed"
 			for agent in agents:			
-				agent.ownRewards.add_final_episode_reward("Team_Killed")				
+				agent.ownRewards.add_final_episode_reward("Team_Killed", (max_cycles - n_action_steps) / action_repeat, agent.missiles)				
 			#print("Sync::INFO::TeamKilled" )
 			for enemy in enemies:
 				enemy.done = true
@@ -75,9 +78,11 @@ func _physics_process(delta):
 		var missiles = tree.get_nodes_in_group(simGroups.MISSILE)		
 		if len(missiles) == 0:
 			stop_simulation = true
+			finalState[0]["end_cond"] = "Red_Killed"
+			finalState[1]["end_cond"] = "Red_Killed"
 			for agent in agents:
 				agent.done = true
-				agent.ownRewards.add_final_episode_reward("Enemies_Killed")					
+				agent.ownRewards.add_final_episode_reward("Enemies_Killed", (max_cycles - n_action_steps) / action_repeat, agent.missiles)					
 			#print("Sync::INFO::EnemyKilled" )
 				
 	if n_action_steps % action_repeat != 0 and not stop_simulation:
@@ -93,7 +98,9 @@ func _physics_process(delta):
 			
 		for agent in agents:
 			agent.done = true 
-			agent.ownRewards.add_final_episode_reward("Max_Cycles")
+			agent.ownRewards.add_final_episode_reward("Max_Cycles", (max_cycles - n_action_steps) / action_repeat, agent.missiles)
+		finalState[0]["end_cond"] = "Max_Cycles"
+		finalState[1]["end_cond"] = "Max_Cycles"
 		
 		
 	#PROCCESS Global Rewards
@@ -103,30 +110,39 @@ func _physics_process(delta):
 	var enemy_on_target = false
 	
 	#Calculate Penaulties for enemy distance to target	
+	var tactics = []
 	for enemy in enemies:		
-		if enemy.activated and not enemy.get_done():										
-			enemy_goal_reward += -1.0 / enemy.dist2go			
-			if enemy.dist2go < 3.0: #300 meters
+		if enemy.activated and not enemy.get_done():			
+			tactics.append(str(enemy.id) + ": " + enemy.tatic_status )
+			#if enemy.HPT != null:
+			#	tactics[-1] += " " + str(enemy.HPT.is_alive) + "/" + str(enemy.HPT.offensive_factor)
+			enemy_goal_reward += -1.0 / enemy.dist2go
+			if enemy.dist2go < 5.0: #500 meters
 				enemy_on_target = true
 				finalState[1]['mission'] += 1 
+				finalState[0]["end_cond"] = "Red_Mission"
+				finalState[1]["end_cond"] = "Red_Mission"
+	
+	mainCanvas.update_tactics(tactics)
 
 	if enemy_on_target:
 		for agent in agents:
 			agent.done = true
-			agent.ownRewards.add_final_episode_reward("Enemy_Achieved_Target")
+			agent.ownRewards.add_final_episode_reward("Enemy_Achieved_Target", (max_cycles - n_action_steps) / action_repeat, agent.missiles)
 		for enemy in enemies:
 			enemy.done = true
 			
 	#Calculate Penaulties for own distance to defense target	
 	var own_goal_reward = 0.0
 	for agent in agents:
-		if agent.activated and not agent.get_done():							
-			if agent.dist2go > 185.2 * 2 and enemies_alive_control > 0: #20NM
-				own_goal_reward -= agent.dist2go / 185200
-							
+		if agent.activated and not agent.get_done():										
+			#own_goal_reward += agent.dist2go / 185200
+			own_goal_reward += 1.0 + (-0.99)/(1 + exp(-0.02 * (agent.dist2go - 370.4)))
+				
+			#print([own_goal_reward, agent.dist2go])
 			#print([enemy_goal_reward, own_goal_reward, enemies_alive_control])
 			#Add the calculated rews
-			agent.ownRewards.add_mission_rew(enemy_goal_reward)
+			#agent.ownRewards.add_mission_rew(enemy_goal_reward)
 			agent.ownRewards.add_mission_rew(own_goal_reward)
 
 func _set_agents(_tree):	
@@ -154,6 +170,8 @@ func _set_agents(_tree):
 		newFigther.phy_fps 		 = int(envConfig["phy_fps"])
 		newFigther.action_repeat = int(envConfig["action_repeat"])
 		newFigther.action_type 	 = envConfig["action_type"]
+		
+		newFigther.max_cycles = max_cycles
 		
 		newFigther.add_to_group(simGroups.FIGHTER)
 		newFigther.simGroups = simGroups		
@@ -199,7 +217,7 @@ func _set_agents(_tree):
 						
 			newFigther.add_to_group(simGroups.ENEMY)							
 			newFigther.add_to_group(simGroups.RED)
-			newFigther.id = 200 +  len(agents)
+			newFigther.id = 200 +  len(enemies)
 			newFigther.set_meta('id', 200 +  len(enemies))
 			newFigther.team_color = "RED"
 			newFigther.team_color_group = simGroups.RED
@@ -212,6 +230,10 @@ func _set_agents(_tree):
 			
 	for fighter in fighters:
 		fighter.update_scene(tree)
+	var i = 0
+	for agent in agents:
+		agent.agent_name = "agent_" + str(i)
+		i = i + 1
 
 func _reset_simulation():
 	
@@ -231,7 +253,8 @@ func _reset_simulation():
 				"killed" 	: 0,
 				"mission"	: 0,
 				"reward"  	: 0.0,
-				"missile"	: 0
+				"missile"	: 0,
+				"end_cond"  : null
 				})
 	
 	stop_simulation = false

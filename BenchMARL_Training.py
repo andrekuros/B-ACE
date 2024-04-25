@@ -65,16 +65,15 @@ if __name__ == "__main__":
     experiment_config.share_policy_params: True
     experiment_config.prefer_continuous_actions = True  
     experiment_config.evaluation_interval = 18000
-    experiment_config.evaluation_episodes = 20   
+    experiment_config.evaluation_episodes = 30   
     experiment_config.evaluation_deterministic_actions = False  
     
-             
     
     # experiment_config.exploration_eps_init = 1.0
     # experiment_config.exploration_eps_end = 1.0   
     
     # ----- On policy Configuration ----- #
-       
+
     experiment_config.on_policy_collected_frames_per_batch = 6000    
     #experiment_config.on_policy_n_minibatch_iters = 64    
     #experiment_config.on_policy_minibatch_size = 512
@@ -103,9 +102,9 @@ if __name__ == "__main__":
                     "EnvConfig" : 
                     {
                         "task": "b_ace_v1",
-                        "env_path": "BVR_AirCombat/bin/B_ACE_v6.exe",
+                        "env_path": "BVR_AirCombat/bin/B_ACE_v8.exe",
                         "port": 12500,
-                        "renderize": 0,
+                        "renderize": 1,
                         "debug_view": 0,
                         "phy_fps": 20,
                         "speed_up": 50000,
@@ -118,26 +117,22 @@ if __name__ == "__main__":
                         "full_observation": 1,
                         
                         "RewardsConfig" : {
-                            "mission_factor": 1.0,
+                            "mission_factor": 0.001,
                             "missile_fire_factor": -0.1,
                             "missile_no_fire_factor": -0.001,
                             "missile_miss_factor": -0.5,
                             "detect_loss_factor": -0.1,
-                            "keep_track_factor": 0.005,
+                            "keep_track_factor": 0.001,
                             "hit_enemy_factor": 3.0,
-                            "hit_own_factor": -5.0,
-                            "situation_factor": 0.1,
-                            "final_team_killed_factor": -5.0,
-                            "final_enemy_on_target_factor": -3.0,
-                            "final_enemies_killed_factor": 5.0,
-                            "final_max_cycles_factor": 3.0
+                            "hit_own_factor": -5.0,                            
+                            "mission_accomplished_factor": 10.0
                         }
                     },
 
                     "AgentsConfig" : 
                     {
                         "blue_agents": { 
-                            "num_agents" : 2,
+                            "num_agents" : 1,
                             "beh_config" : {
                                 "dShot" : 0.85,
                                 "lCrank": 0.60,
@@ -154,7 +149,7 @@ if __name__ == "__main__":
                         },	
                         "red_agents":
                         { 
-                            "num_agents" : 2, 
+                            "num_agents" : 1, 
                             "base_behavior": "baseline1",
                             "beh_config" : {
                                 "dShot" : 0.85,
@@ -212,15 +207,18 @@ if __name__ == "__main__":
     elif args.algorithm == 'maddpg':
         algorithm_config = MaddpgConfig.get_from_yaml()
     else:  # 'iddpg'
-        #algorithm_config = IddpgConfig.get_from_yaml()
-        algorithm_config = MaddpgConfig.get_from_yaml()
+        algorithm_config = IppoConfig.get_from_yaml()
+        #algorithm_config = MaddpgConfig.get_from_yaml()
+        #algorithm_config.share_param_critic = True
+        
     
     # Loads from "benchmarl/conf/model/layers/mlp.yaml"
-    #model_config = GnnConfig.get_from_yaml()
-    model_config = MlpConfig.get_from_yaml()
+    model_config = GnnConfig.get_from_yaml()
+    #model_config = MlpConfig.get_from_yaml()
+    
     critic_model_config = MlpConfig.get_from_yaml()
 
-    model_config.layers = [256,256]
+    model_config.layers = [128,128]
     
     for i in range (3):
 

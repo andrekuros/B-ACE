@@ -1,9 +1,11 @@
-[gd_scene load_steps=3 format=3 uid="uid://c88ncuvk838mf"]
+[gd_scene load_steps=4 format=3 uid="uid://c88ncuvk838mf"]
 
 [ext_resource type="Script" path="res://btn_speedUp.gd" id="1_agkej"]
+[ext_resource type="Script" path="res://CanvasLayer.gd" id="1_t3j0s"]
 [ext_resource type="Script" path="res://btn_VSync.gd" id="2_1pm7n"]
 
 [node name="CanvasLayer" type="CanvasLayer"]
+script = ExtResource("1_t3j0s")
 
 [node name="Control" type="Control" parent="."]
 layout_mode = 3
@@ -28,6 +30,16 @@ offset_left = 3.0
 offset_top = 83.0
 offset_right = 43.0
 offset_bottom = 109.0
+text = "-1"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="Steps_Show" type="Label" parent="Control"]
+layout_mode = 0
+offset_left = 3.0
+offset_top = 106.0
+offset_right = 43.0
+offset_bottom = 132.0
 text = "-1"
 horizontal_alignment = 1
 vertical_alignment = 1
@@ -66,6 +78,15 @@ offset_bottom = 108.0
 text = "FPS
 "
 
+[node name="RichTextLabel4" type="RichTextLabel" parent="Control"]
+layout_mode = 0
+offset_left = 57.0
+offset_top = 108.0
+offset_right = 123.0
+offset_bottom = 132.0
+text = "Time(s)
+"
+
 [node name="RichTextLabel3" type="RichTextLabel" parent="Control"]
 layout_mode = 0
 offset_left = 56.0
@@ -73,6 +94,25 @@ offset_top = 60.0
 offset_right = 109.0
 offset_bottom = 84.0
 text = "Speed
+"
+
+[node name="LastResults" type="RichTextLabel" parent="Control"]
+layout_mode = 0
+offset_left = 15.0
+offset_top = 704.0
+offset_right = 1180.0
+offset_bottom = 790.0
+text = "Last Results
+"
+
+[node name="Tactics" type="RichTextLabel" parent="Control"]
+layout_mode = 0
+offset_left = 1012.0
+offset_top = 6.0
+offset_right = 1189.0
+offset_bottom = 174.0
+text = "Tactics
+
 "
 
 [connection signal="button_down" from="Control/btn_speedUp" to="Control/btn_speedUp" method="_on_button_down"]

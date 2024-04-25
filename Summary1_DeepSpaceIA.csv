@@ -102,3 +102,5 @@ dataType,regressor,interactionsDegree,polyreduction,mae,mae_std,rmse,rmse_std,fi
 TestData,LinReg,4,-1,0.3091173363411687,0.0,0.4157832090167578,0.0,0.05353713035583496,0.0,0.22294402122497559,0.0,0
 dataType,regressor,interactionsDegree,polyreduction,mae,mae_std,rmse,rmse_std,fitTime,fitTime_std,predTime,predTime_std,trainSize
 TestData,LinReg,4,-1,0.3091173363411687,0.0,0.4157832090167578,0.0,0.05405306816101074,0.0,0.2107067108154297,0.0,0
+dataType,regressor,interactionsDegree,polyreduction,mae,mae_std,rmse,rmse_std,fitTime,fitTime_std,predTime,predTime_std,trainSize
+TestData,LinReg,4,-1,0.3091173363411687,0.0,0.4157832090167578,0.0,0.05987739562988281,0.0,0.20778703689575195,0.0,0

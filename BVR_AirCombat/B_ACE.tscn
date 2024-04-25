@@ -1,8 +1,7 @@
-[gd_scene load_steps=5 format=3 uid="uid://ck5icni1e7bki"]
+[gd_scene load_steps=4 format=3 uid="uid://ck5icni1e7bki"]
 
 [ext_resource type="Script" path="res://addons/godot_rl_agents/sync.gd" id="3_nnga6"]
 [ext_resource type="PackedScene" uid="uid://c88ncuvk838mf" path="res://CanvasLayer.tscn" id="5_ql4ly"]
-[ext_resource type="Script" path="res://CanvasLayer.gd" id="6_nvf5n"]
 [ext_resource type="PackedScene" uid="uid://damfq04ajowss" path="res://debug_window.tscn" id="7_ra34l"]
 
 [node name="B_ACE" type="Node3D"]
@@ -12,7 +11,6 @@ script = ExtResource("3_nnga6")
 
 [node name="CanvasLayer" parent="." instance=ExtResource("5_ql4ly")]
 follow_viewport_enabled = true
-script = ExtResource("6_nvf5n")
 
 [node name="DebugWindow" parent="." instance=ExtResource("7_ra34l")]
 

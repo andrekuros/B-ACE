@@ -6,13 +6,13 @@ const SConv   = preload("res://Sim_assets.gd").SConv
 const RewardsControl = preload("res://Sim_assets.gd").RewardsControl
 const Calc = preload("res://Calc.gd")
 
-
-
 @onready var mainView = get_tree().root.get_node("B_ACE")
+
 #@onready var sync = get_tree().root.get_node("B_ACE/Sync")
 var manager = null
 var tree = null
 var ownRewards = null
+var max_cycles = -1
 #@onready var actionsPanel = env.get_node("CanvasLayer/Control/ActionPanel")
 
 var alliesList = []
@@ -23,6 +23,7 @@ var action_repeat
 # AIR COMBAT DATA
 var team_id = 1 # Example: 0 or 1 for two different teams
 var id
+var agent_name
 var radar_range = 50.0 * SConv.NM2GDM  # Detection range for the radar
 var radar_hfov = [-60.0, 60.0] # degrees
 var radar_vfov = [-20.0, 40.0] # degrees
@@ -76,7 +77,9 @@ var init_layer = collision_layer
 var init_mask = collision_mask 
 var init_hdg = 0
 var dist2go = 100000.0
-var strike_line_z = 0
+var strike_line_z = 0.0
+var strike_line_xL = 0.0
+var strike_line_xR = 0.0
 
 var target_position = Vector3.ZERO
 
@@ -184,6 +187,8 @@ func update_init_config(config, rewConfig = {}):
 	
 	#10NM before target 
 	strike_line_z = target_pos.z - (sign(target_pos.z) * 15 * SConv.NM2GDM )
+	strike_line_xL = target_pos.x - 60 * SConv.NM2GDM
+	strike_line_xR = target_pos.x + 60 * SConv.NM2GDM
 	
 	shoot_range_error = init_config['rnd_shot_dist_var']
 	
@@ -313,8 +318,7 @@ func update_scene(_tree):
 	
 	len_allieds_data_obs = 1 if len(alliesList) >= 1 else 0
 	len_tracks_data_obs = 2 if len(tree.get_nodes_in_group(simGroups.ENEMY)) > 1 else 1
-				
-				
+								
 func set_fullView(_def):
 	if _def == 1:
 		fullView = true
@@ -378,7 +382,7 @@ func get_obs(with_labels = false):
 	var tracks_info = []
 	var tracks_added = 0
 
-	if HPT != null:
+	if HPT != null and HPT.track_obj.is_alive:
 		var track = HPT
 		tracks_info.append_array([
 			["track_alt_diff", (global_transform.origin.y - track.obj.global_transform.origin.y) / 150.0],
@@ -412,15 +416,12 @@ func get_obs(with_labels = false):
 			["track_threat_factor", 0.0],
 			["track_offensive_factor", 0.0],
 			["track_is_missile_support", 0.0],
-			["track_detected", 0.0]
+			["track_detected", 0]
 		])
 
 	var obs = own_info + tracks_info
 	if false:
 		obs += allied_info
-
-	
-	
 	
 	var obs_values = obs.map(func(item): return item[1])
 	
@@ -576,9 +577,12 @@ func process_tracks():
 					if track.threat_factor > max_treat: # and track.obj.get_meta('id') == 1:
 						max_treat = track.threat_factor					
 						new_HRT = track
+		else:
+			track.is_alive = false
+			track.detected = false			
 												
 	if HPT != null:			
-		if not HPT.is_missile_support:
+		if not HPT.is_missile_support or not HPT.is_alive:
 			HPT = new_HPT
 	else:
 		HPT = new_HPT
@@ -589,16 +593,8 @@ func process_behavior(delta_s):
 			
 	tatic_time += delta_s		
 	
-	if behavior == "duck":
-		if 	tatic_status != "Strike": 
-			if (sign(strike_line_z) > 0 and global_transform.origin.z > strike_line_z) or\
-			   	(sign(strike_line_z) < 0 and global_transform.origin.z < strike_line_z):				
-				desiredG_input = 3.0	
-				tatic_status = "Strike"							
-				tatic_time = 0.0
-		
-		else :									
-			hdg_input = Calc.get_hdg_2d(global_transform.origin, target_position )			
+	if behavior == "duck":			
+		hdg_input = Calc.clamp_hdg(Calc.get_hdg_2d(global_transform.origin, target_position ))			
 		return
 		
 	elif behavior == "test" or behavior == "wez_eval_target_max":		
@@ -610,7 +606,7 @@ func process_behavior(delta_s):
 			hdg_input = Calc.clamp_hdg(Calc.get_hdg_2d(global_transform.origin, manager.enemies[0].global_transform.origin) + 180.0)
 			#hdg_input = Calc.clamp_hdg(current_hdg + 180 )#fmod(oposite_hdg + 180.0, 360.0) - 180.0
 			desiredG_input = 6.0
-			test_executed = true														
+			test_executed = true
 		return
 	
 	elif behavior == "wez_eval_shooter" :
@@ -620,14 +616,13 @@ func process_behavior(delta_s):
 			return
 					
 	elif behavior == "baseline1":
-		
-		#print(id, " : " ,tatic_status)
-		if HPT != null and HPT.threat_factor > (lBreak + 0.5 * int(HPT.is_missile_support)):
+				
+		#print(id, " : " ,tatic_status, tatic_time, HPT)
+		if tatic_status != "Evade" and HPT != null and\
+		   HPT.detected and HPT.threat_factor > (lBreak + 0.5 * int(HPT.is_missile_support)):
 			tatic_time = 0.0					
-			tatic_status = "Evade"        
-			AP_mode = "FlyHdg"				
-			tatic_time = 0.0						
-			hdg_input = Calc.clamp_hdg(HPT.radial + 180)#fmod(oposite_hdg + 180.0, 360.0) - 180.0
+			tatic_status = "Evade"        						
+			hdg_input = Calc.clamp_hdg(HPT.radial + 180.0)
 			desiredG_input = 6.0		
 
 		elif tatic_status == "Search" or tatic_status == "Return":
@@ -643,37 +638,47 @@ func process_behavior(delta_s):
 				tatic_time = 0.0
 				
 			elif tatic_status == "Search":				
-				
+																
 				if (sign(strike_line_z) > 0 and global_transform.origin.z > strike_line_z) or\
-			   		(sign(strike_line_z) < 0 and global_transform.origin.z < strike_line_z):					
-					desiredG_input = 3.0	
+			   		(sign(strike_line_z) < 0 and global_transform.origin.z < strike_line_z) or\
+					global_transform.origin.x > strike_line_xR or global_transform.origin.x < strike_line_xL:					
+					desiredG_input = 5.0	
 					tatic_status = "Strike"							
 					tatic_time = 0.0					
 				
-				if tatic_time >= 120.0:
+				#hdg_input = -90
+				if tatic_time >= 180.0:
 					hdg_input = Calc.get_hdg_2d(global_transform.origin, target_position )
 					
 				
 			elif tatic_status == "Return" and tatic_time >= 80.0:			
-				hdg_input = init_hdg
+				hdg_input = Calc.get_hdg_2d(global_transform.origin, target_position )
 				desiredG_input = 3.0	
 				tatic_status = "Search"							
 				tatic_time = 0.0
 			
 		elif tatic_status == "Strike":									
-			hdg_input = Calc.get_hdg_2d(global_transform.origin, target_position )
+			
+			if HPT != null and HPT.detected  and HPT.is_alive and HPT.offensive_factor > dShot:
+				tatic_time = 0.0					
+				tatic_status = "Search" 
+				#print([HPT.detected,HPT.offensive_factor,HPT.radial, HPT.is_alive, HPT.id  ])       													
+				hdg_input = Calc.clamp_hdg(HPT.radial)
+				desiredG_input = 3.0		
+			
+			else:
+				hdg_input = Calc.get_hdg_2d(global_transform.origin, target_position )
 						
 		elif tatic_status == "Engage":
 			
 			if HPT != null:											
-				
+																
 				do_crank 	= HPT.threat_factor > lCrank									
 				hdg_input 	= Calc.clamp_hdg(HPT.radial + 50* int(do_crank) * defense_side)
-														
-				
+																										
 				if HPT.offensive_factor > dShot:					
 					#print( id, "(" ,current_time, " ) :", [HPT.offensive_factor, HPT.threat_factor,abs(HPT.aspect_angle)])					
-					if abs(HPT.aspect_angle) < 15.0:					
+					if abs(HPT.aspect_angle) < 15.0 and !HPT.is_missile_support:					
 						if launch_missile_at_target(HPT):							
 							tatic_status = "MissileSupport"			
 							tatic_time = 0.0							
@@ -681,20 +686,32 @@ func process_behavior(delta_s):
 							HPT.is_missile_support = true
 							#print(tatic_status, tatic_time)
 																
+				if HPT.detected and HPT.threat_factor > (lBreak + 0.5 * int(HPT.is_missile_support)):
+					tatic_time = 0.0					
+					tatic_status = "Evade"        										
+					hdg_input = Calc.clamp_hdg(HPT.radial + 180)#fmod(oposite_hdg + 180.0, 360.0) - 180.0
+					desiredG_input = 6.0		
+				
+				
 				if (sign(strike_line_z) > 0 and global_transform.origin.z > strike_line_z) or\
-			   		(sign(strike_line_z) < 0 and global_transform.origin.z < strike_line_z):															
-					
-					desiredG_input = 3.0	
+			   		(sign(strike_line_z) < 0 and global_transform.origin.z < strike_line_z) or\
+					global_transform.origin.x > strike_line_xR or global_transform.origin.x < strike_line_xL:					
+					desiredG_input = 5.0	
 					tatic_status = "Strike"							
-					tatic_time = 0.0
-					#print(tatic_status)
-			else:			
-				tatic_time = 0.0					
+					tatic_time = 0.0	
+					
+				if not HPT.is_alive:
+					tatic_status = "Search"					
+					hdg_input = Calc.get_hdg_2d(global_transform.origin, target_position )
+					desiredG_input = 3.0							
+					tatic_time = 0.0	
+							
+			else:										
 				tatic_status = "Evade"        
 				AP_mode = "FlyHdg"				
 				tatic_time = 0.0		
 													
-				hdg_input = Calc.clamp_hdg(current_hdg + 180)#fmod(oposite_hdg + 180.0, 360.0) - 180.0
+				hdg_input = Calc.clamp_hdg(current_hdg + 180)
 				desiredG_input = 6.0								
 				#print("ID:", get_meta("id"), ":" ,tatic_status, tatic_time, " / ", hdg_input)				
 			
@@ -704,19 +721,15 @@ func process_behavior(delta_s):
 				
 				if in_flight_missile.pitbull or in_flight_missile == null:
 				
-					tatic_status = "Evade"        
-					AP_mode = "FlyHdg"				
+					tatic_status = "Evade"        						
 					tatic_time = 0.0		
-									
-					#var oposite_hdg = rad_to_deg(global_transform.basis.get_euler().y) + 180.0				
-					#hdg_input = Calc.clamp_hdg(current_hdg + 180 - defense_side * 50.0)#fmod(oposite_hdg + 180.0, 360.0) - 180.0
+														
 					if HPT != null:
 						hdg_input = Calc.clamp_hdg(HPT.radial + 180)						
 					else:
 						hdg_input = Calc.clamp_hdg(current_hdg + 180 - defense_side * 50.0)#fmod(oposite_hdg + 180.0, 360.0) - 180.0							
 					
-					desiredG_input = 6.0								
-					#print(tatic_status, tatic_time, " / ", hdg_input)
+					desiredG_input = 6.0													
 				else:
 					if HPT != null:
 						hdg_input = Calc.clamp_hdg(HPT.radial + defense_side * 50.0) 										
@@ -729,11 +742,10 @@ func process_behavior(delta_s):
 				desiredG_input = max_g			
 				#print(tatic_status, tatic_time)
 				
-		elif tatic_status == "Evade" and tatic_time >= 50.0:
+		elif tatic_status == "Evade" and tatic_time >= 80.0:
 			
-			tatic_status = "Search"		
-			AP_mode = "FlyHdg"			
-			hdg_input = Calc.clamp_hdg(current_hdg + 180)							
+			tatic_status = "Search"					
+			hdg_input = Calc.get_hdg_2d(global_transform.origin, target_position )
 			desiredG_input = 3.0							
 			tatic_time = 0.0		
 			
@@ -811,8 +823,13 @@ func _physics_process(delta: float) -> void:
 			last_beh_proc = n_steps
 		
 	if  behavior == "external"  and shoot_input > 0 and HPT != null:
-		if launch_missile_at_target(HPT): 									
-			shoot_input = -1		
+		
+		if abs(HPT.aspect_angle) < 30.0 and !HPT.is_missile_support:
+			if launch_missile_at_target(HPT): 									
+				shoot_input = -1		
+		else:
+			ownRewards.add_missile_no_fire_rew()
+			
 	
 	var turn_g = clamp(desiredG_input, 1.0,  max_g * altitude_g_factor(current_level)) * SConv.GRAVITY_GDM
 	var turn_speed =  turn_g / velocity.length() 
@@ -892,7 +909,7 @@ func process_manouvers_action():
 
 func launch_missile_at_target(target_track):
 		
-	if missiles > 0:
+	if missiles > 0 and target_track.detected:
 		
 		#There are already a missile in flight this missile lost support
 		if is_instance_valid(in_flight_missile):			
@@ -931,7 +948,7 @@ func own_kill():
 		killed = true	
 		done = true	
 		ownRewards.add_hit_own_rew()		
-		manager.inform_state(team_id, "killed") 	
+		manager.inform_state(team_id, "killed") 		
 					
 func reactivate():
 	# Enabling processing

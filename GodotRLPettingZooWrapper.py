@@ -102,7 +102,8 @@ class GodotRLPettingZooWrapper(GodotEnv, ParallelEnv):
         result  = super().reset()
         
         observations = []
-        self.observations = {}        
+        self.observations = {}          
+        
         for i, indiv_obs in enumerate(result[0]):
             
             self.observations[self.possible_agents[i]] =  indiv_obs["obs"] 
@@ -133,27 +134,36 @@ class GodotRLPettingZooWrapper(GodotEnv, ParallelEnv):
                                 
         #print("GODOT:", godot_actions)
         obs, reward, dones, truncs, info = super().step(godot_actions, order_ij=order_ij)
+                
+        self.observations = {agent_name : _obs["obs"] for agent_name, _obs in obs.items()}
+        self.rewards = reward
+        self.terminations = dones
+        self.truncations = truncs
         
-        #print(obs)
+        # for agent, done in self.terminations.items():
+        #     if done:
+        #         print(self.terminations)
+        
+        #self.info = {agent_name : {}} for agent_name, _obs in obs.items()}
         #self.terminations = {}
         #self.truncations = {}
         #self.terminations = False
         #self.truncations = False
         
-        self.rewards = {}#[]#0.0
+        #self.rewards = {}#[]#0.0
         # Assuming 'obs' is a list of dictionaries with 'obs' keys among others
-        for i, agent in enumerate(self.possible_agents):
-            # Convert observations, rewards, etc., to tensors
-            # if dones[i] == True:
-            #     continue
-            # .to('cuda') moves the tensor to GPU if you're using CUDA; remove it if not using GPU
-            self.observations[agent] =  obs[i]['obs']            
-            self.rewards[agent] = reward[i]#torch.tensor([reward[i]], dtype=torch.float32).to('cuda')
-            #self.terminations.append(dones[i])#torch.tensor([False], dtype=torch.bool).to('cuda')  # Assuming False for all
-            #self.truncations.append(truncs[i])#torch.tensor([False], dtype=torch.bool).to('cuda')  # Assuming False for all
+        #for i, agent in enumerate(self.possible_agents):
+        #     # Convert observations, rewards, etc., to tensors
+        #     # if dones[i] == True:
+        #     #     continue
+        #     # .to('cuda') moves the tensor to GPU if you're using CUDA; remove it if not using GPU
+        #     self.observations[agent] =  obs[agent]['obs']            
+        #     self.rewards[agent] = reward[i]#torch.tensor([reward[i]], dtype=torch.float32).to('cuda')
+        #     #self.terminations.append(dones[i])#torch.tensor([False], dtype=torch.bool).to('cuda')  # Assuming False for all
+        #     #self.truncations.append(truncs[i])#torch.tensor([False], dtype=torch.bool).to('cuda')  # Assuming False for all
             
-            self.terminations[agent] = dones[i]#torch.tensor([False], dtype=torch.bool).to('cuda')  # Assuming False for all
-            self.truncations[agent] = truncs[i]#torch.tensor([False], dtype=torch.bool).to('cuda')  # Assuming False for all
+        #     self.terminations[agent] = dones[i]#torch.tensor([False], dtype=torch.bool).to('cuda')  # Assuming False for all
+        #     self.truncations[agent] = truncs[i]#torch.tensor([False], dtype=torch.bool).to('cuda')  # Assuming False for all
             
             #self.terminations = self.terminations and dones[i]
             #self.truncations = self.truncations or truncs[i]
@@ -164,14 +174,17 @@ class GodotRLPettingZooWrapper(GodotEnv, ParallelEnv):
             
             
             # For 'info', it might not need to be a tensor depending on its use
-            self.info[agent] = info[i]  # Assuming 'info' does not need tensor conversion            
-                        
+            #self.info[agent] = info[i]  # Assuming 'info' does not need tensor conversion            
+                    
         #  # Update the list of active agents based on the 'dones' information
         #  for agent, done in dones.items():
         #      if done:
         # 
 
         return self.observations, self.rewards, self.terminations, self.truncations, self.info 
+    
+    def _process_obs(self, response_obs):
+        return response_obs
     
     def last(self, env=None):
         

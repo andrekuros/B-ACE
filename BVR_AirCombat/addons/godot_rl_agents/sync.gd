@@ -10,6 +10,7 @@ const DEFAULT_PORT := "11008"
 @onready var mainCanvas = get_tree().root.get_node("B_ACE/CanvasLayer")
 @onready var fps_show = mainView.get_node("CanvasLayer/Control/FPS_Show")
 @onready var phy_show = mainView.get_node("CanvasLayer/Control/PHY_Show")
+@onready var steps_show = mainView.get_node("CanvasLayer/Control/Steps_Show")
 @onready var debug_window = mainView.get_node("DebugWindow")
 
 const SimManager = preload("res://SimManager.tscn")
@@ -277,6 +278,7 @@ func _physics_process(delta):
 		sim_speed = physics_updates / phy_fps * 10.0
 		phy_show.text = str(sim_speed)
 		fps_show.text = str(Performance.get_monitor(Performance.TIME_FPS))
+		
 		if renderize:
 			Engine.max_fps = sim_speed * 4#physics_updates / phy_fps * 10.0
 		physics_updates = 0.0
@@ -286,8 +288,9 @@ func _physics_process(delta):
 		n_action_steps += 1						
 		return
 	
+	steps_show.text = str(n_action_steps/action_repeat)
 	#Reach This part only every ActionRepeat Steps
-	n_action_steps += 1	
+	n_action_steps += 1			
 	
 	if connected:		
 		#RL Mode
@@ -299,7 +302,13 @@ func _physics_process(delta):
 				#for sim in simulation_list:																		
 				#	print(sim._collect_results()," - ", phy_show.text, "X" )				
 				just_reset = false
-				var obs = _get_obs_from_simulations()
+				var obs = _get_obs_from_simulations()				
+				
+				var obs_dict = {}
+				var i = 0
+				for agent in simulation_list[0].agents:
+					obs_dict[agent.agent_name] = obs[i]
+					i = i + 1					
 			
 				var reply = {
 					"type": "reset",
@@ -313,15 +322,26 @@ func _physics_process(delta):
 			if need_to_send_obs:
 				need_to_send_obs = false
 				var reward = _get_reward_from_simulations()
-				var done = _get_dones_from_simulations_agents()
-				#_reset_agents_if_done() # this ensures the new observation is from the next env instance : NEEDS REFACTOR			
+				var done = _get_dones_from_simulations_agents()				
 				var obs = _get_obs_from_simulations()
 				
+				var obs_dict  	= {}
+				var done_dict 	= {}
+				var reward_dict = {}
+				
+				var i = 0
+				for agent in simulation_list[0].agents:
+					obs_dict[agent.agent_name] = obs[i]
+					done_dict[agent.agent_name] = done[i]
+					reward_dict[agent.agent_name] = reward[i]
+					i = i + 1
+
+									
 				var reply = {
 					"type": "step",
-					"obs": obs,
-					"reward": reward,
-					"done": done
+					"obs": obs_dict,
+					"reward": reward_dict,
+					"done": done_dict
 				}
 				_send_dict_as_json_message(reply)
 								
@@ -368,6 +388,12 @@ func _physics_process(delta):
 		
 		#_get_obs_from_simulations()
 		_get_reward_from_simulations()
+		
+		#var done = _get_dones_from_simulations_agents()
+		#_reset_agents_if_done() # this ensures the new observation is from the next env instance : NEEDS REFACTOR			
+		#var obs = _get_obs_from_simulations()
+		#print(done)
+		
 		_reset_agents_if_done()	
 		
 	
@@ -393,15 +419,19 @@ func handle_message() -> bool:
 		
 	if message["type"] == "reset":		
 						
-		if len(simulation_list) == 1:
-			simulation_list[0]._reset_simulation()
+		if len(simulation_list) == 1:			
+			var results = simulation_list[0]._collect_results()			
+			mainCanvas.update_results(results)
+			simulation_list[0]._reset_simulation()			
 		else:
 			var index = 0
 			for sim in simulation_list:
 				simulation_list[index]._reset_simulation()
 				index += 1
 		
-		just_reset = true		
+		just_reset = true	
+		n_action_steps = 0			
+		
 		get_tree().set_pause(false) 
 		
 		#print("resetting forcing draw")
@@ -471,16 +501,18 @@ func _check_all_sims_done():
 
 func _reset_agents_if_done():
 			
+	
 	var index = 0
 	var finalStatus = []
 	for sim in simulation_list:
 		var donesAgents  = sim._check_all_done_agents()
 		var donesEnemies  = sim._check_all_done_enemies()		
 				
-		if donesAgents and donesEnemies:
-		#print(_get_reward_from_agents())
-			finalStatus.append(sim._collect_results())
-			print(sim._collect_results(), " - ", phy_show.text, "X" )
+		if donesAgents and donesEnemies:		
+			n_action_steps = 0
+			finalStatus.append(sim._collect_results())			
+			var results = sim._collect_results()			
+			mainCanvas.update_results(results)
 			sim._reset_simulation()
 			
 		else:
@@ -501,7 +533,7 @@ func clamp_array(arr : Array, min:float, max:float):
 		output.append(clamp(a, min, max))
 	return output	
 
-func _reset_all_sims():
+func _reset_all_sims():	
 	for sim in simulation_list:
 		sim._reset_simulation()
 		
@@ -512,6 +544,7 @@ func _get_obs_from_simulations():
 		
 	if len(simulation_list) == 1:		
 		return simulation_list[0]._get_obs_from_agents()
+	
 	else:
 		var envs_obs = []
 		for sim in simulation_list:
