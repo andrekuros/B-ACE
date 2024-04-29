@@ -30,6 +30,7 @@ from torch.utils.tensorboard import SummaryWriter
 from DNN_B_ACE_ACTOR import DNN_B_ACE_ACTOR
 from DNN_B_ACE_CRITIC import DNN_B_ACE_CRITIC
 from Task_MHA_B_ACE import Task_MHA_B_ACE
+from Task_DNN_B_ACE import Task_DNN_B_ACE
 from Task_B_ACE_Env import B_ACE_TaskEnv
 
 from CollectorMA import CollectorMA
@@ -49,13 +50,13 @@ from tianshou.utils import WandbLogger
 ####---------------------------#######
 
 
-model  =  "Task_MHA_B_ACE"#"SISL_Task_MultiHead" #"CNN_ATT_SISL" #"MultiHead_SISL" 
+model  =  "Task_DNN_B_ACE"#"SISL_Task_MultiHead" #"CNN_ATT_SISL" #"MultiHead_SISL" 
 test_num  =  "_B_ACE02"
 policyModel  =  "DQN"
 name = model + test_num
 
-train_env_num = 5
-test_env_num = 5
+train_env_num = 4
+test_env_num = 4
 
 now = datetime.datetime.now().strftime("%y%m%d-%H%M%S")
 log_name = name + str(now)
@@ -63,7 +64,7 @@ log_path = os.path.join('./', "Logs", "dqn_sisl", log_name)
 
 load_policy_name = f'policy_B_ACE_Task_MHA_Desk.pth'
 save_policy_name = f'policy_{log_name}'
-policy_path = "MHA_task_B_ACE"
+policy_path = "DNN_task_B_ACE"
 
 
 model_load_path = os.path.join(policy_path, load_policy_name)  
@@ -81,7 +82,7 @@ B_ACE_Config = {
                     "EnvConfig" : 
                     {
                         "task": "b_ace_v1",
-                        "env_path": "BVR_AirCombat/bin/B_ACE_v6.console.exe",
+                        "env_path": "BVR_AirCombat/bin/B_ACE_v8.exe",
                         "port": 12500,
                         "renderize": 0,
                         "debug_view": 0,
@@ -93,22 +94,18 @@ B_ACE_Config = {
                         "seed": 1,	
                         "action_repeat": 20,	
                         "action_type": "Low_Level_Continuous",                        
-                        "full_observation": 0,                        
+                        "full_observation": 1,
                         
                         "RewardsConfig" : {
-                            "mission_factor": 1.0,
+                            "mission_factor": 0.001,
                             "missile_fire_factor": -0.1,
                             "missile_no_fire_factor": -0.001,
                             "missile_miss_factor": -0.5,
                             "detect_loss_factor": -0.1,
-                            "keep_track_factor": 0.005,
+                            "keep_track_factor": 0.001,
                             "hit_enemy_factor": 3.0,
-                            "hit_own_factor": -5.0,
-                            "situation_factor": 0.1,
-                            "final_team_killed_factor": -5.0,
-                            "final_enemy_on_target_factor": -3.0,
-                            "final_enemies_killed_factor": 5.0,
-                            "final_max_cycles_factor": 3.0
+                            "hit_own_factor": -5.0,                            
+                            "mission_accomplished_factor": 10.0
                         }
                     },
 
@@ -116,24 +113,24 @@ B_ACE_Config = {
                     {
                         "blue_agents": { 
                             "num_agents" : 1,
-                            "base_behavior": "external", 
                             "beh_config" : {
                                 "dShot" : 0.85,
                                 "lCrank": 0.60,
                                 "lBreak": 0.95
-                            },                                             
+                            },
+                            "base_behavior": "external",                  
                             "init_position": {"x": 0.0, "y": 25000.0,"z": 30.0},
                             "offset_pos": {	"x": 0.0, "y": 0.0, "z": 0.0},
                             "init_hdg": 0.0,                        
                             "target_position": {"x": 0.0,"y": 25000.0,"z": 30.0},
-                            "rnd_offset_range":{"x": 10.0,"y": 10000.0,"z": 5.0},
+                            "rnd_offset_range":{"x": 10.0,"y": 10000.0,"z": 5.0},				
                             "rnd_shot_dist_var": 0.0,
                             "wez_models" : "res://assets/Default_Wez_params.json"
                         },	
                         "red_agents":
                         { 
                             "num_agents" : 1, 
-                            "base_behavior": "baseline1",
+                            "base_behavior": "duck",
                             "beh_config" : {
                                 "dShot" : 0.85,
                                 "lCrank": 0.60,
@@ -143,21 +140,21 @@ B_ACE_Config = {
                             "offset_pos": {"x": 0.0,"y": 0.0,"z": 0.0},
                             "init_hdg" : 180.0,                        
                             "target_position": {"x": 0.0,"y": 25000.0,"z": 30.0},
-                            "rnd_offset_range":{"x": 10.0,"y": 10000.0,"z": 5.0},
+                            "rnd_offset_range":{"x": 10.0,"y": 10000.0,"z": 5.0},				
                             "rnd_shot_dist_var": 0.0,
                             "wez_models" : "res://assets/Default_Wez_params.json"
                         }
                     }	
-                }
+            }
 #max_cycles = B_ACE_Config["max_cycles"]
 n_agents = 1#B_ACE_Config["n_pursuers"]
 
 dqn_params =    {
                 "discount_factor": 0.99, 
                 "estimation_step": 180, 
-                "target_update_freq": 400 * train_env_num,#max_cycles * n_agents,
+                "target_update_freq": 3 * 1250 * train_env_num,#max_cycles * n_agents,
                 "optminizer": "Adam",
-                "lr": 0.000005 
+                "lr": 0.00005 
                 }
 
 PPO_params= {    
@@ -180,19 +177,19 @@ PPO_params= {
 
 
 trainer_params = {"max_epoch": 500,
-                  "step_per_epoch": 10 * 100 * train_env_num,#5 * (150 * n_agents),
-                  "step_per_collect": 100 * train_env_num,# * (10 * n_agents),
+                  "step_per_epoch": 3 * 1250 * train_env_num,#5 * (150 * n_agents),
+                  "step_per_collect": 1250 * train_env_num,# * (10 * n_agents),
                   
                   "batch_size" : 600,
                   
-                  "update_per_step": 1 / (200), #Off-Policy Only (run after close a Collect (run many times as necessary to meet the value))
+                  "update_per_step": 1 / (100), #Off-Policy Only (run after close a Collect (run many times as necessary to meet the value))
                   
                   "repeat_per_collect":64, #On-Policy Only
                   
                   "episode_per_test": 30,                  
-                  "tn_eps_max": 0.15,
+                  "tn_eps_max": 0.30,
                   "ts_eps_max": 0.01,
-                  "warmup_size" : 5
+                  "warmup_size" : 1
 }
 #agent_learn = PPOPolicy(**policy_params)
 
@@ -236,6 +233,16 @@ def _get_agents(
 
             if model == "Task_MHA_B_ACE":
                 net = Task_MHA_B_ACE(
+                    #obs_shape=agent_observation_space.shape,                                                  
+                    num_tasks = 6,
+                    num_features_per_task= 12,                    
+                    nhead = 4,
+                    device="cuda" if torch.cuda.is_available() else "cpu"
+                    
+                ).to(device) 
+            
+            if model == "Task_DNN_B_ACE":
+                net = Task_DNN_B_ACE(
                     #obs_shape=agent_observation_space.shape,                                                  
                     num_tasks = 6,
                     num_features_per_task= 12,                    
@@ -374,7 +381,7 @@ if __name__ == "__main__":
         train_collector = Collector(
             policy,
             train_envs,
-            VectorReplayBuffer(300_000, len(train_envs)),
+            VectorReplayBuffer(100_000, len(train_envs)),
             #PrioritizedVectorReplayBuffer( 300_000, len(train_envs), alpha=0.6, beta=0.4) , 
             #ListReplayBuffer(100000)       
             # buffer = StateMemoryVectorReplayBuffer(

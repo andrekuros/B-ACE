@@ -249,7 +249,7 @@ class B_ACE_TaskEnv(GodotRLPettingZooWrapper):
             #     continue
             # .to('cuda') moves the tensor to GPU if you're using CUDA; remove it if not using GPU
             
-            self.raw_observations[agent] =  obs[i]['obs']            
+            self.raw_observations[agent] =  obs[agent]['obs']            
             #self.rewards[agent] = reward[i]#torch.tensor([reward[i]], dtype=torch.float32).to('cuda')
             #self.terminations.append(dones[i])#torch.tensor([False], dtype=torch.bool).to('cuda')  # Assuming False for all
             #self.truncations.append(truncs[i])#torch.tensor([False], dtype=torch.bool).to('cuda')  # Assuming False for all
@@ -257,9 +257,9 @@ class B_ACE_TaskEnv(GodotRLPettingZooWrapper):
             #self.terminations[agent] = dones[i]#torch.tensor([False], dtype=torch.bool).to('cuda')  # Assuming False for all
             #self.truncations[agent] = truncs[i]#torch.tensor([False], dtype=torch.bool).to('cuda')  # Assuming False for all
             
-            self.terminations = self.terminations and dones[i]
-            self.truncations = self.truncations or truncs[i]            
-            self.rewards += reward[i] #torch.tensor([reward[i]], dtype=torch.float32).to('cuda')
+            self.terminations = self.terminations and dones[agent]
+            self.truncations = self.truncations or truncs[agent]            
+            self.rewards += reward[agent] #torch.tensor([reward[i]], dtype=torch.float32).to('cuda')
  
             # For 'info', it might not need to be a tensor depending on its use
             #self.info[agent] = info[i]  # Assuming 'info' does not need tensor conversion            

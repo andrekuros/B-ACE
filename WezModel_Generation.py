@@ -78,7 +78,7 @@ rangeEval = 1 # 1-> RMAX / 2->RNEZ
 def prepareDataFromASA(fileName, altInMeters = False, relativeRedHdg = True,\
                         normalize = True, argumentation = True, size = -1,  \
                         sinCos = True):
-        
+
     fulldataDf = pd.read_csv(fileName)   
     
     if size > 0:
@@ -781,4 +781,3 @@ testCase = pd.DataFrame(interactionSpc.fit_transform(testCase), columns=interact
 predCase = model.predict(testCase) 
 
 print(predCase)
-# %%

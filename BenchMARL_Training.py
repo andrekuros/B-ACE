@@ -91,11 +91,11 @@ if __name__ == "__main__":
     experiment_config.on_policy_n_envs_per_worker= 4
      
     #experiment_config.evaluation = True  # Enable evaluation mode
-    #experiment_config.restore_file = "D:\Projects\B-ACE\B-ACE\Results\maddpg_b_ace_mlp__14627b2c_24_03_17-21_29_33\checkpoints\checkpoint_2340000.pt"
+    #experiment_config.restore_file = "D:\Projects\B-ACE\B-ACE\Results\ippo_b_ace_mlp__10808413_24_04_24-12_08_54\checkpoints\checkpoint_900000.pt"
     #experiment_config.loggers = []
     
     experiment_config.save_folder = "Results"
-    experiment_config.lr = 0.000005
+    experiment_config.lr = 0.00005
     
     #TASK Config    
     b_ace_config = { 	
@@ -104,7 +104,7 @@ if __name__ == "__main__":
                         "task": "b_ace_v1",
                         "env_path": "BVR_AirCombat/bin/B_ACE_v8.exe",
                         "port": 12500,
-                        "renderize": 1,
+                        "renderize": 0,
                         "debug_view": 0,
                         "phy_fps": 20,
                         "speed_up": 50000,
@@ -150,7 +150,7 @@ if __name__ == "__main__":
                         "red_agents":
                         { 
                             "num_agents" : 1, 
-                            "base_behavior": "baseline1",
+                            "base_behavior": "duck",
                             "beh_config" : {
                                 "dShot" : 0.85,
                                 "lCrank": 0.60,
@@ -213,12 +213,12 @@ if __name__ == "__main__":
         
     
     # Loads from "benchmarl/conf/model/layers/mlp.yaml"
-    model_config = GnnConfig.get_from_yaml()
-    #model_config = MlpConfig.get_from_yaml()
+    #model_config = GnnConfig.get_from_yaml()
+    model_config = MlpConfig.get_from_yaml()
     
     critic_model_config = MlpConfig.get_from_yaml()
 
-    model_config.layers = [128,128]
+    model_config.layers = [64,64,64,64]
     
     for i in range (3):
 
