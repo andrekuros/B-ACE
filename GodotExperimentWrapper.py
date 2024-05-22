@@ -20,9 +20,8 @@ class GodotExperimentWrapper(GodotEnv):
         self.action_type    = self.env_config.get("action_type", "Low_Level_Continuous")  
         self.speedup        = self.env_config.get("speedup", 1000)                          
         
-        self.parallel_envs  = self.env_config.get("parallel_envs", 1)   
-          
-
+        self.parallel_envs  = self.env_config.get("parallel_envs", 1)             
+        
         self.port = GodotExperimentWrapper.DEFAULT_PORT + random.randint(0,3100)                 
         self.proc = None
         
@@ -65,7 +64,7 @@ class GodotExperimentWrapper(GodotEnv):
             if response["type"] == "experiment_step":                
                 print(f'{str(response["run_finished"])}', end="." )
             time.sleep(1)
-                    
+                            
         experiment_results = response["results"]        
         return experiment_results
     

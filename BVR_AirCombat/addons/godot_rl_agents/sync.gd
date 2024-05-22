@@ -174,12 +174,13 @@ func _create_simulations(_agents_config_dict, _experiment_cases=null):
 	
 	for i in range(parallel_envs):
 				
-		var case_config = _agents_config_dict
+		var case_config = _agents_config_dict.duplicate()
 		
 		if _experiment_cases != null:
 			assert(len(_experiment_cases)==parallel_envs)
 			case_config = _agents_config_dict.duplicate()
-			update_dict(case_config, _experiment_cases[i])			
+			update_dict(case_config, _experiment_cases[i]["AgentsConfig"])			
+			
 						
 		var viewport_container = SimManager.instantiate()
 		var viewport = viewport_container.get_node("SubViewport")
@@ -349,13 +350,15 @@ func _physics_process(delta):
 		
 		#Experiment MODE 
 		elif experiment_in_progress:			
-			
+						
+			_get_reward_from_simulations()
+									
 			if _check_all_sims_done():
 				experiment_current_run += 1
 				
 				var result = _collect_experiment_result(experiment_current_run)
-								
-				experiment_results.append(result)				
+				
+				experiment_results.append(result)
 
 				if experiment_current_run >= experiment_runs_per_case:
 					var reply = {
@@ -629,6 +632,7 @@ func _run_experiment(agents_config_msg, experiment_config):
 	envConfig["parallel_envs"] = len(experiment_config['cases'])
 	parallel_envs 	= envConfig["parallel_envs"]
 	
+	
 	# Create simulations based on the experiment configuration
 	_create_simulations(agents_config_msg, experiment_config.get("cases", null))
 	
@@ -643,11 +647,16 @@ func _collect_experiment_result(run_num):
 	var _results = []
 	for simulation in simulation_list: 
 		
+		var final_results = simulation._collect_results()
+		
+		mainCanvas.update_results(final_results)		
+		
 		var sim_result = {
 			"env_id" : simulation.id,
-			"run_num": run_num,			
+			"run_num": run_num,
+			"final_results" : final_results		
 		}
-		sim_result.merge(simulation._collect_results())		
+							
 		_results.append(sim_result)
 		
 	return _results

@@ -50,7 +50,7 @@ from tianshou.utils import WandbLogger
 ####---------------------------#######
 
 
-model  =  "Task_DNN_B_ACE"#"SISL_Task_MultiHead" #"CNN_ATT_SISL" #"MultiHead_SISL" 
+model  =  "Task_MHA_B_ACE"#"SISL_Task_MultiHead" #"CNN_ATT_SISL" #"MultiHead_SISL" 
 test_num  =  "_B_ACE02"
 policyModel  =  "DQN"
 name = model + test_num
@@ -64,7 +64,7 @@ log_path = os.path.join('./', "Logs", "dqn_sisl", log_name)
 
 load_policy_name = f'policy_B_ACE_Task_MHA_Desk.pth'
 save_policy_name = f'policy_{log_name}'
-policy_path = "DNN_task_B_ACE"
+policy_path = model + policyModel
 
 
 model_load_path = os.path.join(policy_path, load_policy_name)  
@@ -112,7 +112,7 @@ B_ACE_Config = {
                     "AgentsConfig" : 
                     {
                         "blue_agents": { 
-                            "num_agents" : 1,
+                            "num_agents" : 2,
                             "beh_config" : {
                                 "dShot" : 0.85,
                                 "lCrank": 0.60,
@@ -129,7 +129,7 @@ B_ACE_Config = {
                         },	
                         "red_agents":
                         { 
-                            "num_agents" : 1, 
+                            "num_agents" : 2, 
                             "base_behavior": "duck",
                             "beh_config" : {
                                 "dShot" : 0.85,

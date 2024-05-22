@@ -56,7 +56,7 @@ if __name__ == "__main__":
     # Loads from "benchmarl/conf/experiment/base_experiment.yaml"
     experiment_config = ExperimentConfig.get_from_yaml()
 
-    experiment_config.sampling_device = 'cuda'
+    experiment_config.sampling_device = 'cpu'
     experiment_config.train_device = 'cuda'
     experiment_config.max_n_iters = 500
     experiment_config.checkpoint_interval = 150000
@@ -95,7 +95,7 @@ if __name__ == "__main__":
     #experiment_config.loggers = []
     
     experiment_config.save_folder = "Results"
-    experiment_config.lr = 0.00005
+    experiment_config.lr = 0.000001
     
     #TASK Config    
     b_ace_config = { 	
@@ -132,7 +132,7 @@ if __name__ == "__main__":
                     "AgentsConfig" : 
                     {
                         "blue_agents": { 
-                            "num_agents" : 1,
+                            "num_agents" : 2,
                             "beh_config" : {
                                 "dShot" : 0.85,
                                 "lCrank": 0.60,
@@ -149,7 +149,7 @@ if __name__ == "__main__":
                         },	
                         "red_agents":
                         { 
-                            "num_agents" : 1, 
+                            "num_agents" : 2, 
                             "base_behavior": "duck",
                             "beh_config" : {
                                 "dShot" : 0.85,
@@ -218,7 +218,7 @@ if __name__ == "__main__":
     
     critic_model_config = MlpConfig.get_from_yaml()
 
-    model_config.layers = [64,64,64,64]
+    model_config.layers = [256,256]
     
     for i in range (3):
 
