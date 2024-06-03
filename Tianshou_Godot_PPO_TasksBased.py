@@ -54,8 +54,8 @@ test_num  =  "_B_ACE02"
 policyModel  =  "DQN"
 name = model + test_num
 
-train_env_num = 1
-test_env_num = 1
+train_env_num = 10
+test_env_num = 10
 
 now = datetime.datetime.now().strftime("%y%m%d-%H%M%S")
 log_name = name + str(now)
@@ -83,7 +83,7 @@ B_ACE_Config = {
                         "task": "b_ace_v1",
                         "env_path": "BVR_AirCombat/bin/B_ACE_v9.exe",
                         "port": 12500,
-                        "renderize": 0,
+                        "renderize": 1,
                         "debug_view": 0,
                         "phy_fps": 20,
                         "speed_up": 50000,
@@ -129,7 +129,7 @@ B_ACE_Config = {
                         "red_agents":
                         { 
                             "num_agents" : 1, 
-                            "base_behavior": "duck",
+                            "base_behavior": "baseline1",
                             "beh_config" : {
                                 "dShot" : 0.85,
                                 "lCrank": 0.60,

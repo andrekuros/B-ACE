@@ -166,6 +166,7 @@ class B_ACE_TaskEnv(GodotRLPettingZooWrapper):
         
         self.observations = {agent : [] for agent in self.agents}
         self.raw_observations = {agent : [] for agent in self.agents}
+        self.rewards = {agent : [] for agent in self.agents}        
         self.infos = {agent : [] for agent in self.agents}
         
         self.task_historic = [0 for _ in self.agents]
@@ -198,7 +199,8 @@ class B_ACE_TaskEnv(GodotRLPettingZooWrapper):
         self.task_historic = [0 for _ in self.agents]
         self.action_historic = [[0] * 5 for _ in self.agents]
         
-        self.observations = {agent : [] for agent in self.agents}        
+        self.observations = {agent : [] for agent in self.agents}   
+        self.rewards = {agent : [] for agent in self.agents}             
         self.infos = {agent : [] for agent in self.agents}
         
         self.tasks_enemies    = {agent : [] for agent in self.agents}
@@ -247,8 +249,8 @@ class B_ACE_TaskEnv(GodotRLPettingZooWrapper):
         for i, agent in enumerate(self.possible_agents):
 
             # Convert observations, rewards, etc., to tensors
-            # if dones[i] == True:
-            #     continue
+            #if dones[agent] == True:
+            #    continue
             # .to('cuda') moves the tensor to GPU if you're using CUDA; remove it if not using GPU
             
             self.raw_observations[agent] =  obs[agent]['obs']            
@@ -262,11 +264,13 @@ class B_ACE_TaskEnv(GodotRLPettingZooWrapper):
             self.terminations = self.terminations and dones[agent]
             self.truncations = self.truncations or truncs[agent]            
             self.rewards += reward[agent] #torch.tensor([reward[i]], dtype=torch.float32).to('cuda')
- 
+            #self.rewards[agent] = reward[agent]
+            
             # For 'info', it might not need to be a tensor depending on its use
             #self.info[agent] = info[i]  # Assuming 'info' does not need tensor conversion            
                         
-
+        self.rewards = self.rewards 
+        
         return self.observations, self.rewards, self.terminations, self.truncations, self.infos 
 
 
@@ -278,6 +282,7 @@ class B_ACE_TaskEnv(GodotRLPettingZooWrapper):
             agent_observation = self.raw_observations[agent]
 
             last_tasks = self.tasks_enemies[agent] + self.tasks_positioning[agent]            
+            
             self.last_len_tasks[agent] = len(last_tasks)
             
             mask = [True for _ in last_tasks]
@@ -299,8 +304,7 @@ class B_ACE_TaskEnv(GodotRLPettingZooWrapper):
                         
             self.observations[agent] = {"obs" : task_features, "mask" : mask}#, "agent_id" : agent }
             self.infos[agent] = {"agent_id" : agent, "mask": mask}
-            
-                
+                            
     
     
     def generate_tasks(self):
@@ -325,8 +329,6 @@ class B_ACE_TaskEnv(GodotRLPettingZooWrapper):
             new_task = Task('fly_direction', 101, self.obs_map)            
             self.tasks_positioning[agent].append(new_task)
             self.tasks_map[new_task.id] = new_task      
-            
-    
             
             #Main null Task            
             new_task = Task('null', 100, self.obs_map)            
