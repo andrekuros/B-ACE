@@ -156,6 +156,20 @@ var rMax_calc
 var rNez_model
 var rNez_calc
 
+var allied_info_null = [
+	["allied_x_pos", 0.0],
+	["allied_z_pos", 0.0],
+	["allied_y_pos", 0.0],
+	["allied_dist2go", 0.0],
+	["allied_aspect_angle", 0.0],
+	["allied_current_hdg", 0.0],
+	["allied_current_speed", 0.0],
+	["allied_missiles", 0.0],
+	["allied_in_flight_missile", 0.0]
+]
+
+
+
 func is_type(type): return type == "Fighter" 
 func get_type(): return "Fighter"	
 
@@ -314,8 +328,7 @@ func update_scene(_tree):
 	for agent in tree.get_nodes_in_group(team_color_group):
 		if agent.id != id:
 			alliesList.append(agent)
-	len_allieds_data_obs = 1 if len(alliesList) >= 1 else 0
-	
+		
 	len_allieds_data_obs = 1 if len(alliesList) >= 1 else 0
 	len_tracks_data_obs = 2 if len(tree.get_nodes_in_group(simGroups.ENEMY)) > 1 else 1
 								
@@ -352,58 +365,29 @@ func get_obs(with_labels = false):
 		["own_in_flight_missile", 1 if is_instance_valid(in_flight_missile) else 0]
 	]
 
-	var allied_info = [
-		["allied_x_pos", 0.0],
-		["allied_z_pos", 0.0],
-		["allied_y_pos", 0.0],
-		["allied_dist2go", 0.0],
-		["allied_aspect_angle", 0.0],
-		["allied_current_hdg", 0.0],
-		["allied_current_speed", 0.0],
-		["allied_missiles", 0.0],
-		["allied_in_flight_missile", 0.0]
-	]
+	var allied_infos = []
 
-	if len_allieds_data_obs > 0:
-		var allied = alliesList[0]
-		if allied.activated:
-			allied_info = [
-				["allied_x_pos", allied.global_transform.origin.x / 3000.0],
-				["allied_z_pos", allied.global_transform.origin.z / 3000.0],
-				["allied_altitude_pos", allied.global_transform.origin.y / 150.0],
-				["allied_dist2go", allied.dist2go / 3000.0],
-				["allied_aspect_angle", Calc.get_2d_aspect_angle(allied.current_hdg, Calc.get_hdg_2d(allied.global_transform.origin, allied.target_position)) / 180.0],
-				["allied_current_hdg", allied.current_hdg / 180.0],
-				["allied_current_speed", allied.current_speed / max_speed],
-				["allied_missiles", allied.missiles / 6.0],
-				["allied_in_flight_missile", 1 if is_instance_valid(allied.in_flight_missile) else 0]
-			]
-
-	var tracks_info = []
-	var tracks_added = 0
-
-	if HPT != null and HPT.track_obj.is_alive:
-		var track = HPT
-		tracks_info.append_array([
-			["track_alt_diff", (global_transform.origin.y - track.obj.global_transform.origin.y) / 150.0],
-			["track_aspect_angle", track.aspect_angle / 180.0],
-			["track_angle_off", track.angle_off / 180.0],
-			["track_dist", track.dist / 3000.0],
-			["track_dist2go", track.obj.dist2go / 3000.0],
-			["track_own_missile_RMax", track.own_missile_RMax / 926.0],
-			["track_own_missile_Nez", track.own_missile_Nez / 926.0],
-			["track_enemy_missile_RMax", track.enemy_missile_RMax / 926.0],
-			["track_enemy_missile_Nez", track.enemy_missile_Nez / 926.0],
-			["track_threat_factor", track.threat_factor - 1],
-			["track_offensive_factor", track.offensive_factor - 1],
-			["track_is_missile_support", track.is_missile_support],
-			["track_detected", 1 if track.detected else 0]
-		])
-		tracks_added += 1
-
-	for track in range(1 - tracks_added):
-		var ref_enemy = manager.enemies[0]
-		tracks_info.append_array([
+	for allied in alliesList:		
+		if len_allieds_data_obs > len(alliesList):			
+			if allied.activated:				
+				allied_infos.append_array([
+					["allied_x_pos", allied.global_transform.origin.x / 3000.0],
+					["allied_z_pos", allied.global_transform.origin.z / 3000.0],
+					["allied_altitude_pos", allied.global_transform.origin.y / 150.0],
+					["allied_dist2go", allied.dist2go / 3000.0],
+					["allied_aspect_angle", Calc.get_2d_aspect_angle(allied.current_hdg, Calc.get_hdg_2d(allied.global_transform.origin, allied.target_position)) / 180.0],
+					["allied_current_hdg", allied.current_hdg / 180.0],
+					["allied_current_speed", allied.current_speed / max_speed],
+					["allied_missiles", allied.missiles / 6.0],
+					["allied_in_flight_missile", 1 if is_instance_valid(allied.in_flight_missile) else 0]
+				])
+	
+	while len_allieds_data_obs > len(allied_infos):
+		allied_infos.append_array(allied_info_null)
+	
+	var tracks_info = []	
+	
+	var track_info_null = [
 			["track_alt_diff", 0.0],
 			["track_aspect_angle", Calc.get_2d_aspect_angle(current_hdg, 0.0) / 180.0],
 			["track_angle_off", 0.0],
@@ -417,11 +401,34 @@ func get_obs(with_labels = false):
 			["track_offensive_factor", 0.0],
 			["track_is_missile_support", 0.0],
 			["track_detected", 0]
-		])
+		]
 
+	for track in radar_track_list:		
+		if len_tracks_data_obs > len(tracks_info) and track.is_alive:			
+							
+			tracks_info.append_array([
+				["track_alt_diff", (global_transform.origin.y - track.obj.global_transform.origin.y) / 150.0],
+				["track_aspect_angle", track.aspect_angle / 180.0],
+				["track_angle_off", track.angle_off / 180.0],
+				["track_dist", track.dist / 3000.0],
+				["track_dist2go", track.obj.dist2go / 3000.0],
+				["track_own_missile_RMax", track.own_missile_RMax / 926.0],
+				["track_own_missile_Nez", track.own_missile_Nez / 926.0],
+				["track_enemy_missile_RMax", track.enemy_missile_RMax / 926.0],
+				["track_enemy_missile_Nez", track.enemy_missile_Nez / 926.0],
+				["track_threat_factor", track.threat_factor - 1],
+				["track_offensive_factor", track.offensive_factor - 1],
+				["track_is_missile_support", track.is_missile_support],
+				["track_detected", 1 if track.detected else 0]
+			])
+			
+	while len_tracks_data_obs > len(tracks_info):
+		tracks_info.append_array(track_info_null)
+	
 	var obs = own_info + tracks_info
-	if false:
-		obs += allied_info
+	
+	if len_allieds_data_obs > 0:
+		obs += allied_infos
 	
 	var obs_values = obs.map(func(item): return item[1])
 	
@@ -537,11 +544,14 @@ func process_tracks():
 	var max_offensive = 0.0
 	var new_HPT = null
 	var new_HRT = null
-	
+					
 	for track in radar_track_list:						
 								
 		if track.obj.activated:
+			
 			track.update_track(self, track.obj, current_time)
+			
+			track.dl_track = false
 			
 			if track.just_detected:			
 				track.just_detected = false
@@ -561,10 +571,15 @@ func process_tracks():
 						if not in_flight_missile.pitbull and in_flight_missile != null:
 							in_flight_missile.lost_support() 
 							ownRewards.add_detect_loss_rew(5.0)
+			
+			track.is_alive = manager.last_team_dl_tracks[team_id].get(track.id, false) or track.is_alive
 						
 			if track.is_alive:				
 								
-				if track.detected: 
+				if track.detected or manager.last_team_dl_tracks[team_id].get(track.id, false):
+					
+					if track.detected:
+						manager.team_dl_tracks[team_id][track.id] = true 
 					
 					track.update_wez_data(get_wez_for_track(track))						
 					
@@ -577,9 +592,16 @@ func process_tracks():
 					if track.threat_factor > max_treat: # and track.obj.get_meta('id') == 1:
 						max_treat = track.threat_factor					
 						new_HRT = track
+											
+					track.dl_track = not track.detected	
+				#else:
+				#	print("ERROROROROR")																						
+			
+										
 		else:
 			track.is_alive = false
-			track.detected = false			
+			track.detected = false
+			manager.team_dl_tracks[team_id][track.id] = false
 												
 	if HPT != null:			
 		if not HPT.is_missile_support or not HPT.is_alive:
@@ -777,8 +799,14 @@ func get_wez_for_track(track):
 					cos(track.aspect_angleR),sin(track.aspect_angleR), 
 					cos(track.angle_offR),sin(track.angle_offR)]
 					
-	var ownRMax = rMax_calc.execute(ownData)	
+	var ownRMax = rMax_calc.execute(ownData)
+	if ownRMax <=0: 
+		ownRMax	= 0.01
+	
 	var ownRNez = rNez_calc.execute(ownData)
+	
+	if ownRNez <= 0: 
+		ownRNez	= 0.01
 							
 	var enemyData
 	var enemyRMax
@@ -792,6 +820,13 @@ func get_wez_for_track(track):
 								-1.0, 0.0, -1.0, 0.0 ]	
 		enemyRMax = rMax_calc.execute(enemyData) / (1.0 + abs(track.inv_aspect_angle)/180.0)		
 		enemyRNez = rNez_calc.execute(enemyData) / (1.0 + abs(track.inv_aspect_angle)/180.0)
+		
+		if enemyRMax <=0: 
+			enemyRMax	= 0.01
+		if enemyRNez <=0: 
+			enemyRNez	= 0.01
+	
+	
 													
 	else:
 		enemyData = [track.obj.current_level/152.4 * 0.3048,
@@ -803,6 +838,11 @@ func get_wez_for_track(track):
 									
 	#print([current_level/152.4/3,(current_level - track.obj.current_level)/152.4/3,cos(track.aspect_angle),sin(track.aspect_angle), cos(track.angle_off),sin(track.angle_off)])
 	#print([ownRMax, ownRNez, enemyRMax, enemyRNez])
+	if enemyRMax <=0: 
+		enemyRMax	= 0.01
+	if enemyRNez <=0: 
+		enemyRNez	= 0.01
+	
 	return [ownRMax, ownRNez, enemyRMax, enemyRNez]
 		
 func _physics_process(delta: float) -> void:

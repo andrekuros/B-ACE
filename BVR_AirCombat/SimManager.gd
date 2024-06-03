@@ -22,6 +22,11 @@ var simGroups
 var agents = []
 var enemies = []
 var fighters = []
+var teams_agents =[[],[]]
+
+var team_dl_tracks = [{},{}] #True of False to share the track id by Data Link per team_id
+var last_team_dl_tracks = [{},{}] #True of False to share the track id by Data Link per team_id
+
 var agents_alive_control
 var enemies_alive_control
 
@@ -45,17 +50,24 @@ func initialize(_id, _tree, _envConfig, _agentsConfig):
 	action_repeat	= int(envConfig["action_repeat"])
 	max_cycles		= int(envConfig["max_cycles"])
 	
-	agentsConfig = _agentsConfig.duplicate(true)
-	
+	agentsConfig = _agentsConfig.duplicate(true)	
 	simGroups = SimGroups.new(id)
-	
+		
 	_set_agents(_tree)	 		
 	_set_heuristic("AP")
 	
+	_reset_simulation()
+	
 	initialized = true
+	
 
 # Called every frame. 'delta' is the elapsed time since the previous frame.
 func _physics_process(delta):
+		
+	last_team_dl_tracks = team_dl_tracks #Use last list pointer
+	team_dl_tracks = [{},{}] #reset list before agents do the updates
+	
+	
 	# Increment the physics update count
 	physics_updates += 1    
 	elapsed_time += delta	
@@ -176,12 +188,11 @@ func _set_agents(_tree):
 		newFigther.add_to_group(simGroups.FIGHTER)
 		newFigther.simGroups = simGroups		
 		newFigther.set_fullView(envConfig["full_observation"])			
-		
-				
+						
 		if comp == "Allied_Agent":
 			
 			var blue_config = agentsConfig["blue_agents"].duplicate(true)
-			newFigther.team_id 	= 0
+			newFigther.team_id 	= 0			
 			agents.append(newFigther)			
 			
 			var offset_x = 0
@@ -227,6 +238,7 @@ func _set_agents(_tree):
 			newFigther.reset()			
 																										
 		fighters.append(newFigther)
+		teams_agents[newFigther.team_id].append(newFigther)
 			
 	for fighter in fighters:
 		fighter.update_scene(tree)
@@ -234,12 +246,19 @@ func _set_agents(_tree):
 	for agent in agents:
 		agent.agent_name = "agent_" + str(i)
 		i = i + 1
+		
 
 func _reset_simulation():
 	
 	_reset_all_uavs()
 	_reset_components()	
 	
+	for team_id in range(2):
+		for agent in teams_agents[team_id]:		
+			for track in agent.radar_track_list:
+				team_dl_tracks[team_id][track.id] = false
+				track.is_alive = false
+							
 	physics_updates = 0
 	elapsed_time = 0.0
 	
@@ -279,8 +298,7 @@ func _get_obs_from_agents():
 	var obs = []
 	for agent in agents:
 		obs.append(agent.get_obs())
-		
-		
+				
 	return obs
 	
 func _get_reward_from_agents():

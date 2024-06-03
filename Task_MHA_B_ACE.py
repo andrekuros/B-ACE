@@ -68,19 +68,17 @@ class Task_MHA_B_ACE(nn.Module):
         
         #print("MHA", [obs, info])
         if isinstance(obs, np.ndarray):
-            observation = torch.tensor(np.array(obs), dtype=torch.float32).to(self.device)
-            mask =  info.info["mask"]
-        else:
-            observation = torch.tensor(np.array(obs["agent_0"].obs), dtype=torch.float32).to(self.device)
-            mask =  obs["agent_0"].mask
-            
-        
+            observation = torch.tensor(np.array(obs), dtype=torch.float32).to(self.device)            
+            mask = info.mask
+        else:            
+            observation = torch.tensor(np.array(obs[info].obs), dtype=torch.float32).to(self.device)
+            mask =  obs[info].mask
+                    
         
         mask = ~mask #for pythorch
         mask = torch.tensor(mask, dtype=torch.bool).to(self.device)
         # Process each task independently through the task encoder
-        batch_size, num_tasks, num_features = observation.shape
-                
+        batch_size, num_tasks, num_features = observation.shape                
         
         obs_reshaped = observation.view(-1, num_features)  # [batch_size * num_tasks, num_features]
         task_embeddings = self.task_encoder(obs_reshaped)  # [batch_size * num_tasks, embedding_size]

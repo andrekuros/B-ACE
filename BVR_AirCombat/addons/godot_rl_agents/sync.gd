@@ -391,6 +391,8 @@ func _physics_process(delta):
 		
 		#_get_obs_from_simulations()
 		_get_reward_from_simulations()
+		var obs = _get_obs_from_simulations()	
+		#print(obs)
 		
 		#var done = _get_dones_from_simulations_agents()
 		#_reset_agents_if_done() # this ensures the new observation is from the next env instance : NEEDS REFACTOR			

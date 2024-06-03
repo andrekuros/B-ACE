@@ -31,7 +31,7 @@
 	"AgentsConfig" : 
 	{
 		"blue_agents": { 
-			"num_agents" : 2,
+			"num_agents" : 50,
 			
 			"base_behavior": "baseline1",
 			"beh_config" : {
@@ -50,7 +50,7 @@
 		},	
 		"red_agents":
 		{ 
-			"num_agents" : 2, 
+			"num_agents" : 50, 
 						
 			"base_behavior": "baseline1",
 			"beh_config" : {

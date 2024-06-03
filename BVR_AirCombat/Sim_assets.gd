@@ -61,6 +61,7 @@ class Track:
 	var radar_vfov
 	var last_track_hdg
 	var detected
+	var dl_track
 	var just_detected
 	var just_lost
 	var is_alive	
@@ -83,6 +84,8 @@ class Track:
 		radar_range= fighter.radar_range
 		radar_hfov = fighter.radar_hfov
 		radar_vfov = fighter.radar_vfov
+		
+		dl_track = false
 		
 		update_track(fighter, track_obj, 0.0)
 					
@@ -119,7 +122,7 @@ class Track:
 		inv_angle_offR 	  	= deg_to_rad(inv_angle_off)
 		inv_aspect_angleR	= deg_to_rad(inv_aspect_angle)
 				
-		var is_detectable = is_track_detectable()		
+		var is_detectable = is_track_detectable() 		
 				
 		if is_detectable:
 			#print(" detectable:", [angle_off,
@@ -133,7 +136,7 @@ class Track:
 				just_detected = true			
 				detected = true
 		else:			
-			if time_detected - last_detection > 20.0:
+			if time_detected - last_detection > 10.0:
 				is_alive = false
 			
 			if detected:

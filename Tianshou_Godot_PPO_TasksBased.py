@@ -14,7 +14,6 @@ from tianshou.data import Collector, VectorReplayBuffer, PrioritizedVectorReplay
 from tianshou.env import SubprocVectorEnv, DummyVectorEnv
 #from tianshou.env.pettingzoo_env_parallel import PettingZooParallelEnv
 #from tianshou.env.pettingzoo_env import PettingZooEnv
-
 #from PettingZooParallelEnv import PettingZooParallelEnv
 
 
@@ -55,14 +54,14 @@ test_num  =  "_B_ACE02"
 policyModel  =  "DQN"
 name = model + test_num
 
-train_env_num = 4
-test_env_num = 4
+train_env_num = 1
+test_env_num = 1
 
 now = datetime.datetime.now().strftime("%y%m%d-%H%M%S")
 log_name = name + str(now)
 log_path = os.path.join('./', "Logs", "dqn_sisl", log_name)
 
-load_policy_name = f'policy_B_ACE_Task_MHA_Desk.pth'
+load_policy_name = f'policy_Task_MHA_B_ACE_B_ACE02240528-113023_73_BestRew.pth'
 save_policy_name = f'policy_{log_name}'
 policy_path = model + policyModel
 
@@ -82,7 +81,7 @@ B_ACE_Config = {
                     "EnvConfig" : 
                     {
                         "task": "b_ace_v1",
-                        "env_path": "BVR_AirCombat/bin/B_ACE_v8.exe",
+                        "env_path": "BVR_AirCombat/bin/B_ACE_v9.exe",
                         "port": 12500,
                         "renderize": 0,
                         "debug_view": 0,
@@ -112,7 +111,7 @@ B_ACE_Config = {
                     "AgentsConfig" : 
                     {
                         "blue_agents": { 
-                            "num_agents" : 2,
+                            "num_agents" : 1,
                             "beh_config" : {
                                 "dShot" : 0.85,
                                 "lCrank": 0.60,
@@ -129,7 +128,7 @@ B_ACE_Config = {
                         },	
                         "red_agents":
                         { 
-                            "num_agents" : 2, 
+                            "num_agents" : 1, 
                             "base_behavior": "duck",
                             "beh_config" : {
                                 "dShot" : 0.85,
@@ -147,14 +146,16 @@ B_ACE_Config = {
                     }	
             }
 #max_cycles = B_ACE_Config["max_cycles"]
-n_agents = 1#B_ACE_Config["n_pursuers"]
+#n_agents = 1#B_ACE_Config["n_pursuers"]
 
 dqn_params =    {
                 "discount_factor": 0.99, 
                 "estimation_step": 180, 
-                "target_update_freq": 3 * 1250 * train_env_num,#max_cycles * n_agents,
+                "target_update_freq": 3000 * 4,#max_cycles * n_agents,
+                "reward_normalization" : False,
+                "clip_loss_grad" : False,
                 "optminizer": "Adam",
-                "lr": 0.00005 
+                "lr": 0.000016 
                 }
 
 PPO_params= {    
@@ -176,18 +177,18 @@ PPO_params= {
             }
 
 
-trainer_params = {"max_epoch": 500,
-                  "step_per_epoch": 3 * 1250 * train_env_num,#5 * (150 * n_agents),
-                  "step_per_collect": 1250 * train_env_num,# * (10 * n_agents),
+trainer_params = {"max_epoch": 200,
+                  "step_per_epoch": 24000,#5 * (150 * n_agents),
+                  "step_per_collect": 3000,# * (10 * n_agents),
                   
-                  "batch_size" : 600,
+                  "batch_size" : 1000,
                   
                   "update_per_step": 1 / (100), #Off-Policy Only (run after close a Collect (run many times as necessary to meet the value))
                   
-                  "repeat_per_collect":64, #On-Policy Only
+                  "repeat_per_collect": 64, #On-Policy Only
                   
                   "episode_per_test": 30,                  
-                  "tn_eps_max": 0.30,
+                  "tn_eps_max": 0.15,
                   "ts_eps_max": 0.01,
                   "warmup_size" : 1
 }
@@ -223,7 +224,7 @@ def _get_agents(
     if Policy_Config["same_policy"]:
         policies_number = 1
     else:
-        policies_number = 2#len(env.agents)
+        policies_number = len(env.agents)
 
     for _ in range(policies_number):      
         
@@ -234,7 +235,7 @@ def _get_agents(
             if model == "Task_MHA_B_ACE":
                 net = Task_MHA_B_ACE(
                     #obs_shape=agent_observation_space.shape,                                                  
-                    num_tasks = 6,
+                    num_tasks = 20,
                     num_features_per_task= 12,                    
                     nhead = 4,
                     device="cuda" if torch.cuda.is_available() else "cpu"
@@ -244,7 +245,7 @@ def _get_agents(
             if model == "Task_DNN_B_ACE":
                 net = Task_DNN_B_ACE(
                     #obs_shape=agent_observation_space.shape,                                                  
-                    num_tasks = 6,
+                    num_tasks = 20,
                     num_features_per_task= 12,                    
                     nhead = 4,
                     device="cuda" if torch.cuda.is_available() else "cpu"
@@ -256,12 +257,12 @@ def _get_agents(
             agent_learn = DQNPolicy(
                 model=net,
                 optim=optim,
-                action_space = Discrete(10),
+                action_space = Discrete(20),
                 discount_factor= dqn_params["discount_factor"],
                 estimation_step=dqn_params["estimation_step"],
                 target_update_freq=dqn_params["target_update_freq"],
-                reward_normalization = False,
-                clip_loss_grad = False 
+                reward_normalization = dqn_params["reward_normalization"],
+                clip_loss_grad = dqn_params["clip_loss_grad"]
             )                   
         
         elif model == "PPO_DNN":
@@ -317,10 +318,10 @@ def _get_agents(
                 lr_scheduler=None
             )
             
-            if Policy_Config["load_model"] is True:
-                # Load the saved checkpoint             
-                agent_learn.load_state_dict(torch.load(model_load_path))
-                print(f'Loaded-> {model_load_path}')
+        if Policy_Config["load_model"] is True:
+            # Load the saved checkpoint             
+            agent_learn.load_state_dict(torch.load(model_load_path))
+            print(f'Loaded-> {model_load_path}')
                    
         
         agents.append(agent_learn)
@@ -381,7 +382,7 @@ if __name__ == "__main__":
         train_collector = Collector(
             policy,
             train_envs,
-            VectorReplayBuffer(100_000, len(train_envs)),
+            VectorReplayBuffer(30_000, len(train_envs)),
             #PrioritizedVectorReplayBuffer( 300_000, len(train_envs), alpha=0.6, beta=0.4) , 
             #ListReplayBuffer(100000)       
             # buffer = StateMemoryVectorReplayBuffer(
@@ -497,13 +498,13 @@ if __name__ == "__main__":
 
 
     def test_fn(epoch, env_step):
-               
+
         epsilon = trainer_params['ts_eps_max']#0.01#max(0.001, 0.1 - epoch * 0.001)
         if Policy_Config["same_policy"]:
             policy.policies[agents[0]].set_eps(epsilon)
         else:            
             for agent in agents:                             
-                 policy.policies[agent].set_eps(epsilon)
+                policy.policies[agent].set_eps(epsilon)
                 
         
         if global_step_holder[0] % 10 == 0:
@@ -522,8 +523,8 @@ if __name__ == "__main__":
     def reward_metric(rews):       
                 
         global_step_holder[0] +=1 
-        #print(rews)
-        return rews#np.sum(rews)
+        print(rews)
+        return np.mean(rews)#np.sum(rews)
 
 
 

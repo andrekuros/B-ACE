@@ -62,31 +62,30 @@ if __name__ == "__main__":
     experiment_config.checkpoint_interval = 150000
     
     # Whether to share the parameters of the policy within agent groups
-    experiment_config.share_policy_params: True
+    experiment_config.share_policy_params: False
     experiment_config.prefer_continuous_actions = True  
     experiment_config.evaluation_interval = 18000
     experiment_config.evaluation_episodes = 30   
     experiment_config.evaluation_deterministic_actions = False  
     
-    
-    # experiment_config.exploration_eps_init = 1.0
-    # experiment_config.exploration_eps_end = 1.0   
+    experiment_config.exploration_eps_init = 0.9
+    experiment_config.exploration_eps_end = 0.01   
     
     # ----- On policy Configuration ----- #
-
     experiment_config.on_policy_collected_frames_per_batch = 6000    
     #experiment_config.on_policy_n_minibatch_iters = 64    
     #experiment_config.on_policy_minibatch_size = 512
+    #-------------------------------------------#
     
     # ----- Off Policy Configuration -----   #
     
     experiment_config.off_policy_collected_frames_per_batch: 6000
-    # This is the number of times off_policy_train_batch_size will be sampled from the buffer and trained over.
     experiment_config.off_policy_n_optimizer_steps: 64    
     experiment_config.off_policy_train_batch_size: 512    
-    experiment_config.off_policy_memory_size: 1_000_000    
+    experiment_config.off_policy_memory_size: 100_000    
     experiment_config.off_policy_init_random_frames: 0
-    
+       
+    #-------------------------------------------#
     experiment_config.off_policy_n_envs_per_worker= 4
     experiment_config.on_policy_n_envs_per_worker= 4
      
@@ -95,14 +94,14 @@ if __name__ == "__main__":
     #experiment_config.loggers = []
     
     experiment_config.save_folder = "Results"
-    experiment_config.lr = 0.000001
+    experiment_config.lr = 0.0000005
     
     #TASK Config    
     b_ace_config = { 	
                     "EnvConfig" : 
                     {
                         "task": "b_ace_v1",
-                        "env_path": "BVR_AirCombat/bin/B_ACE_v8.exe",
+                        "env_path": "BVR_AirCombat/bin/B_ACE_v9.exe",
                         "port": 12500,
                         "renderize": 0,
                         "debug_view": 0,
@@ -132,7 +131,7 @@ if __name__ == "__main__":
                     "AgentsConfig" : 
                     {
                         "blue_agents": { 
-                            "num_agents" : 2,
+                            "num_agents" : 4,
                             "beh_config" : {
                                 "dShot" : 0.85,
                                 "lCrank": 0.60,
@@ -149,7 +148,7 @@ if __name__ == "__main__":
                         },	
                         "red_agents":
                         { 
-                            "num_agents" : 2, 
+                            "num_agents" : 4, 
                             "base_behavior": "duck",
                             "beh_config" : {
                                 "dShot" : 0.85,
@@ -207,18 +206,18 @@ if __name__ == "__main__":
     elif args.algorithm == 'maddpg':
         algorithm_config = MaddpgConfig.get_from_yaml()
     else:  # 'iddpg'
-        algorithm_config = IppoConfig.get_from_yaml()
-        #algorithm_config = MaddpgConfig.get_from_yaml()
+        #algorithm_config = MAPpoConfig.get_from_yaml()
+        algorithm_config = MaddpgConfig.get_from_yaml()
         #algorithm_config.share_param_critic = True
         
-    
+    #algorithm_config.share_param_critic = True
     # Loads from "benchmarl/conf/model/layers/mlp.yaml"
     #model_config = GnnConfig.get_from_yaml()
     model_config = MlpConfig.get_from_yaml()
     
     critic_model_config = MlpConfig.get_from_yaml()
 
-    model_config.layers = [256,256]
+    model_config.layers = [256,256,256]
     
     for i in range (3):
 

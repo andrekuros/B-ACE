@@ -146,7 +146,7 @@ class B_ACE_TaskEnv(GodotRLPettingZooWrapper):
         self.agent_name_mapping = dict(zip(self.agents, list(range(self.num_agents))))                
         
         #Env modification for Task based policy
-        self.max_tasks = 6  # Maximum number of tasks
+        self.max_tasks = 20  # Maximum number of tasks
         self.act_space = spaces.Discrete(self.max_tasks)
         self.action_space = spaces.Discrete(self.max_tasks)
         #self.action_spaces = dict(zip(self.agents, self.action_space))
@@ -235,6 +235,8 @@ class B_ACE_TaskEnv(GodotRLPettingZooWrapper):
         
         obs, reward, dones, truncs, info = GodotEnv.step(self, godot_actions, order_ij=True)
         
+        #print(["obs_task_bace", obs, reward])
+        
         self.prepare_next_tasks()
                 
         
@@ -243,7 +245,7 @@ class B_ACE_TaskEnv(GodotRLPettingZooWrapper):
         self.rewards = 0.0
         
         for i, agent in enumerate(self.possible_agents):
-                       
+
             # Convert observations, rewards, etc., to tensors
             # if dones[i] == True:
             #     continue
@@ -264,8 +266,7 @@ class B_ACE_TaskEnv(GodotRLPettingZooWrapper):
             # For 'info', it might not need to be a tensor depending on its use
             #self.info[agent] = info[i]  # Assuming 'info' does not need tensor conversion            
                         
-        
-                                
+
         return self.observations, self.rewards, self.terminations, self.truncations, self.infos 
 
 
@@ -297,7 +298,7 @@ class B_ACE_TaskEnv(GodotRLPettingZooWrapper):
             # task_tensor = torch.tensor(task_features, dtype=torch.float32).to("cuda")
                         
             self.observations[agent] = {"obs" : task_features, "mask" : mask}#, "agent_id" : agent }
-            self.infos[agent] = {"info" : {"agent_id" : agent, "mask": mask}}
+            self.infos[agent] = {"agent_id" : agent, "mask": mask}
             
                 
     
