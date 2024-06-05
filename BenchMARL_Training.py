@@ -94,7 +94,7 @@ if __name__ == "__main__":
     #experiment_config.loggers = []
     
     experiment_config.save_folder = "Results"
-    experiment_config.lr = 0.0000005
+    experiment_config.lr = 0.000005
     
     #TASK Config    
     b_ace_config = { 	
@@ -131,7 +131,7 @@ if __name__ == "__main__":
                     "AgentsConfig" : 
                     {
                         "blue_agents": { 
-                            "num_agents" : 4,
+                            "num_agents" : 1,
                             "beh_config" : {
                                 "dShot" : 0.85,
                                 "lCrank": 0.60,
@@ -148,8 +148,8 @@ if __name__ == "__main__":
                         },	
                         "red_agents":
                         { 
-                            "num_agents" : 4, 
-                            "base_behavior": "duck",
+                            "num_agents" : 1, 
+                            "base_behavior": "baseline1",
                             "beh_config" : {
                                 "dShot" : 0.85,
                                 "lCrank": 0.60,
@@ -207,7 +207,7 @@ if __name__ == "__main__":
         algorithm_config = MaddpgConfig.get_from_yaml()
     else:  # 'iddpg'
         #algorithm_config = MAPpoConfig.get_from_yaml()
-        algorithm_config = MaddpgConfig.get_from_yaml()
+        algorithm_config = IppoConfig.get_from_yaml()
         #algorithm_config.share_param_critic = True
         
     #algorithm_config.share_param_critic = True
@@ -219,7 +219,7 @@ if __name__ == "__main__":
 
     model_config.layers = [256,256,256]
     
-    for i in range (3):
+    for i in range (0,5):
 
         experiment = Experiment(
             task=task,

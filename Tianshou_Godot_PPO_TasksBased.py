@@ -83,14 +83,14 @@ B_ACE_Config = {
                         "task": "b_ace_v1",
                         "env_path": "BVR_AirCombat/bin/B_ACE_v9.exe",
                         "port": 12500,
-                        "renderize": 1,
+                        "renderize": 0,
                         "debug_view": 0,
                         "phy_fps": 20,
                         "speed_up": 50000,
                         "max_cycles": 36000,
                         "experiment_mode"  : 0,
                         "parallel_envs": 1,	
-                        "seed": 1,	
+                        "seed": 3,	
                         "action_repeat": 20,	
                         "action_type": "Low_Level_Continuous",                        
                         "full_observation": 1,
@@ -365,13 +365,13 @@ if __name__ == "__main__":
     #test_envs = DummyVectorEnv([_get_env for _ in range(test_env_num)])#, share_memory = True) 
 
     # seed
-    seed = 100
+    seed = B_ACE_Config['EnvConfig']['seed']
     np.random.seed(seed)
     
     torch.manual_seed(seed)
 
-    #train_envs.seed(seed)
-    #test_envs.seed(seed)
+    train_envs.seed(seed)
+    test_envs.seed(seed)
 
     # ======== Step 2: Agent setup =========
     policy, optim, agents = _get_agents()    
@@ -523,7 +523,7 @@ if __name__ == "__main__":
     def reward_metric(rews):       
                 
         global_step_holder[0] +=1 
-        print(rews)
+        #print(rews)
         return np.mean(rews)#np.sum(rews)
 
 
