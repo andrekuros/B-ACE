@@ -31,7 +31,7 @@
 	"AgentsConfig" : 
 	{
 		"blue_agents": { 
-			"num_agents" : 50,
+			"num_agents" : 2,
 			
 			"base_behavior": "baseline1",
 			"beh_config" : {
@@ -46,11 +46,11 @@
 			"target_position": {"x": 0.0,"y": 25000.0,"z": -30.0},
 			"rnd_offset_range":{"x": 10.0,"y": 10000.0,"z": 5.0},				
 			"rnd_shot_dist_var": 0.0,
-			"wez_models" : "res://assets/Default_Wez_params.json"
+			"wez_models" : "res://assets/wez/Default_Wez_params.json"
 		},	
 		"red_agents":
 		{ 
-			"num_agents" : 50, 
+			"num_agents" : 2, 
 						
 			"base_behavior": "baseline1",
 			"beh_config" : {
@@ -64,7 +64,7 @@
 			"target_position": {"x": 0.0,"y": 25000.0,"z": 30.0},
 			"rnd_offset_range":{"x": 10.0,"y": 10000.0,"z": 5.0},				
 			"rnd_shot_dist_var": 0.0,
-			"wez_models" : "res://assets/Default_Wez_params.json"
+			"wez_models" : "res://assets/wez/Default_Wez_params.json"
 		}
 	},
 	

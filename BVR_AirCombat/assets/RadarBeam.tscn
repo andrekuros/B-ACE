@@ -1,6 +1,6 @@
 [gd_scene load_steps=3 format=3 uid="uid://b4qjgpl5wgap7"]
 
-[ext_resource type="ArrayMesh" uid="uid://dwfepm1wjriw8" path="res://assets/RadarBeam.obj" id="1_5b1mm"]
+[ext_resource type="ArrayMesh" uid="uid://degvmpojwh6bo" path="res://assets/RadarBeam.obj" id="1_5b1mm"]
 
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_00blf"]
 transparency = 1

@@ -1,8 +1,8 @@
 [gd_scene load_steps=4 format=3 uid="uid://c88ncuvk838mf"]
 
-[ext_resource type="Script" path="res://btn_speedUp.gd" id="1_agkej"]
-[ext_resource type="Script" path="res://CanvasLayer.gd" id="1_t3j0s"]
-[ext_resource type="Script" path="res://btn_VSync.gd" id="2_1pm7n"]
+[ext_resource type="Script" path="res://gui/btn_speedUp.gd" id="1_agkej"]
+[ext_resource type="Script" path="res://gui/CanvasLayer.gd" id="1_t3j0s"]
+[ext_resource type="Script" path="res://gui/btn_VSync.gd" id="2_1pm7n"]
 
 [node name="CanvasLayer" type="CanvasLayer"]
 script = ExtResource("1_t3j0s")

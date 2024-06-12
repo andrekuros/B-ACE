@@ -1,6 +1,6 @@
 extends Node
 
-const Calc = preload("res://Calc.gd") # Ensure you have a Calc script for calculations
+const Calc = preload("res://assets/Calc.gd") # Ensure you have a Calc script for calculations
 									
 class SimGroups:
 	

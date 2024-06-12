@@ -13,7 +13,7 @@ var camera_angle_v = 0
 var camera_angle_h = 0
 var zoom_level = 1500
 var move_speed = 25
-var fighterObj = preload("res://Fighter.tscn")
+var fighterObj = preload("res://components/Fighter.tscn")
 var rng = RandomNumberGenerator.new()
 var numTasksDone = 0
 

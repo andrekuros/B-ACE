@@ -1,6 +1,6 @@
 extends Button
 
-var speed_option = [0.1, 1 , 5 ,10 , 50, 200]
+var speed_option = [0.1, 1 , 5 ,10 , 50, 200, 1000]
 var speedIdx = 1
 
 func _on_button_down():

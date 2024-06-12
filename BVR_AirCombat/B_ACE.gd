@@ -19,7 +19,7 @@ var zoom_level = 10
 var move_speed = 5
 
 @onready var canvas = get_node("CanvasLayer")
-var fighterObj = preload("res://Fighter.tscn")
+var fighterObj = preload("res://components/Fighter.tscn")
 
 var rng = RandomNumberGenerator.new()
 var numTasksDone = 0

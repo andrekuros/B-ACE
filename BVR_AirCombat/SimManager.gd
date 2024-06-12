@@ -1,8 +1,8 @@
 extends Node3D
 
-var fighterObj   = preload("res://Fighter.tscn")
-const SConv      = preload("res://Sim_assets.gd").SConv
-const SimGroups  = preload("res://Sim_assets.gd").SimGroups
+var fighterObj   = preload("res://components/Fighter.tscn")
+const SConv      = preload("res://assets/Sim_assets.gd").SConv
+const SimGroups  = preload("res://assets/Sim_assets.gd").SimGroups
 
 @onready var mainView = get_tree().root.get_node("B_ACE")
 @onready var mainCanvas = mainView.get_node("CanvasLayer")
@@ -117,9 +117,9 @@ func _physics_process(delta):
 		
 	#PROCCESS Global Rewards
 	#Enmies Rewards are actually penaulties due to the proximity to the 
-	#Enemies targets and also finish the episode in case the target is achieved	
-	var enemy_goal_reward = 0.0
+	#Enemies targets and also finish the episode in case the target is achieved		
 	var enemy_on_target = false
+	var enemy_goal_reward  = 0.0
 	
 	#Calculate Penaulties for enemy distance to target	
 	var tactics = []

@@ -1,6 +1,6 @@
 [gd_scene load_steps=6 format=3 uid="uid://b6latvyoa7i26"]
 
-[ext_resource type="Script" path="res://Missile.gd" id="1_i3wbj"]
+[ext_resource type="Script" path="res://components/Missile.gd" id="1_i3wbj"]
 
 [sub_resource type="SphereShape3D" id="SphereShape3D_16o7b"]
 radius = 3.0

@@ -1,7 +1,7 @@
 extends RigidBody3D
 
-const SConv = preload("res://Sim_assets.gd").SConv
-const Calc = preload("res://Calc.gd")
+const SConv = preload("res://assets/Sim_assets.gd").SConv
+const Calc = preload("res://assets/Calc.gd")
 
 var target: Node3D
 var max_speed: float = 10.0 #3600 km/h

@@ -11,7 +11,6 @@ const DEFAULT_PORT := "11008"
 @onready var fps_show = mainView.get_node("CanvasLayer/Control/FPS_Show")
 @onready var phy_show = mainView.get_node("CanvasLayer/Control/PHY_Show")
 @onready var steps_show = mainView.get_node("CanvasLayer/Control/Steps_Show")
-@onready var debug_window = mainView.get_node("DebugWindow")
 
 const SimManager = preload("res://SimManager.tscn")
 
@@ -27,7 +26,6 @@ var seed
 
 #Aditional Env Config
 var parallel_envs 
-var debug_view 
 
 #Experiment Mode 
 var experiment_mode
@@ -69,9 +67,6 @@ func _ready():
 	physics_updates = 0
 	last_check = Time.get_ticks_msec()
 	
-	if not debug_view:
-		debug_window.visible = false
-		
 
 func _handshake():
 	#print("performing handshake")
