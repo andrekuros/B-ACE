@@ -21,3 +21,4 @@ __pycache__/*
 DNN_task_B_ACE/*
 Task_MHA_B_ACEDQN/*
 
+wandb/debug-cli.andre.log
