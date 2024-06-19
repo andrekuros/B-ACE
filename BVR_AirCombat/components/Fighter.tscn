@@ -2,7 +2,7 @@
 
 [ext_resource type="Script" path="res://components/Fighter.gd" id="2"]
 [ext_resource type="Script" path="res://components/Detection.gd" id="2_7x3gy"]
-[ext_resource type="ArrayMesh" uid="uid://dwfepm1wjriw8" path="res://assets/RadarBeam.obj" id="3_oycbp"]
+[ext_resource type="ArrayMesh" uid="uid://degvmpojwh6bo" path="res://assets/RadarBeam.obj" id="3_oycbp"]
 
 [sub_resource type="SphereShape3D" id="SphereShape3D_6pjqh"]
 margin = 1.0

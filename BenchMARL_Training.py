@@ -1,6 +1,8 @@
 #%%%
 import argparse
 import sys
+import os
+from pathlib import Path
 from typing import List
 from benchmarl.environments import VmasTask 
 from benchmarl.environments import PettingZooTask
@@ -27,6 +29,28 @@ def update_dict(config_dict, key_path, value):
         sys.exit(1)
     current_dict[keys[-1]] = value
 
+
+def get_policy():
+    current_folder = Path(os.path.dirname(os.path.realpath(__file__)))
+    config_folder = current_folder / "yaml"
+
+    config = ExperimentConfig.get_from_yaml(str(config_folder / "experiment.yaml"))
+    config.restore_file = str(current_folder / "checkpoint.pt")
+
+    experiment = Experiment(
+        config=config,
+        task=VmasTask.RM_NAVIGATION.get_from_yaml(
+            str(config_folder / "rm_navigation.yaml")
+        ),
+        algorithm_config=IppoConfig.get_from_yaml(str(config_folder / "ippo.yaml")),
+        model_config=RmGnnConfig.get_from_yaml(str(config_folder / "rmgnn.yaml")),
+        critic_model_config=RmGnnConfig.get_from_yaml(
+            str(config_folder / "rmgnn.yaml")
+        ),
+        seed=0,
+    )
+
+    return experiment.policy
 
 class SaveBest(Callback):
     
@@ -59,41 +83,38 @@ if __name__ == "__main__":
     experiment_config.sampling_device = 'cpu'
     experiment_config.train_device = 'cuda'
     experiment_config.max_n_iters = 500
-    experiment_config.checkpoint_interval = 150000
+    experiment_config.checkpoint_interval = 120000
     
     # Whether to share the parameters of the policy within agent groups
-    experiment_config.share_policy_params: False
+    experiment_config.share_policy_params= False
     experiment_config.prefer_continuous_actions = True  
-    experiment_config.evaluation_interval = 18000
+    experiment_config.evaluation_interval = 36000
     experiment_config.evaluation_episodes = 30   
-    experiment_config.evaluation_deterministic_actions = False  
+    experiment_config.evaluation_deterministic_actions = True  
     
-    experiment_config.exploration_eps_init = 0.9
+    experiment_config.exploration_eps_init = 0.50
     experiment_config.exploration_eps_end = 0.01   
     
     # ----- On policy Configuration ----- #
-    experiment_config.on_policy_collected_frames_per_batch = 6000    
-    #experiment_config.on_policy_n_minibatch_iters = 64    
-    #experiment_config.on_policy_minibatch_size = 512
+    experiment_config.on_policy_collected_frames_per_batch = 12000    
+    experiment_config.on_policy_n_minibatch_iters = 1     
+    experiment_config.on_policy_minibatch_size = 1
+    
+    
     #-------------------------------------------#
     
     # ----- Off Policy Configuration -----   #
     
     experiment_config.off_policy_collected_frames_per_batch: 6000
-    experiment_config.off_policy_n_optimizer_steps: 64    
-    experiment_config.off_policy_train_batch_size: 512    
+    experiment_config.off_policy_n_optimizer_steps= 64    
+    experiment_config.off_policy_train_batch_size= 512    
     experiment_config.off_policy_memory_size: 100_000    
-    experiment_config.off_policy_init_random_frames: 0
+    experiment_config.off_policy_init_random_frames= 0
        
     #-------------------------------------------#
     experiment_config.off_policy_n_envs_per_worker= 4
     experiment_config.on_policy_n_envs_per_worker= 4
-     
-    #experiment_config.evaluation = True  # Enable evaluation mode
-    #experiment_config.restore_file = "D:\Projects\B-ACE\B-ACE\Results\ippo_b_ace_mlp__10808413_24_04_24-12_08_54\checkpoints\checkpoint_900000.pt"
-    #experiment_config.loggers = []
-    
-    experiment_config.save_folder = "Results"
+ 
     experiment_config.lr = 0.000005
     
     #TASK Config    
@@ -219,6 +240,32 @@ if __name__ == "__main__":
 
     model_config.layers = [256,256,256]
     
+        
+    #experiment_config.evaluation = True  # Enable evaluation mode
+    #experiment_config.restore_file = "D:\Projects\B-ACE\B-ACE\Results\ippo_b_ace_mlp__5ccae4a3_24_06_04-06_18_04\checkpoints\checkpoint_3000000.pt"
+    #experiment_config.loggers = []
+    
+    if False:
+        
+        
+        experiment_config.restore_file = "D:\Projects\B-ACE\B-ACE\Results\ippo_b_ace_mlp__5ccae4a3_24_06_04-06_18_04\checkpoints\checkpoint_3000000.pt"
+        
+        experiment_to_load = Experiment(
+            task=task,
+            algorithm_config=algorithm_config,
+            model_config=model_config,
+            critic_model_config=critic_model_config,
+            seed=0,
+            config=experiment_config,
+            callbacks=None#[SaveBest() ],
+        )
+        
+        loaded_policy = experiment_to_load.policy
+        
+        experiment_config.restore_file = None
+    else:        
+        experiment_config.save_folder = "Results"
+    
     for i in range (0,5):
 
         experiment = Experiment(
@@ -230,5 +277,7 @@ if __name__ == "__main__":
             config=experiment_config,
             callbacks=None#[SaveBest() ],
         )
+        if False:
+            experiment.policy = loaded_policy
         experiment.run()
 # %%

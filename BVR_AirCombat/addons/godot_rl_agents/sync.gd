@@ -239,8 +239,7 @@ func _initialize():
 	speed_up 		= envConfig["speed_up"]
 	renderize 		= envConfig["renderize"]
 	action_repeat 	= int(envConfig["action_repeat"])
-	parallel_envs 	= envConfig["parallel_envs"]  #Will receive default at this point
-	debug_view		= envConfig["debug_view"]  	   #Will receive default at this point
+	parallel_envs 	= envConfig["parallel_envs"]  #Will receive default at this point	
 	experiment_mode	= envConfig["experiment_mode"]#Will receive default at this point		
 		
 	Engine.physics_ticks_per_second = speed_up * phy_fps  
@@ -259,9 +258,7 @@ func _initialize():
 		initialized = true
 		for sim in simulation_list:
 			sim._reset_simulation()
-		
-	if debug_view:		
-		initialize_debug()
+
 		
 	_set_view_features()	
 
@@ -396,16 +393,6 @@ func _physics_process(delta):
 		
 		_reset_agents_if_done()	
 		
-	
-	if debug_view:
-		
-		var agent_idx = debug_window.selected_agent
-		
-		var obs = simulation_list[0].agents[agent_idx].get_obs()
-		debug_window.update_obs( obs['obs'] )
-				
-		var actions_values = simulation_list[0].agents[agent_idx].get_current_inputs()
-		debug_window.update_actions( actions_values )		
 
 func handle_message() -> bool:
 	# get json message: reset, step, close
@@ -600,8 +587,7 @@ func _wait_for_configuration():
 	var env_config_msg 	= config_message['env_config']
 	update_dict(envConfig,env_config_msg)
 			
-	parallel_envs 	= int(envConfig.parallel_envs)
-	debug_view		= int(envConfig.debug_view)
+	parallel_envs 	= int(envConfig.parallel_envs)	
 	experiment_mode	= int(envConfig.experiment_mode)
 	
 	var agents_config_msg 	= config_message['agents_config']	
@@ -658,19 +644,6 @@ func _collect_experiment_result(run_num):
 		
 	return _results
 		
-func initialize_debug():
-	
-	var obs = simulation_list[0].fighters[0].get_obs(true)
-	var actions_labels = ['hdg', 'level', 'g', 'fire']
-	var actions_values = [-1, -1, -1, -1]
-	
-	debug_window.initialize( 	obs["labels"],
-								obs["obs"],
-								actions_labels,
-								actions_values )
-	debug_window.visible = true
-	
-	debug_window.selected_agent_control.create_agent_buttons(len(simulation_list[0].agents))
 
 func are_all_true(array):
 	
