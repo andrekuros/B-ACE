@@ -10,7 +10,7 @@ class GodotExperimentWrapper(GodotEnv):
                         
         self.env_config = config_kwargs.get("EnvConfig", "") 
         self.agents_config = config_kwargs.get("AgentsConfig", "")
-        self.experiment_config = config_kwargs.get("ExperimentConfig", "")    
+        self.experiment_config = config_kwargs.get("ExperimentConfig", { 'runs_per_case': 1, 'cases' : {} })        
         
         #Godot Line Parameters Commands
         self.env_path       = self.env_config.get("env_path", "./bin/BVR.exe")  
@@ -38,7 +38,8 @@ class GodotExperimentWrapper(GodotEnv):
         self.num_envs = None
         
         self._handshake()                
-        self.send_sim_config(self.experiment_config)   
+        self.send_sim_config(self.experiment_config)
+        self.num_runs = self.experiment_config['runs_per_case']
         #self._get_env_info()                                    
         
         atexit.register(self._close)
@@ -62,7 +63,7 @@ class GodotExperimentWrapper(GodotEnv):
                 #print("Experiment Concluded")
                 break
             if response["type"] == "experiment_step":                
-                print(f'{str(response["run_finished"])}', end="." )
+                print(f'{str(response["run_finished"])/{self.num_runs}}', end=f'\r' )
             time.sleep(1)
                             
         experiment_results = response["results"]        

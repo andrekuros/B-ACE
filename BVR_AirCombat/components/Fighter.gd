@@ -107,8 +107,13 @@ var team_color_group
 
 #Heuristic Behavior Params
 #var max_shoot_range = 30 *  SConv.NM2GDM
-var shoot_range_variation = 0.0
-var shoot_range_error = 0.0
+var shoot_range_variation = 0.05
+var shoot_range_error 	  = 1.0
+var crank_variation		= 0.05
+var crank_error 		= 1.0
+var break_variation		= 0.05
+var break_error		 	= 1.0
+
 var defense_side = 1
 
 var tatic_status = "Search" #"MissileSupport / Commit / Evade / Recommit
@@ -204,7 +209,9 @@ func update_init_config(config, rewConfig = {}):
 	strike_line_xL = target_pos.x - 60 * SConv.NM2GDM
 	strike_line_xR = target_pos.x + 60 * SConv.NM2GDM
 	
-	shoot_range_error = init_config['rnd_shot_dist_var']
+	shoot_range_variation 	= init_config['rnd_shot_dist_var']
+	crank_variation 		= init_config['rnd_crank_var']
+	break_variation		 	= init_config['rnd_break_var']
 	
 	#Prepare WEZ models	
 	var input_data = ["blue_alt","diffAlt" ,"cosAspect" ,"sinAspect" ,"cosAngleOff", "sinAngleOff"]
@@ -292,10 +299,15 @@ func reset():
 
 	tatic_status = "Search" #"MissileSupport / Commit / Evade / Recommit
 	tatic_time = 0.0	
+	
+	
+	shoot_range_error 	= 1.0
+	crank_error 		= 1.0
+	break_error		 	= 1.0
 		
 	HPT = null
 	HRT = null
-	
+			
 	data_link_list = {}
 	in_flight_missile = null					
 				
@@ -652,6 +664,10 @@ func process_behavior(delta_s):
 			if HPT != null:								
 				#Define new shot distance with randominess
 				shoot_range_error =  1 + randf_range(-shoot_range_variation , shoot_range_variation)						
+				break_error =  1 + randf_range(-break_variation , break_variation)						
+				crank_error =  1 + randf_range(-crank_variation , crank_variation)						
+				
+				print(team_id, "ErrS:", shoot_range_error, " ErrB:", break_error, " ErrC:", crank_error)
 				
 				tatic_status = "Engage"
 				defense_side = 1 - randi_range(0,1) * 2 #Choose defence side        
@@ -694,9 +710,9 @@ func process_behavior(delta_s):
 		elif tatic_status == "Engage":
 			
 			if HPT != null:											
-																
+																				
 				do_crank 	= HPT.threat_factor > lCrank									
-				hdg_input 	= Calc.clamp_hdg(HPT.radial + 50* int(do_crank) * defense_side)
+				hdg_input 	= Calc.clamp_hdg(HPT.radial + 50 * int(do_crank) * defense_side)
 																										
 				if HPT.offensive_factor > dShot:					
 					#print( id, "(" ,current_time, " ) :", [HPT.offensive_factor, HPT.threat_factor,abs(HPT.aspect_angle)])					
@@ -837,7 +853,7 @@ func get_wez_for_track(track):
 		enemyRNez = rNez_calc.execute(enemyData)
 									
 	#print([current_level/152.4/3,(current_level - track.obj.current_level)/152.4/3,cos(track.aspect_angle),sin(track.aspect_angle), cos(track.angle_off),sin(track.angle_off)])
-	#print([ownRMax, ownRNez, enemyRMax, enemyRNez])
+	#print(team_id, ":", [ownRMax, ownRNez, enemyRMax, enemyRNez])
 	if enemyRMax <=0: 
 		enemyRMax	= 0.01
 	if enemyRNez <=0: 

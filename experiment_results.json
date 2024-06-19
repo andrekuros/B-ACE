@@ -5,95 +5,15 @@
             "final_results": [
                 {
                     "end_cond": "Blue_Killed",
-                    "killed": 2,
+                    "killed": 1,
                     "missile": 0,
                     "mission": 0,
-                    "reward": -36.1185415510015
+                    "reward": -18.0113190054211
                 },
                 {
                     "end_cond": "Blue_Killed",
                     "killed": 0,
-                    "missile": 4,
-                    "mission": 0,
-                    "reward": 0
-                }
-            ],
-            "run_num": 1
-        },
-        {
-            "env_id": 1,
-            "final_results": [
-                {
-                    "end_cond": "Blue_Killed",
-                    "killed": 2,
-                    "missile": 0,
-                    "mission": 0,
-                    "reward": -36.5231057565256
-                },
-                {
-                    "end_cond": "Blue_Killed",
-                    "killed": 0,
-                    "missile": 4,
-                    "mission": 0,
-                    "reward": 0
-                }
-            ],
-            "run_num": 1
-        },
-        {
-            "env_id": 2,
-            "final_results": [
-                {
-                    "end_cond": "Red_Killed",
-                    "killed": 1,
-                    "missile": 3,
-                    "mission": 0,
-                    "reward": 23.914582459842
-                },
-                {
-                    "end_cond": "Red_Killed",
-                    "killed": 2,
-                    "missile": 3,
-                    "mission": 0,
-                    "reward": 0
-                }
-            ],
-            "run_num": 1
-        },
-        {
-            "env_id": 3,
-            "final_results": [
-                {
-                    "end_cond": "Red_Killed",
-                    "killed": 1,
-                    "missile": 3,
-                    "mission": 0,
-                    "reward": 25.9272126840427
-                },
-                {
-                    "end_cond": "Red_Killed",
-                    "killed": 2,
                     "missile": 1,
-                    "mission": 0,
-                    "reward": 0
-                }
-            ],
-            "run_num": 1
-        },
-        {
-            "env_id": 4,
-            "final_results": [
-                {
-                    "end_cond": "Blue_Killed",
-                    "killed": 2,
-                    "missile": 0,
-                    "mission": 0,
-                    "reward": -36.1541931806621
-                },
-                {
-                    "end_cond": "Blue_Killed",
-                    "killed": 0,
-                    "missile": 3,
                     "mission": 0,
                     "reward": 0
                 }
@@ -106,95 +26,15 @@
             "env_id": 0,
             "final_results": [
                 {
-                    "end_cond": "Blue_Killed",
-                    "killed": 2,
+                    "end_cond": "Red_Killed",
+                    "killed": 0,
                     "missile": 1,
                     "mission": 0,
-                    "reward": -32.6832862927667
+                    "reward": 16.1154560600265
                 },
-                {
-                    "end_cond": "Blue_Killed",
-                    "killed": 1,
-                    "missile": 3,
-                    "mission": 0,
-                    "reward": 0
-                }
-            ],
-            "run_num": 2
-        },
-        {
-            "env_id": 1,
-            "final_results": [
                 {
                     "end_cond": "Red_Killed",
                     "killed": 1,
-                    "missile": 2,
-                    "mission": 0,
-                    "reward": 27.2038095743881
-                },
-                {
-                    "end_cond": "Red_Killed",
-                    "killed": 2,
-                    "missile": 1,
-                    "mission": 0,
-                    "reward": 0
-                }
-            ],
-            "run_num": 2
-        },
-        {
-            "env_id": 2,
-            "final_results": [
-                {
-                    "end_cond": "Red_Killed",
-                    "killed": 0,
-                    "missile": 3,
-                    "mission": 0,
-                    "reward": 30.8473507743925
-                },
-                {
-                    "end_cond": "Red_Killed",
-                    "killed": 2,
-                    "missile": 0,
-                    "mission": 0,
-                    "reward": 0
-                }
-            ],
-            "run_num": 2
-        },
-        {
-            "env_id": 3,
-            "final_results": [
-                {
-                    "end_cond": "Blue_Killed",
-                    "killed": 2,
-                    "missile": 0,
-                    "mission": 0,
-                    "reward": -36.3939291440245
-                },
-                {
-                    "end_cond": "Blue_Killed",
-                    "killed": 0,
-                    "missile": 4,
-                    "mission": 0,
-                    "reward": 0
-                }
-            ],
-            "run_num": 2
-        },
-        {
-            "env_id": 4,
-            "final_results": [
-                {
-                    "end_cond": "Red_Killed",
-                    "killed": 0,
-                    "missile": 2,
-                    "mission": 0,
-                    "reward": 32.2141128877825
-                },
-                {
-                    "end_cond": "Red_Killed",
-                    "killed": 2,
                     "missile": 0,
                     "mission": 0,
                     "reward": 0
@@ -208,96 +48,16 @@
             "env_id": 0,
             "final_results": [
                 {
-                    "end_cond": "Blue_Killed",
-                    "killed": 2,
-                    "missile": 0,
-                    "mission": 0,
-                    "reward": -36.8489703363233
-                },
-                {
-                    "end_cond": "Blue_Killed",
-                    "killed": 0,
-                    "missile": 5,
-                    "mission": 0,
-                    "reward": 0
-                }
-            ],
-            "run_num": 3
-        },
-        {
-            "env_id": 1,
-            "final_results": [
-                {
-                    "end_cond": "Red_Killed",
-                    "killed": 1,
-                    "missile": 2,
-                    "mission": 0,
-                    "reward": 26.6434610999099
-                },
-                {
-                    "end_cond": "Red_Killed",
-                    "killed": 2,
-                    "missile": 1,
-                    "mission": 0,
-                    "reward": 0
-                }
-            ],
-            "run_num": 3
-        },
-        {
-            "env_id": 2,
-            "final_results": [
-                {
                     "end_cond": "Red_Killed",
                     "killed": 0,
-                    "missile": 3,
+                    "missile": 1,
                     "mission": 0,
-                    "reward": 30.9588475334993
+                    "reward": 16.1343234681067
                 },
                 {
                     "end_cond": "Red_Killed",
-                    "killed": 2,
+                    "killed": 1,
                     "missile": 0,
-                    "mission": 0,
-                    "reward": 0
-                }
-            ],
-            "run_num": 3
-        },
-        {
-            "env_id": 3,
-            "final_results": [
-                {
-                    "end_cond": "Blue_Killed",
-                    "killed": 2,
-                    "missile": 2,
-                    "mission": 0,
-                    "reward": -33.0870908126625
-                },
-                {
-                    "end_cond": "Blue_Killed",
-                    "killed": 1,
-                    "missile": 2,
-                    "mission": 0,
-                    "reward": 0
-                }
-            ],
-            "run_num": 3
-        },
-        {
-            "env_id": 4,
-            "final_results": [
-                {
-                    "end_cond": "Blue_Killed",
-                    "killed": 2,
-                    "missile": 1,
-                    "mission": 0,
-                    "reward": -32.9350950500318
-                },
-                {
-                    "end_cond": "Blue_Killed",
-                    "killed": 1,
-                    "missile": 3,
                     "mission": 0,
                     "reward": 0
                 }
@@ -310,96 +70,16 @@
             "env_id": 0,
             "final_results": [
                 {
-                    "end_cond": "Blue_Killed",
-                    "killed": 2,
-                    "missile": 1,
-                    "mission": 0,
-                    "reward": -32.8965532345668
-                },
-                {
-                    "end_cond": "Blue_Killed",
-                    "killed": 1,
-                    "missile": 3,
-                    "mission": 0,
-                    "reward": 0
-                }
-            ],
-            "run_num": 4
-        },
-        {
-            "env_id": 1,
-            "final_results": [
-                {
-                    "end_cond": "Blue_Killed",
-                    "killed": 2,
-                    "missile": 1,
-                    "mission": 0,
-                    "reward": -33.0040110137437
-                },
-                {
-                    "end_cond": "Blue_Killed",
-                    "killed": 1,
-                    "missile": 3,
-                    "mission": 0,
-                    "reward": 0
-                }
-            ],
-            "run_num": 4
-        },
-        {
-            "env_id": 2,
-            "final_results": [
-                {
-                    "end_cond": "Red_Killed",
-                    "killed": 1,
-                    "missile": 6,
-                    "mission": 0,
-                    "reward": 22.1881860838438
-                },
-                {
-                    "end_cond": "Red_Killed",
-                    "killed": 2,
-                    "missile": 2,
-                    "mission": 0,
-                    "reward": 0
-                }
-            ],
-            "run_num": 4
-        },
-        {
-            "env_id": 3,
-            "final_results": [
-                {
                     "end_cond": "Red_Killed",
                     "killed": 0,
-                    "missile": 3,
-                    "mission": 0,
-                    "reward": 31.1229748736709
-                },
-                {
-                    "end_cond": "Red_Killed",
-                    "killed": 2,
                     "missile": 1,
                     "mission": 0,
-                    "reward": 0
-                }
-            ],
-            "run_num": 4
-        },
-        {
-            "env_id": 4,
-            "final_results": [
+                    "reward": 16.1303413098617
+                },
                 {
                     "end_cond": "Red_Killed",
                     "killed": 1,
-                    "missile": 2,
-                    "mission": 0,
-                    "reward": 25.9362025386359
-                },
-                {
-                    "end_cond": "Red_Killed",
-                    "killed": 2,
-                    "missile": 1,
+                    "missile": 0,
                     "mission": 0,
                     "reward": 0
                 }
@@ -412,95 +92,15 @@
             "env_id": 0,
             "final_results": [
                 {
-                    "end_cond": "Blue_Killed",
-                    "killed": 2,
-                    "missile": 1,
-                    "mission": 0,
-                    "reward": -32.9192378835144
-                },
-                {
-                    "end_cond": "Blue_Killed",
-                    "killed": 1,
-                    "missile": 3,
-                    "mission": 0,
-                    "reward": 0
-                }
-            ],
-            "run_num": 5
-        },
-        {
-            "env_id": 1,
-            "final_results": [
-                {
-                    "end_cond": "Blue_Killed",
-                    "killed": 2,
-                    "missile": 2,
-                    "mission": 0,
-                    "reward": -32.8538360762691
-                },
-                {
-                    "end_cond": "Blue_Killed",
-                    "killed": 1,
-                    "missile": 2,
-                    "mission": 0,
-                    "reward": 0
-                }
-            ],
-            "run_num": 5
-        },
-        {
-            "env_id": 2,
-            "final_results": [
-                {
-                    "end_cond": "Blue_Killed",
-                    "killed": 2,
-                    "missile": 1,
-                    "mission": 0,
-                    "reward": -32.8309347840971
-                },
-                {
-                    "end_cond": "Blue_Killed",
-                    "killed": 1,
-                    "missile": 3,
-                    "mission": 0,
-                    "reward": 0
-                }
-            ],
-            "run_num": 5
-        },
-        {
-            "env_id": 3,
-            "final_results": [
-                {
-                    "end_cond": "Blue_Killed",
-                    "killed": 2,
-                    "missile": 1,
-                    "mission": 0,
-                    "reward": -33.0786753242817
-                },
-                {
-                    "end_cond": "Blue_Killed",
-                    "killed": 1,
-                    "missile": 3,
-                    "mission": 0,
-                    "reward": 0
-                }
-            ],
-            "run_num": 5
-        },
-        {
-            "env_id": 4,
-            "final_results": [
-                {
                     "end_cond": "Red_Killed",
                     "killed": 0,
-                    "missile": 4,
+                    "missile": 1,
                     "mission": 0,
-                    "reward": 30.5645443318859
+                    "reward": 16.1303413098617
                 },
                 {
                     "end_cond": "Red_Killed",
-                    "killed": 2,
+                    "killed": 1,
                     "missile": 0,
                     "mission": 0,
                     "reward": 0
@@ -514,96 +114,16 @@
             "env_id": 0,
             "final_results": [
                 {
-                    "end_cond": "Blue_Killed",
-                    "killed": 2,
+                    "end_cond": "Red_Killed",
+                    "killed": 0,
                     "missile": 1,
                     "mission": 0,
-                    "reward": -33.1178836716915
+                    "reward": 16.1343234681077
                 },
                 {
-                    "end_cond": "Blue_Killed",
+                    "end_cond": "Red_Killed",
                     "killed": 1,
-                    "missile": 2,
-                    "mission": 0,
-                    "reward": 0
-                }
-            ],
-            "run_num": 6
-        },
-        {
-            "env_id": 1,
-            "final_results": [
-                {
-                    "end_cond": "Blue_Killed",
-                    "killed": 2,
-                    "missile": 2,
-                    "mission": 0,
-                    "reward": -33.0919947437215
-                },
-                {
-                    "end_cond": "Blue_Killed",
-                    "killed": 1,
-                    "missile": 4,
-                    "mission": 0,
-                    "reward": 0
-                }
-            ],
-            "run_num": 6
-        },
-        {
-            "env_id": 2,
-            "final_results": [
-                {
-                    "end_cond": "Blue_Killed",
-                    "killed": 2,
-                    "missile": 1,
-                    "mission": 0,
-                    "reward": -33.0409260596018
-                },
-                {
-                    "end_cond": "Blue_Killed",
-                    "killed": 1,
-                    "missile": 3,
-                    "mission": 0,
-                    "reward": 0
-                }
-            ],
-            "run_num": 6
-        },
-        {
-            "env_id": 3,
-            "final_results": [
-                {
-                    "end_cond": "Blue_Killed",
-                    "killed": 2,
-                    "missile": 1,
-                    "mission": 0,
-                    "reward": -33.011478901228
-                },
-                {
-                    "end_cond": "Blue_Killed",
-                    "killed": 1,
-                    "missile": 3,
-                    "mission": 0,
-                    "reward": 0
-                }
-            ],
-            "run_num": 6
-        },
-        {
-            "env_id": 4,
-            "final_results": [
-                {
-                    "end_cond": "Blue_Killed",
-                    "killed": 2,
-                    "missile": 2,
-                    "mission": 0,
-                    "reward": -32.6891910125253
-                },
-                {
-                    "end_cond": "Blue_Killed",
-                    "killed": 1,
-                    "missile": 2,
+                    "missile": 0,
                     "mission": 0,
                     "reward": 0
                 }
@@ -616,96 +136,16 @@
             "env_id": 0,
             "final_results": [
                 {
-                    "end_cond": "Blue_Killed",
-                    "killed": 2,
-                    "missile": 0,
-                    "mission": 0,
-                    "reward": -36.4913470831531
-                },
-                {
-                    "end_cond": "Blue_Killed",
-                    "killed": 0,
-                    "missile": 4,
-                    "mission": 0,
-                    "reward": 0
-                }
-            ],
-            "run_num": 7
-        },
-        {
-            "env_id": 1,
-            "final_results": [
-                {
                     "end_cond": "Red_Killed",
                     "killed": 0,
-                    "missile": 4,
-                    "mission": 0,
-                    "reward": 30.0028552942892
-                },
-                {
-                    "end_cond": "Red_Killed",
-                    "killed": 2,
-                    "missile": 0,
-                    "mission": 0,
-                    "reward": 0
-                }
-            ],
-            "run_num": 7
-        },
-        {
-            "env_id": 2,
-            "final_results": [
-                {
-                    "end_cond": "Red_Killed",
-                    "killed": 0,
-                    "missile": 2,
-                    "mission": 0,
-                    "reward": 31.2789204094196
-                },
-                {
-                    "end_cond": "Red_Killed",
-                    "killed": 2,
-                    "missile": 0,
-                    "mission": 0,
-                    "reward": 0
-                }
-            ],
-            "run_num": 7
-        },
-        {
-            "env_id": 3,
-            "final_results": [
-                {
-                    "end_cond": "Red_Killed",
-                    "killed": 1,
-                    "missile": 2,
-                    "mission": 0,
-                    "reward": 26.1249469095425
-                },
-                {
-                    "end_cond": "Red_Killed",
-                    "killed": 2,
-                    "missile": 2,
-                    "mission": 0,
-                    "reward": 0
-                }
-            ],
-            "run_num": 7
-        },
-        {
-            "env_id": 4,
-            "final_results": [
-                {
-                    "end_cond": "Red_Killed",
-                    "killed": 1,
-                    "missile": 3,
-                    "mission": 0,
-                    "reward": 25.9783302719054
-                },
-                {
-                    "end_cond": "Red_Killed",
-                    "killed": 2,
                     "missile": 1,
+                    "mission": 0,
+                    "reward": 16.1343234681094
+                },
+                {
+                    "end_cond": "Red_Killed",
+                    "killed": 1,
+                    "missile": 0,
                     "mission": 0,
                     "reward": 0
                 }
@@ -720,94 +160,14 @@
                 {
                     "end_cond": "Red_Killed",
                     "killed": 0,
-                    "missile": 4,
-                    "mission": 0,
-                    "reward": 30.0865295704731
-                },
-                {
-                    "end_cond": "Red_Killed",
-                    "killed": 2,
-                    "missile": 0,
-                    "mission": 0,
-                    "reward": 0
-                }
-            ],
-            "run_num": 8
-        },
-        {
-            "env_id": 1,
-            "final_results": [
-                {
-                    "end_cond": "Blue_Killed",
-                    "killed": 2,
                     "missile": 1,
                     "mission": 0,
-                    "reward": -33.0740986549053
+                    "reward": 16.1343234681081
                 },
-                {
-                    "end_cond": "Blue_Killed",
-                    "killed": 1,
-                    "missile": 2,
-                    "mission": 0,
-                    "reward": 0
-                }
-            ],
-            "run_num": 8
-        },
-        {
-            "env_id": 2,
-            "final_results": [
-                {
-                    "end_cond": "Red_Killed",
-                    "killed": 0,
-                    "missile": 3,
-                    "mission": 0,
-                    "reward": 30.9649407733057
-                },
-                {
-                    "end_cond": "Red_Killed",
-                    "killed": 2,
-                    "missile": 0,
-                    "mission": 0,
-                    "reward": 0
-                }
-            ],
-            "run_num": 8
-        },
-        {
-            "env_id": 3,
-            "final_results": [
                 {
                     "end_cond": "Red_Killed",
                     "killed": 1,
-                    "missile": 2,
-                    "mission": 0,
-                    "reward": 25.9621551363783
-                },
-                {
-                    "end_cond": "Red_Killed",
-                    "killed": 2,
-                    "missile": 2,
-                    "mission": 0,
-                    "reward": 0
-                }
-            ],
-            "run_num": 8
-        },
-        {
-            "env_id": 4,
-            "final_results": [
-                {
-                    "end_cond": "Blue_Killed",
-                    "killed": 2,
                     "missile": 0,
-                    "mission": 0,
-                    "reward": -36.4797740591069
-                },
-                {
-                    "end_cond": "Blue_Killed",
-                    "killed": 0,
-                    "missile": 3,
                     "mission": 0,
                     "reward": 0
                 }
@@ -820,95 +180,15 @@
             "env_id": 0,
             "final_results": [
                 {
-                    "end_cond": "Blue_Killed",
-                    "killed": 2,
-                    "missile": 0,
-                    "mission": 0,
-                    "reward": -36.5330818019109
-                },
-                {
-                    "end_cond": "Blue_Killed",
+                    "end_cond": "Red_Killed",
                     "killed": 0,
-                    "missile": 4,
-                    "mission": 0,
-                    "reward": 0
-                }
-            ],
-            "run_num": 9
-        },
-        {
-            "env_id": 1,
-            "final_results": [
-                {
-                    "end_cond": "Blue_Killed",
-                    "killed": 2,
                     "missile": 1,
                     "mission": 0,
-                    "reward": -32.9769877188409
+                    "reward": 16.1303413098624
                 },
-                {
-                    "end_cond": "Blue_Killed",
-                    "killed": 1,
-                    "missile": 2,
-                    "mission": 0,
-                    "reward": 0
-                }
-            ],
-            "run_num": 9
-        },
-        {
-            "env_id": 2,
-            "final_results": [
                 {
                     "end_cond": "Red_Killed",
                     "killed": 1,
-                    "missile": 2,
-                    "mission": 0,
-                    "reward": 26.2096318676817
-                },
-                {
-                    "end_cond": "Red_Killed",
-                    "killed": 2,
-                    "missile": 2,
-                    "mission": 0,
-                    "reward": 0
-                }
-            ],
-            "run_num": 9
-        },
-        {
-            "env_id": 3,
-            "final_results": [
-                {
-                    "end_cond": "Blue_Killed",
-                    "killed": 2,
-                    "missile": 0,
-                    "mission": 0,
-                    "reward": -36.2973049659717
-                },
-                {
-                    "end_cond": "Blue_Killed",
-                    "killed": 0,
-                    "missile": 4,
-                    "mission": 0,
-                    "reward": 0
-                }
-            ],
-            "run_num": 9
-        },
-        {
-            "env_id": 4,
-            "final_results": [
-                {
-                    "end_cond": "Red_Killed",
-                    "killed": 0,
-                    "missile": 2,
-                    "mission": 0,
-                    "reward": 31.8363458149989
-                },
-                {
-                    "end_cond": "Red_Killed",
-                    "killed": 2,
                     "missile": 0,
                     "mission": 0,
                     "reward": 0
@@ -924,94 +204,14 @@
                 {
                     "end_cond": "Red_Killed",
                     "killed": 0,
-                    "missile": 4,
-                    "mission": 0,
-                    "reward": 30.0191831764735
-                },
-                {
-                    "end_cond": "Red_Killed",
-                    "killed": 2,
-                    "missile": 0,
-                    "mission": 0,
-                    "reward": 0
-                }
-            ],
-            "run_num": 10
-        },
-        {
-            "env_id": 1,
-            "final_results": [
-                {
-                    "end_cond": "Blue_Killed",
-                    "killed": 2,
-                    "missile": 2,
-                    "mission": 0,
-                    "reward": -32.7630711245282
-                },
-                {
-                    "end_cond": "Blue_Killed",
-                    "killed": 1,
-                    "missile": 2,
-                    "mission": 0,
-                    "reward": 0
-                }
-            ],
-            "run_num": 10
-        },
-        {
-            "env_id": 2,
-            "final_results": [
-                {
-                    "end_cond": "Blue_Killed",
-                    "killed": 2,
-                    "missile": 2,
-                    "mission": 0,
-                    "reward": -32.9334987421455
-                },
-                {
-                    "end_cond": "Blue_Killed",
-                    "killed": 1,
-                    "missile": 3,
-                    "mission": 0,
-                    "reward": 0
-                }
-            ],
-            "run_num": 10
-        },
-        {
-            "env_id": 3,
-            "final_results": [
-                {
-                    "end_cond": "Red_Killed",
-                    "killed": 1,
-                    "missile": 2,
-                    "mission": 0,
-                    "reward": 26.1198662250246
-                },
-                {
-                    "end_cond": "Red_Killed",
-                    "killed": 2,
                     "missile": 1,
                     "mission": 0,
-                    "reward": 0
-                }
-            ],
-            "run_num": 10
-        },
-        {
-            "env_id": 4,
-            "final_results": [
-                {
-                    "end_cond": "Red_Killed",
-                    "killed": 1,
-                    "missile": 3,
-                    "mission": 0,
-                    "reward": 25.3651224593376
+                    "reward": 16.1303413098593
                 },
                 {
                     "end_cond": "Red_Killed",
-                    "killed": 2,
-                    "missile": 2,
+                    "killed": 1,
+                    "missile": 0,
                     "mission": 0,
                     "reward": 0
                 }
@@ -1024,95 +224,15 @@
             "env_id": 0,
             "final_results": [
                 {
-                    "end_cond": "Blue_Killed",
-                    "killed": 2,
-                    "missile": 0,
-                    "mission": 0,
-                    "reward": -36.2941174570541
-                },
-                {
-                    "end_cond": "Blue_Killed",
-                    "killed": 0,
-                    "missile": 3,
-                    "mission": 0,
-                    "reward": 0
-                }
-            ],
-            "run_num": 11
-        },
-        {
-            "env_id": 1,
-            "final_results": [
-                {
-                    "end_cond": "Blue_Killed",
-                    "killed": 2,
-                    "missile": 1,
-                    "mission": 0,
-                    "reward": -33.0789502210948
-                },
-                {
-                    "end_cond": "Blue_Killed",
-                    "killed": 1,
-                    "missile": 2,
-                    "mission": 0,
-                    "reward": 0
-                }
-            ],
-            "run_num": 11
-        },
-        {
-            "env_id": 2,
-            "final_results": [
-                {
-                    "end_cond": "Blue_Killed",
-                    "killed": 2,
-                    "missile": 1,
-                    "mission": 0,
-                    "reward": -33.2893061751039
-                },
-                {
-                    "end_cond": "Blue_Killed",
-                    "killed": 1,
-                    "missile": 3,
-                    "mission": 0,
-                    "reward": 0
-                }
-            ],
-            "run_num": 11
-        },
-        {
-            "env_id": 3,
-            "final_results": [
-                {
-                    "end_cond": "Blue_Killed",
-                    "killed": 2,
-                    "missile": 0,
-                    "mission": 0,
-                    "reward": -36.6073069326518
-                },
-                {
-                    "end_cond": "Blue_Killed",
-                    "killed": 0,
-                    "missile": 4,
-                    "mission": 0,
-                    "reward": 0
-                }
-            ],
-            "run_num": 11
-        },
-        {
-            "env_id": 4,
-            "final_results": [
-                {
                     "end_cond": "Red_Killed",
                     "killed": 0,
-                    "missile": 3,
+                    "missile": 1,
                     "mission": 0,
-                    "reward": 30.692782003296
+                    "reward": 16.1343234681069
                 },
                 {
                     "end_cond": "Red_Killed",
-                    "killed": 2,
+                    "killed": 1,
                     "missile": 0,
                     "mission": 0,
                     "reward": 0
@@ -1126,96 +246,16 @@
             "env_id": 0,
             "final_results": [
                 {
-                    "end_cond": "Blue_Killed",
-                    "killed": 2,
+                    "end_cond": "Red_Killed",
+                    "killed": 0,
                     "missile": 1,
                     "mission": 0,
-                    "reward": -36.357904331704
-                },
-                {
-                    "end_cond": "Blue_Killed",
-                    "killed": 0,
-                    "missile": 4,
-                    "mission": 0,
-                    "reward": 0
-                }
-            ],
-            "run_num": 12
-        },
-        {
-            "env_id": 1,
-            "final_results": [
-                {
-                    "end_cond": "Red_Killed",
-                    "killed": 0,
-                    "missile": 2,
-                    "mission": 0,
-                    "reward": 32.0324914577707
+                    "reward": 16.1303413098593
                 },
                 {
                     "end_cond": "Red_Killed",
-                    "killed": 2,
-                    "missile": 0,
-                    "mission": 0,
-                    "reward": 0
-                }
-            ],
-            "run_num": 12
-        },
-        {
-            "env_id": 2,
-            "final_results": [
-                {
-                    "end_cond": "Red_Killed",
-                    "killed": 0,
-                    "missile": 3,
-                    "mission": 0,
-                    "reward": 30.7546337242148
-                },
-                {
-                    "end_cond": "Red_Killed",
-                    "killed": 2,
-                    "missile": 0,
-                    "mission": 0,
-                    "reward": 0
-                }
-            ],
-            "run_num": 12
-        },
-        {
-            "env_id": 3,
-            "final_results": [
-                {
-                    "end_cond": "Red_Killed",
-                    "killed": 0,
-                    "missile": 4,
-                    "mission": 0,
-                    "reward": 30.0798609303734
-                },
-                {
-                    "end_cond": "Red_Killed",
-                    "killed": 2,
-                    "missile": 0,
-                    "mission": 0,
-                    "reward": 0
-                }
-            ],
-            "run_num": 12
-        },
-        {
-            "env_id": 4,
-            "final_results": [
-                {
-                    "end_cond": "Blue_Killed",
-                    "killed": 2,
-                    "missile": 2,
-                    "mission": 0,
-                    "reward": -33.1968299354653
-                },
-                {
-                    "end_cond": "Blue_Killed",
                     "killed": 1,
-                    "missile": 2,
+                    "missile": 0,
                     "mission": 0,
                     "reward": 0
                 }
@@ -1230,94 +270,14 @@
                 {
                     "end_cond": "Red_Killed",
                     "killed": 0,
-                    "missile": 3,
-                    "mission": 0,
-                    "reward": 30.5606855695523
-                },
-                {
-                    "end_cond": "Red_Killed",
-                    "killed": 2,
-                    "missile": 0,
-                    "mission": 0,
-                    "reward": 0
-                }
-            ],
-            "run_num": 13
-        },
-        {
-            "env_id": 1,
-            "final_results": [
-                {
-                    "end_cond": "Blue_Killed",
-                    "killed": 2,
                     "missile": 1,
                     "mission": 0,
-                    "reward": -36.4286805925057
-                },
-                {
-                    "end_cond": "Blue_Killed",
-                    "killed": 0,
-                    "missile": 4,
-                    "mission": 0,
-                    "reward": 0
-                }
-            ],
-            "run_num": 13
-        },
-        {
-            "env_id": 2,
-            "final_results": [
-                {
-                    "end_cond": "Red_Killed",
-                    "killed": 0,
-                    "missile": 2,
-                    "mission": 0,
-                    "reward": 32.0874577610813
+                    "reward": 16.1343234681067
                 },
                 {
                     "end_cond": "Red_Killed",
-                    "killed": 2,
+                    "killed": 1,
                     "missile": 0,
-                    "mission": 0,
-                    "reward": 0
-                }
-            ],
-            "run_num": 13
-        },
-        {
-            "env_id": 3,
-            "final_results": [
-                {
-                    "end_cond": "Red_Killed",
-                    "killed": 0,
-                    "missile": 2,
-                    "mission": 0,
-                    "reward": 31.8303310342214
-                },
-                {
-                    "end_cond": "Red_Killed",
-                    "killed": 2,
-                    "missile": 0,
-                    "mission": 0,
-                    "reward": 0
-                }
-            ],
-            "run_num": 13
-        },
-        {
-            "env_id": 4,
-            "final_results": [
-                {
-                    "end_cond": "Blue_Killed",
-                    "killed": 2,
-                    "missile": 1,
-                    "mission": 0,
-                    "reward": -36.4602183045317
-                },
-                {
-                    "end_cond": "Blue_Killed",
-                    "killed": 0,
-                    "missile": 4,
                     "mission": 0,
                     "reward": 0
                 }
@@ -1332,94 +292,14 @@
                 {
                     "end_cond": "Red_Killed",
                     "killed": 0,
-                    "missile": 3,
-                    "mission": 0,
-                    "reward": 29.5930216879612
-                },
-                {
-                    "end_cond": "Red_Killed",
-                    "killed": 2,
-                    "missile": 2,
-                    "mission": 0,
-                    "reward": 0
-                }
-            ],
-            "run_num": 14
-        },
-        {
-            "env_id": 1,
-            "final_results": [
-                {
-                    "end_cond": "Red_Killed",
-                    "killed": 0,
-                    "missile": 4,
-                    "mission": 0,
-                    "reward": 30.1593782931027
-                },
-                {
-                    "end_cond": "Red_Killed",
-                    "killed": 2,
-                    "missile": 0,
-                    "mission": 0,
-                    "reward": 0
-                }
-            ],
-            "run_num": 14
-        },
-        {
-            "env_id": 2,
-            "final_results": [
-                {
-                    "end_cond": "Blue_Killed",
-                    "killed": 2,
                     "missile": 1,
                     "mission": 0,
-                    "reward": -36.3664945654531
-                },
-                {
-                    "end_cond": "Blue_Killed",
-                    "killed": 0,
-                    "missile": 4,
-                    "mission": 0,
-                    "reward": 0
-                }
-            ],
-            "run_num": 14
-        },
-        {
-            "env_id": 3,
-            "final_results": [
-                {
-                    "end_cond": "Red_Killed",
-                    "killed": 0,
-                    "missile": 3,
-                    "mission": 0,
-                    "reward": 31.2568778641142
+                    "reward": 16.134323468109
                 },
                 {
                     "end_cond": "Red_Killed",
-                    "killed": 2,
+                    "killed": 1,
                     "missile": 0,
-                    "mission": 0,
-                    "reward": 0
-                }
-            ],
-            "run_num": 14
-        },
-        {
-            "env_id": 4,
-            "final_results": [
-                {
-                    "end_cond": "Blue_Killed",
-                    "killed": 2,
-                    "missile": 1,
-                    "mission": 0,
-                    "reward": -36.572930502423
-                },
-                {
-                    "end_cond": "Blue_Killed",
-                    "killed": 0,
-                    "missile": 4,
                     "mission": 0,
                     "reward": 0
                 }
@@ -1433,95 +313,15 @@
             "final_results": [
                 {
                     "end_cond": "Red_Killed",
-                    "killed": 1,
-                    "missile": 4,
-                    "mission": 0,
-                    "reward": 28.8777614851211
-                },
-                {
-                    "end_cond": "Red_Killed",
-                    "killed": 2,
-                    "missile": 0,
-                    "mission": 0,
-                    "reward": 0
-                }
-            ],
-            "run_num": 15
-        },
-        {
-            "env_id": 1,
-            "final_results": [
-                {
-                    "end_cond": "Blue_Killed",
-                    "killed": 2,
-                    "missile": 0,
-                    "mission": 0,
-                    "reward": -36.4966624253437
-                },
-                {
-                    "end_cond": "Blue_Killed",
                     "killed": 0,
-                    "missile": 3,
-                    "mission": 0,
-                    "reward": 0
-                }
-            ],
-            "run_num": 15
-        },
-        {
-            "env_id": 2,
-            "final_results": [
-                {
-                    "end_cond": "Blue_Killed",
-                    "killed": 2,
-                    "missile": 0,
-                    "mission": 0,
-                    "reward": -36.3018689963028
-                },
-                {
-                    "end_cond": "Blue_Killed",
-                    "killed": 0,
-                    "missile": 4,
-                    "mission": 0,
-                    "reward": 0
-                }
-            ],
-            "run_num": 15
-        },
-        {
-            "env_id": 3,
-            "final_results": [
-                {
-                    "end_cond": "Blue_Killed",
-                    "killed": 2,
                     "missile": 1,
                     "mission": 0,
-                    "reward": -32.9532563938324
-                },
-                {
-                    "end_cond": "Blue_Killed",
-                    "killed": 1,
-                    "missile": 3,
-                    "mission": 0,
-                    "reward": 0
-                }
-            ],
-            "run_num": 15
-        },
-        {
-            "env_id": 4,
-            "final_results": [
-                {
-                    "end_cond": "Red_Killed",
-                    "killed": 1,
-                    "missile": 2,
-                    "mission": 0,
-                    "reward": 26.8903733402717
+                    "reward": 16.1323307532413
                 },
                 {
                     "end_cond": "Red_Killed",
-                    "killed": 2,
-                    "missile": 2,
+                    "killed": 1,
+                    "missile": 0,
                     "mission": 0,
                     "reward": 0
                 }
@@ -1536,94 +336,14 @@
                 {
                     "end_cond": "Red_Killed",
                     "killed": 0,
-                    "missile": 3,
-                    "mission": 0,
-                    "reward": 30.8423970482264
-                },
-                {
-                    "end_cond": "Red_Killed",
-                    "killed": 2,
-                    "missile": 0,
-                    "mission": 0,
-                    "reward": 0
-                }
-            ],
-            "run_num": 16
-        },
-        {
-            "env_id": 1,
-            "final_results": [
-                {
-                    "end_cond": "Red_Killed",
-                    "killed": 0,
-                    "missile": 4,
-                    "mission": 0,
-                    "reward": 29.9238749021728
-                },
-                {
-                    "end_cond": "Red_Killed",
-                    "killed": 2,
-                    "missile": 0,
-                    "mission": 0,
-                    "reward": 0
-                }
-            ],
-            "run_num": 16
-        },
-        {
-            "env_id": 2,
-            "final_results": [
-                {
-                    "end_cond": "Red_Killed",
-                    "killed": 0,
-                    "missile": 3,
-                    "mission": 0,
-                    "reward": 31.0257733663755
-                },
-                {
-                    "end_cond": "Red_Killed",
-                    "killed": 2,
-                    "missile": 0,
-                    "mission": 0,
-                    "reward": 0
-                }
-            ],
-            "run_num": 16
-        },
-        {
-            "env_id": 3,
-            "final_results": [
-                {
-                    "end_cond": "Blue_Killed",
-                    "killed": 2,
                     "missile": 1,
                     "mission": 0,
-                    "reward": -32.7563338151758
+                    "reward": 16.1303413098617
                 },
-                {
-                    "end_cond": "Blue_Killed",
-                    "killed": 1,
-                    "missile": 2,
-                    "mission": 0,
-                    "reward": 0
-                }
-            ],
-            "run_num": 16
-        },
-        {
-            "env_id": 4,
-            "final_results": [
                 {
                     "end_cond": "Red_Killed",
                     "killed": 1,
-                    "missile": 2,
-                    "mission": 0,
-                    "reward": 27.2618207466892
-                },
-                {
-                    "end_cond": "Red_Killed",
-                    "killed": 2,
-                    "missile": 1,
+                    "missile": 0,
                     "mission": 0,
                     "reward": 0
                 }
@@ -1637,94 +357,14 @@
             "final_results": [
                 {
                     "end_cond": "Red_Killed",
-                    "killed": 1,
-                    "missile": 3,
-                    "mission": 0,
-                    "reward": 25.7735891738256
-                },
-                {
-                    "end_cond": "Red_Killed",
-                    "killed": 2,
+                    "killed": 0,
                     "missile": 1,
                     "mission": 0,
-                    "reward": 0
-                }
-            ],
-            "run_num": 17
-        },
-        {
-            "env_id": 1,
-            "final_results": [
-                {
-                    "end_cond": "Red_Mission",
-                    "killed": 1,
-                    "missile": 2,
-                    "mission": 0,
-                    "reward": -22.7727182419805
-                },
-                {
-                    "end_cond": "Red_Mission",
-                    "killed": 1,
-                    "missile": 1,
-                    "mission": 1,
-                    "reward": 0
-                }
-            ],
-            "run_num": 17
-        },
-        {
-            "env_id": 2,
-            "final_results": [
-                {
-                    "end_cond": "Blue_Killed",
-                    "killed": 2,
-                    "missile": 0,
-                    "mission": 0,
-                    "reward": -36.5494438302893
-                },
-                {
-                    "end_cond": "Blue_Killed",
-                    "killed": 0,
-                    "missile": 3,
-                    "mission": 0,
-                    "reward": 0
-                }
-            ],
-            "run_num": 17
-        },
-        {
-            "env_id": 3,
-            "final_results": [
-                {
-                    "end_cond": "Blue_Killed",
-                    "killed": 2,
-                    "missile": 0,
-                    "mission": 0,
-                    "reward": -36.091086956937
-                },
-                {
-                    "end_cond": "Blue_Killed",
-                    "killed": 0,
-                    "missile": 4,
-                    "mission": 0,
-                    "reward": 0
-                }
-            ],
-            "run_num": 17
-        },
-        {
-            "env_id": 4,
-            "final_results": [
-                {
-                    "end_cond": "Red_Killed",
-                    "killed": 0,
-                    "missile": 3,
-                    "mission": 0,
-                    "reward": 30.9691669655174
+                    "reward": 16.134323468109
                 },
                 {
                     "end_cond": "Red_Killed",
-                    "killed": 2,
+                    "killed": 1,
                     "missile": 0,
                     "mission": 0,
                     "reward": 0
@@ -1738,96 +378,16 @@
             "env_id": 0,
             "final_results": [
                 {
-                    "end_cond": "Blue_Killed",
-                    "killed": 2,
-                    "missile": 2,
-                    "mission": 0,
-                    "reward": -32.5526243365507
-                },
-                {
-                    "end_cond": "Blue_Killed",
-                    "killed": 1,
-                    "missile": 2,
-                    "mission": 0,
-                    "reward": 0
-                }
-            ],
-            "run_num": 18
-        },
-        {
-            "env_id": 1,
-            "final_results": [
-                {
-                    "end_cond": "Blue_Killed",
-                    "killed": 2,
+                    "end_cond": "Red_Killed",
+                    "killed": 0,
                     "missile": 1,
                     "mission": 0,
-                    "reward": -32.8590808776531
+                    "reward": 16.1343234681094
                 },
-                {
-                    "end_cond": "Blue_Killed",
-                    "killed": 1,
-                    "missile": 6,
-                    "mission": 0,
-                    "reward": 0
-                }
-            ],
-            "run_num": 18
-        },
-        {
-            "env_id": 2,
-            "final_results": [
-                {
-                    "end_cond": "Blue_Killed",
-                    "killed": 2,
-                    "missile": 1,
-                    "mission": 0,
-                    "reward": -33.0617616782951
-                },
-                {
-                    "end_cond": "Blue_Killed",
-                    "killed": 1,
-                    "missile": 3,
-                    "mission": 0,
-                    "reward": 0
-                }
-            ],
-            "run_num": 18
-        },
-        {
-            "env_id": 3,
-            "final_results": [
                 {
                     "end_cond": "Red_Killed",
                     "killed": 1,
-                    "missile": 2,
-                    "mission": 0,
-                    "reward": 26.2105255361492
-                },
-                {
-                    "end_cond": "Red_Killed",
-                    "killed": 2,
-                    "missile": 1,
-                    "mission": 0,
-                    "reward": 0
-                }
-            ],
-            "run_num": 18
-        },
-        {
-            "env_id": 4,
-            "final_results": [
-                {
-                    "end_cond": "Red_Killed",
-                    "killed": 1,
-                    "missile": 3,
-                    "mission": 0,
-                    "reward": 25.420072645542
-                },
-                {
-                    "end_cond": "Red_Killed",
-                    "killed": 2,
-                    "missile": 1,
+                    "missile": 0,
                     "mission": 0,
                     "reward": 0
                 }
@@ -1842,94 +402,14 @@
                 {
                     "end_cond": "Red_Killed",
                     "killed": 0,
-                    "missile": 4,
-                    "mission": 0,
-                    "reward": 30.2767883436408
-                },
-                {
-                    "end_cond": "Red_Killed",
-                    "killed": 2,
-                    "missile": 0,
-                    "mission": 0,
-                    "reward": 0
-                }
-            ],
-            "run_num": 19
-        },
-        {
-            "env_id": 1,
-            "final_results": [
-                {
-                    "end_cond": "Blue_Killed",
-                    "killed": 2,
-                    "missile": 0,
-                    "mission": 0,
-                    "reward": -36.5486468634808
-                },
-                {
-                    "end_cond": "Blue_Killed",
-                    "killed": 0,
-                    "missile": 4,
-                    "mission": 0,
-                    "reward": 0
-                }
-            ],
-            "run_num": 19
-        },
-        {
-            "env_id": 2,
-            "final_results": [
-                {
-                    "end_cond": "Blue_Killed",
-                    "killed": 2,
-                    "missile": 0,
-                    "mission": 0,
-                    "reward": -36.5025707994003
-                },
-                {
-                    "end_cond": "Blue_Killed",
-                    "killed": 0,
-                    "missile": 4,
-                    "mission": 0,
-                    "reward": 0
-                }
-            ],
-            "run_num": 19
-        },
-        {
-            "env_id": 3,
-            "final_results": [
-                {
-                    "end_cond": "Red_Mission",
-                    "killed": 0,
                     "missile": 1,
                     "mission": 0,
-                    "reward": -17.5047017995257
+                    "reward": 16.1303413098593
                 },
-                {
-                    "end_cond": "Red_Mission",
-                    "killed": 1,
-                    "missile": 1,
-                    "mission": 1,
-                    "reward": 0
-                }
-            ],
-            "run_num": 19
-        },
-        {
-            "env_id": 4,
-            "final_results": [
                 {
                     "end_cond": "Red_Killed",
                     "killed": 1,
-                    "missile": 2,
-                    "mission": 0,
-                    "reward": 26.498721608298
-                },
-                {
-                    "end_cond": "Red_Killed",
-                    "killed": 2,
-                    "missile": 2,
+                    "missile": 0,
                     "mission": 0,
                     "reward": 0
                 }
@@ -1944,93 +424,13 @@
                 {
                     "end_cond": "Red_Killed",
                     "killed": 0,
-                    "missile": 6,
+                    "missile": 1,
                     "mission": 0,
-                    "reward": 27.891468590862
+                    "reward": 16.1323307532413
                 },
-                {
-                    "end_cond": "Red_Killed",
-                    "killed": 2,
-                    "missile": 0,
-                    "mission": 0,
-                    "reward": 0
-                }
-            ],
-            "run_num": 20
-        },
-        {
-            "env_id": 1,
-            "final_results": [
-                {
-                    "end_cond": "Red_Killed",
-                    "killed": 0,
-                    "missile": 4,
-                    "mission": 0,
-                    "reward": 29.9036622554463
-                },
-                {
-                    "end_cond": "Red_Killed",
-                    "killed": 2,
-                    "missile": 0,
-                    "mission": 0,
-                    "reward": 0
-                }
-            ],
-            "run_num": 20
-        },
-        {
-            "env_id": 2,
-            "final_results": [
                 {
                     "end_cond": "Red_Killed",
                     "killed": 1,
-                    "missile": 2,
-                    "mission": 0,
-                    "reward": 25.0986401343264
-                },
-                {
-                    "end_cond": "Red_Killed",
-                    "killed": 2,
-                    "missile": 1,
-                    "mission": 0,
-                    "reward": 0
-                }
-            ],
-            "run_num": 20
-        },
-        {
-            "env_id": 3,
-            "final_results": [
-                {
-                    "end_cond": "Red_Killed",
-                    "killed": 0,
-                    "missile": 2,
-                    "mission": 0,
-                    "reward": 31.5596852702069
-                },
-                {
-                    "end_cond": "Red_Killed",
-                    "killed": 2,
-                    "missile": 1,
-                    "mission": 0,
-                    "reward": 0
-                }
-            ],
-            "run_num": 20
-        },
-        {
-            "env_id": 4,
-            "final_results": [
-                {
-                    "end_cond": "Red_Killed",
-                    "killed": 0,
-                    "missile": 7,
-                    "mission": 0,
-                    "reward": 26.6202299225015
-                },
-                {
-                    "end_cond": "Red_Killed",
-                    "killed": 2,
                     "missile": 0,
                     "mission": 0,
                     "reward": 0
@@ -2046,94 +446,14 @@
                 {
                     "end_cond": "Red_Killed",
                     "killed": 0,
-                    "missile": 4,
+                    "missile": 1,
                     "mission": 0,
-                    "reward": 30.3874715712288
+                    "reward": 16.1343234681004
                 },
                 {
                     "end_cond": "Red_Killed",
-                    "killed": 2,
-                    "missile": 0,
-                    "mission": 0,
-                    "reward": 0
-                }
-            ],
-            "run_num": 21
-        },
-        {
-            "env_id": 1,
-            "final_results": [
-                {
-                    "end_cond": "Blue_Killed",
-                    "killed": 2,
-                    "missile": 1,
-                    "mission": 0,
-                    "reward": -36.2745410633468
-                },
-                {
-                    "end_cond": "Blue_Killed",
-                    "killed": 0,
-                    "missile": 2,
-                    "mission": 0,
-                    "reward": 0
-                }
-            ],
-            "run_num": 21
-        },
-        {
-            "env_id": 2,
-            "final_results": [
-                {
-                    "end_cond": "Blue_Killed",
-                    "killed": 2,
-                    "missile": 0,
-                    "mission": 0,
-                    "reward": -36.0795890329187
-                },
-                {
-                    "end_cond": "Blue_Killed",
-                    "killed": 0,
-                    "missile": 3,
-                    "mission": 0,
-                    "reward": 0
-                }
-            ],
-            "run_num": 21
-        },
-        {
-            "env_id": 3,
-            "final_results": [
-                {
-                    "end_cond": "Red_Killed",
-                    "killed": 0,
-                    "missile": 3,
-                    "mission": 0,
-                    "reward": 30.7153874406675
-                },
-                {
-                    "end_cond": "Red_Killed",
-                    "killed": 2,
-                    "missile": 1,
-                    "mission": 0,
-                    "reward": 0
-                }
-            ],
-            "run_num": 21
-        },
-        {
-            "env_id": 4,
-            "final_results": [
-                {
-                    "end_cond": "Blue_Killed",
-                    "killed": 2,
-                    "missile": 1,
-                    "mission": 0,
-                    "reward": -33.0613364487145
-                },
-                {
-                    "end_cond": "Blue_Killed",
                     "killed": 1,
-                    "missile": 2,
+                    "missile": 0,
                     "mission": 0,
                     "reward": 0
                 }
@@ -2146,96 +466,16 @@
             "env_id": 0,
             "final_results": [
                 {
-                    "end_cond": "Blue_Killed",
-                    "killed": 2,
-                    "missile": 1,
-                    "mission": 0,
-                    "reward": -33.0606752175156
-                },
-                {
-                    "end_cond": "Blue_Killed",
-                    "killed": 1,
-                    "missile": 3,
-                    "mission": 0,
-                    "reward": 0
-                }
-            ],
-            "run_num": 22
-        },
-        {
-            "env_id": 1,
-            "final_results": [
-                {
-                    "end_cond": "Blue_Killed",
-                    "killed": 2,
-                    "missile": 1,
-                    "mission": 0,
-                    "reward": -33.3953413188437
-                },
-                {
-                    "end_cond": "Blue_Killed",
-                    "killed": 1,
-                    "missile": 3,
-                    "mission": 0,
-                    "reward": 0
-                }
-            ],
-            "run_num": 22
-        },
-        {
-            "env_id": 2,
-            "final_results": [
-                {
-                    "end_cond": "Blue_Killed",
-                    "killed": 2,
-                    "missile": 1,
-                    "mission": 0,
-                    "reward": -32.9867839832145
-                },
-                {
-                    "end_cond": "Blue_Killed",
-                    "killed": 1,
-                    "missile": 2,
-                    "mission": 0,
-                    "reward": 0
-                }
-            ],
-            "run_num": 22
-        },
-        {
-            "env_id": 3,
-            "final_results": [
-                {
-                    "end_cond": "Blue_Killed",
-                    "killed": 2,
-                    "missile": 0,
-                    "mission": 0,
-                    "reward": -36.4021632120283
-                },
-                {
-                    "end_cond": "Blue_Killed",
+                    "end_cond": "Red_Killed",
                     "killed": 0,
-                    "missile": 4,
+                    "missile": 1,
                     "mission": 0,
-                    "reward": 0
-                }
-            ],
-            "run_num": 22
-        },
-        {
-            "env_id": 4,
-            "final_results": [
-                {
-                    "end_cond": "Blue_Killed",
-                    "killed": 2,
-                    "missile": 2,
-                    "mission": 0,
-                    "reward": -33.1944176889693
+                    "reward": 16.1303413098593
                 },
                 {
-                    "end_cond": "Blue_Killed",
+                    "end_cond": "Red_Killed",
                     "killed": 1,
-                    "missile": 3,
+                    "missile": 0,
                     "mission": 0,
                     "reward": 0
                 }
@@ -2248,96 +488,16 @@
             "env_id": 0,
             "final_results": [
                 {
-                    "end_cond": "Blue_Killed",
-                    "killed": 2,
+                    "end_cond": "Red_Killed",
+                    "killed": 0,
                     "missile": 1,
                     "mission": 0,
-                    "reward": -32.8780472008795
+                    "reward": 16.1303413098593
                 },
                 {
-                    "end_cond": "Blue_Killed",
+                    "end_cond": "Red_Killed",
                     "killed": 1,
-                    "missile": 4,
-                    "mission": 0,
-                    "reward": 0
-                }
-            ],
-            "run_num": 23
-        },
-        {
-            "env_id": 1,
-            "final_results": [
-                {
-                    "end_cond": "Blue_Killed",
-                    "killed": 2,
-                    "missile": 2,
-                    "mission": 0,
-                    "reward": -33.2554781666629
-                },
-                {
-                    "end_cond": "Blue_Killed",
-                    "killed": 1,
-                    "missile": 3,
-                    "mission": 0,
-                    "reward": 0
-                }
-            ],
-            "run_num": 23
-        },
-        {
-            "env_id": 2,
-            "final_results": [
-                {
-                    "end_cond": "Red_Killed",
-                    "killed": 0,
-                    "missile": 4,
-                    "mission": 0,
-                    "reward": 29.9588771317724
-                },
-                {
-                    "end_cond": "Red_Killed",
-                    "killed": 2,
                     "missile": 0,
-                    "mission": 0,
-                    "reward": 0
-                }
-            ],
-            "run_num": 23
-        },
-        {
-            "env_id": 3,
-            "final_results": [
-                {
-                    "end_cond": "Red_Killed",
-                    "killed": 0,
-                    "missile": 2,
-                    "mission": 0,
-                    "reward": 32.1206587877964
-                },
-                {
-                    "end_cond": "Red_Killed",
-                    "killed": 2,
-                    "missile": 0,
-                    "mission": 0,
-                    "reward": 0
-                }
-            ],
-            "run_num": 23
-        },
-        {
-            "env_id": 4,
-            "final_results": [
-                {
-                    "end_cond": "Blue_Killed",
-                    "killed": 2,
-                    "missile": 1,
-                    "mission": 0,
-                    "reward": -36.1857051509914
-                },
-                {
-                    "end_cond": "Blue_Killed",
-                    "killed": 0,
-                    "missile": 3,
                     "mission": 0,
                     "reward": 0
                 }
@@ -2352,94 +512,14 @@
                 {
                     "end_cond": "Red_Killed",
                     "killed": 0,
-                    "missile": 2,
+                    "missile": 1,
                     "mission": 0,
-                    "reward": 31.8944170057744
+                    "reward": 16.1323307537872
                 },
                 {
                     "end_cond": "Red_Killed",
-                    "killed": 2,
-                    "missile": 0,
-                    "mission": 0,
-                    "reward": 0
-                }
-            ],
-            "run_num": 24
-        },
-        {
-            "env_id": 1,
-            "final_results": [
-                {
-                    "end_cond": "Blue_Killed",
-                    "killed": 2,
-                    "missile": 1,
-                    "mission": 0,
-                    "reward": -33.2831371828586
-                },
-                {
-                    "end_cond": "Blue_Killed",
                     "killed": 1,
-                    "missile": 3,
-                    "mission": 0,
-                    "reward": 0
-                }
-            ],
-            "run_num": 24
-        },
-        {
-            "env_id": 2,
-            "final_results": [
-                {
-                    "end_cond": "Red_Killed",
-                    "killed": 0,
-                    "missile": 4,
-                    "mission": 0,
-                    "reward": 29.9168676428344
-                },
-                {
-                    "end_cond": "Red_Killed",
-                    "killed": 2,
                     "missile": 0,
-                    "mission": 0,
-                    "reward": 0
-                }
-            ],
-            "run_num": 24
-        },
-        {
-            "env_id": 3,
-            "final_results": [
-                {
-                    "end_cond": "Blue_Killed",
-                    "killed": 2,
-                    "missile": 1,
-                    "mission": 0,
-                    "reward": -36.5630820141997
-                },
-                {
-                    "end_cond": "Blue_Killed",
-                    "killed": 0,
-                    "missile": 3,
-                    "mission": 0,
-                    "reward": 0
-                }
-            ],
-            "run_num": 24
-        },
-        {
-            "env_id": 4,
-            "final_results": [
-                {
-                    "end_cond": "Blue_Killed",
-                    "killed": 2,
-                    "missile": 0,
-                    "mission": 0,
-                    "reward": -36.3171807234969
-                },
-                {
-                    "end_cond": "Blue_Killed",
-                    "killed": 0,
-                    "missile": 4,
                     "mission": 0,
                     "reward": 0
                 }
@@ -2454,94 +534,14 @@
                 {
                     "end_cond": "Red_Killed",
                     "killed": 0,
-                    "missile": 3,
+                    "missile": 1,
                     "mission": 0,
-                    "reward": 31.4278330602363
+                    "reward": 16.134323468109
                 },
                 {
                     "end_cond": "Red_Killed",
-                    "killed": 2,
-                    "missile": 1,
-                    "mission": 0,
-                    "reward": 0
-                }
-            ],
-            "run_num": 25
-        },
-        {
-            "env_id": 1,
-            "final_results": [
-                {
-                    "end_cond": "Blue_Killed",
-                    "killed": 2,
+                    "killed": 1,
                     "missile": 0,
-                    "mission": 0,
-                    "reward": -36.4742426477206
-                },
-                {
-                    "end_cond": "Blue_Killed",
-                    "killed": 0,
-                    "missile": 4,
-                    "mission": 0,
-                    "reward": 0
-                }
-            ],
-            "run_num": 25
-        },
-        {
-            "env_id": 2,
-            "final_results": [
-                {
-                    "end_cond": "Blue_Killed",
-                    "killed": 2,
-                    "missile": 2,
-                    "mission": 0,
-                    "reward": -28.9729119596437
-                },
-                {
-                    "end_cond": "Blue_Killed",
-                    "killed": 2,
-                    "missile": 2,
-                    "mission": 0,
-                    "reward": 0
-                }
-            ],
-            "run_num": 25
-        },
-        {
-            "env_id": 3,
-            "final_results": [
-                {
-                    "end_cond": "Blue_Killed",
-                    "killed": 2,
-                    "missile": 2,
-                    "mission": 0,
-                    "reward": -33.045840461921
-                },
-                {
-                    "end_cond": "Blue_Killed",
-                    "killed": 1,
-                    "missile": 2,
-                    "mission": 0,
-                    "reward": 0
-                }
-            ],
-            "run_num": 25
-        },
-        {
-            "env_id": 4,
-            "final_results": [
-                {
-                    "end_cond": "Blue_Killed",
-                    "killed": 2,
-                    "missile": 1,
-                    "mission": 0,
-                    "reward": -32.7419963575888
-                },
-                {
-                    "end_cond": "Blue_Killed",
-                    "killed": 1,
-                    "missile": 2,
                     "mission": 0,
                     "reward": 0
                 }
@@ -2556,93 +556,13 @@
                 {
                     "end_cond": "Red_Killed",
                     "killed": 0,
-                    "missile": 4,
+                    "missile": 1,
                     "mission": 0,
-                    "reward": 30.5077308194725
+                    "reward": 16.1343234681081
                 },
                 {
                     "end_cond": "Red_Killed",
-                    "killed": 2,
-                    "missile": 0,
-                    "mission": 0,
-                    "reward": 0
-                }
-            ],
-            "run_num": 26
-        },
-        {
-            "env_id": 1,
-            "final_results": [
-                {
-                    "end_cond": "Blue_Killed",
-                    "killed": 2,
-                    "missile": 2,
-                    "mission": 0,
-                    "reward": -29.7809432152542
-                },
-                {
-                    "end_cond": "Blue_Killed",
-                    "killed": 2,
-                    "missile": 2,
-                    "mission": 0,
-                    "reward": 0
-                }
-            ],
-            "run_num": 26
-        },
-        {
-            "env_id": 2,
-            "final_results": [
-                {
-                    "end_cond": "Red_Killed",
-                    "killed": 0,
-                    "missile": 4,
-                    "mission": 0,
-                    "reward": 29.9559239331709
-                },
-                {
-                    "end_cond": "Red_Killed",
-                    "killed": 2,
-                    "missile": 0,
-                    "mission": 0,
-                    "reward": 0
-                }
-            ],
-            "run_num": 26
-        },
-        {
-            "env_id": 3,
-            "final_results": [
-                {
-                    "end_cond": "Blue_Killed",
-                    "killed": 2,
-                    "missile": 3,
-                    "mission": 0,
-                    "reward": -33.1014813945417
-                },
-                {
-                    "end_cond": "Blue_Killed",
                     "killed": 1,
-                    "missile": 2,
-                    "mission": 0,
-                    "reward": 0
-                }
-            ],
-            "run_num": 26
-        },
-        {
-            "env_id": 4,
-            "final_results": [
-                {
-                    "end_cond": "Red_Killed",
-                    "killed": 0,
-                    "missile": 4,
-                    "mission": 0,
-                    "reward": 30.4748167517979
-                },
-                {
-                    "end_cond": "Red_Killed",
-                    "killed": 2,
                     "missile": 0,
                     "mission": 0,
                     "reward": 0
@@ -2656,95 +576,15 @@
             "env_id": 0,
             "final_results": [
                 {
-                    "end_cond": "Blue_Killed",
-                    "killed": 2,
-                    "missile": 0,
-                    "mission": 0,
-                    "reward": -36.5286180376286
-                },
-                {
-                    "end_cond": "Blue_Killed",
+                    "end_cond": "Red_Killed",
                     "killed": 0,
-                    "missile": 3,
+                    "missile": 1,
                     "mission": 0,
-                    "reward": 0
-                }
-            ],
-            "run_num": 27
-        },
-        {
-            "env_id": 1,
-            "final_results": [
+                    "reward": 16.1343234681102
+                },
                 {
                     "end_cond": "Red_Killed",
                     "killed": 1,
-                    "missile": 3,
-                    "mission": 0,
-                    "reward": 25.5632448903672
-                },
-                {
-                    "end_cond": "Red_Killed",
-                    "killed": 2,
-                    "missile": 2,
-                    "mission": 0,
-                    "reward": 0
-                }
-            ],
-            "run_num": 27
-        },
-        {
-            "env_id": 2,
-            "final_results": [
-                {
-                    "end_cond": "Blue_Killed",
-                    "killed": 2,
-                    "missile": 0,
-                    "mission": 0,
-                    "reward": -36.391110049512
-                },
-                {
-                    "end_cond": "Blue_Killed",
-                    "killed": 0,
-                    "missile": 4,
-                    "mission": 0,
-                    "reward": 0
-                }
-            ],
-            "run_num": 27
-        },
-        {
-            "env_id": 3,
-            "final_results": [
-                {
-                    "end_cond": "Red_Killed",
-                    "killed": 1,
-                    "missile": 3,
-                    "mission": 0,
-                    "reward": 24.963051663845
-                },
-                {
-                    "end_cond": "Red_Killed",
-                    "killed": 2,
-                    "missile": 2,
-                    "mission": 0,
-                    "reward": 0
-                }
-            ],
-            "run_num": 27
-        },
-        {
-            "env_id": 4,
-            "final_results": [
-                {
-                    "end_cond": "Red_Killed",
-                    "killed": 0,
-                    "missile": 4,
-                    "mission": 0,
-                    "reward": 30.0965622335384
-                },
-                {
-                    "end_cond": "Red_Killed",
-                    "killed": 2,
                     "missile": 0,
                     "mission": 0,
                     "reward": 0
@@ -2759,95 +599,15 @@
             "final_results": [
                 {
                     "end_cond": "Red_Killed",
-                    "killed": 1,
-                    "missile": 2,
-                    "mission": 0,
-                    "reward": 26.2506410786046
-                },
-                {
-                    "end_cond": "Red_Killed",
-                    "killed": 2,
-                    "missile": 2,
-                    "mission": 0,
-                    "reward": 0
-                }
-            ],
-            "run_num": 28
-        },
-        {
-            "env_id": 1,
-            "final_results": [
-                {
-                    "end_cond": "Red_Killed",
-                    "killed": 1,
-                    "missile": 2,
-                    "mission": 0,
-                    "reward": 27.3022995368887
-                },
-                {
-                    "end_cond": "Red_Killed",
-                    "killed": 2,
-                    "missile": 1,
-                    "mission": 0,
-                    "reward": 0
-                }
-            ],
-            "run_num": 28
-        },
-        {
-            "env_id": 2,
-            "final_results": [
-                {
-                    "end_cond": "Blue_Killed",
-                    "killed": 2,
-                    "missile": 1,
-                    "mission": 0,
-                    "reward": -33.1981144114683
-                },
-                {
-                    "end_cond": "Blue_Killed",
-                    "killed": 1,
-                    "missile": 2,
-                    "mission": 0,
-                    "reward": 0
-                }
-            ],
-            "run_num": 28
-        },
-        {
-            "env_id": 3,
-            "final_results": [
-                {
-                    "end_cond": "Blue_Killed",
-                    "killed": 2,
-                    "missile": 0,
-                    "mission": 0,
-                    "reward": -36.8519347863859
-                },
-                {
-                    "end_cond": "Blue_Killed",
                     "killed": 0,
-                    "missile": 5,
+                    "missile": 1,
                     "mission": 0,
-                    "reward": 0
-                }
-            ],
-            "run_num": 28
-        },
-        {
-            "env_id": 4,
-            "final_results": [
-                {
-                    "end_cond": "Red_Killed",
-                    "killed": 1,
-                    "missile": 3,
-                    "mission": 0,
-                    "reward": 25.8245195058065
+                    "reward": 16.1303413098617
                 },
                 {
                     "end_cond": "Red_Killed",
-                    "killed": 2,
-                    "missile": 1,
+                    "killed": 1,
+                    "missile": 0,
                     "mission": 0,
                     "reward": 0
                 }
@@ -2860,96 +620,16 @@
             "env_id": 0,
             "final_results": [
                 {
-                    "end_cond": "Blue_Killed",
-                    "killed": 2,
-                    "missile": 0,
-                    "mission": 0,
-                    "reward": -36.3378907676017
-                },
-                {
-                    "end_cond": "Blue_Killed",
-                    "killed": 0,
-                    "missile": 3,
-                    "mission": 0,
-                    "reward": 0
-                }
-            ],
-            "run_num": 29
-        },
-        {
-            "env_id": 1,
-            "final_results": [
-                {
-                    "end_cond": "Blue_Killed",
-                    "killed": 2,
-                    "missile": 1,
-                    "mission": 0,
-                    "reward": -33.3052843140929
-                },
-                {
-                    "end_cond": "Blue_Killed",
-                    "killed": 1,
-                    "missile": 2,
-                    "mission": 0,
-                    "reward": 0
-                }
-            ],
-            "run_num": 29
-        },
-        {
-            "env_id": 2,
-            "final_results": [
-                {
-                    "end_cond": "Red_Killed",
-                    "killed": 1,
-                    "missile": 2,
-                    "mission": 0,
-                    "reward": 25.612402303201
-                },
-                {
-                    "end_cond": "Red_Killed",
-                    "killed": 2,
-                    "missile": 2,
-                    "mission": 0,
-                    "reward": 0
-                }
-            ],
-            "run_num": 29
-        },
-        {
-            "env_id": 3,
-            "final_results": [
-                {
                     "end_cond": "Red_Killed",
                     "killed": 0,
-                    "missile": 8,
+                    "missile": 1,
                     "mission": 0,
-                    "reward": 26.230356731332
+                    "reward": 16.1343234681068
                 },
-                {
-                    "end_cond": "Red_Killed",
-                    "killed": 2,
-                    "missile": 0,
-                    "mission": 0,
-                    "reward": 0
-                }
-            ],
-            "run_num": 29
-        },
-        {
-            "env_id": 4,
-            "final_results": [
                 {
                     "end_cond": "Red_Killed",
                     "killed": 1,
-                    "missile": 3,
-                    "mission": 0,
-                    "reward": 25.7956437996177
-                },
-                {
-                    "end_cond": "Red_Killed",
-                    "killed": 2,
-                    "missile": 1,
+                    "missile": 0,
                     "mission": 0,
                     "reward": 0
                 }
@@ -2964,93 +644,13 @@
                 {
                     "end_cond": "Red_Killed",
                     "killed": 0,
-                    "missile": 3,
+                    "missile": 1,
                     "mission": 0,
-                    "reward": 31.3280548820508
+                    "reward": 16.1303413098601
                 },
-                {
-                    "end_cond": "Red_Killed",
-                    "killed": 2,
-                    "missile": 0,
-                    "mission": 0,
-                    "reward": 0
-                }
-            ],
-            "run_num": 30
-        },
-        {
-            "env_id": 1,
-            "final_results": [
                 {
                     "end_cond": "Red_Killed",
                     "killed": 1,
-                    "missile": 6,
-                    "mission": 0,
-                    "reward": 20.4441490772941
-                },
-                {
-                    "end_cond": "Red_Killed",
-                    "killed": 2,
-                    "missile": 1,
-                    "mission": 0,
-                    "reward": 0
-                }
-            ],
-            "run_num": 30
-        },
-        {
-            "env_id": 2,
-            "final_results": [
-                {
-                    "end_cond": "Blue_Killed",
-                    "killed": 2,
-                    "missile": 1,
-                    "mission": 0,
-                    "reward": -32.8837749201941
-                },
-                {
-                    "end_cond": "Blue_Killed",
-                    "killed": 1,
-                    "missile": 4,
-                    "mission": 0,
-                    "reward": 0
-                }
-            ],
-            "run_num": 30
-        },
-        {
-            "env_id": 3,
-            "final_results": [
-                {
-                    "end_cond": "Blue_Killed",
-                    "killed": 2,
-                    "missile": 0,
-                    "mission": 0,
-                    "reward": -37.0763426153199
-                },
-                {
-                    "end_cond": "Blue_Killed",
-                    "killed": 0,
-                    "missile": 4,
-                    "mission": 0,
-                    "reward": 0
-                }
-            ],
-            "run_num": 30
-        },
-        {
-            "env_id": 4,
-            "final_results": [
-                {
-                    "end_cond": "Red_Killed",
-                    "killed": 0,
-                    "missile": 4,
-                    "mission": 0,
-                    "reward": 30.2718959997079
-                },
-                {
-                    "end_cond": "Red_Killed",
-                    "killed": 2,
                     "missile": 0,
                     "mission": 0,
                     "reward": 0

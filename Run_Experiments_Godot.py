@@ -30,7 +30,7 @@ def clamp_HdgD(hdg):
         return (360 + hdg )    
     return hdg
 
-def generate_cases(blue_altitude, red_altitude, angle_off, aspect_angle, wez_file = "res://assets/Default_Wez_params.json", min_dist=50, max_dist=60, dist_step=0.5):
+def generate_wez_cases(blue_altitude, red_altitude, angle_off, aspect_angle, wez_file = "res://assets/Default_Wez_params.json", min_dist=50, max_dist=60, dist_step=0.5):
     
     cases = []
     dist_cases = [x / 10 for x in range(min_dist * 10, max_dist * 10, 5)]    
@@ -57,88 +57,116 @@ def generate_cases(blue_altitude, red_altitude, angle_off, aspect_angle, wez_fil
         cases.append(case)
 
     return cases
-#TASK Config    
-config_dict = { 	
-            "EnvConfig" : 
-            {
-                "task": "b_ace_v1",
-                "env_path": "BVR_AirCombat/bin/B_ACE_v8.exe",
-                "port": 12500,
-                "renderize": 1,
-                "debug_view": 0,
-                "phy_fps": 20,
-                "speed_up": 50000,
-                "max_cycles": 36000,
-                "experiment_mode"  : 1,
-                "parallel_envs": 1,	
-                "seed": 1,	
-                "action_repeat": 20,	
-                "action_type": "Low_Level_Continuous",                        
-                "full_observation": 0,
-                
-                "RewardsConfig" : {
-                    "mission_factor": 0.001,
-                    "missile_fire_factor": -0.1,
-                    "missile_no_fire_factor": -0.001,
-                    "missile_miss_factor": -0.5,
-                    "detect_loss_factor": -0.1,
-                    "keep_track_factor": 0.001,
-                    "hit_enemy_factor": 3.0,
-                    "hit_own_factor": -5.0,                            
-                    "mission_accomplished_factor": 10.0
-                }
-            },
 
-            "AgentsConfig" : 
-            {
+def generate_behavior_case(dShot = 0.85, lCrank = 0.60, lBreak = 0.95 ):
+    
+    case = { "AgentsConfig" : 
+                {
                 "blue_agents": { 
-                    "num_agents" : 2,
-                    "beh_config" : {
-                        "dShot" : 0.50,
-                        "lCrank": 0.40,
-                        "lBreak": 0.8
-                    },
-                    "base_behavior": "baseline1",                  
-                    "init_position": {"x": 0.0, "y": 25000.0,"z": -30.0},
-                    "offset_pos": {	"x": 0.0, "y": 0.0, "z": 0.0},
-                    "init_hdg": 180.0,                        
-                    "target_position": {"x": 0.0,"y": 25000.0,"z": 0.0},
-                    "rnd_offset_range":{"x": 10.0,"y": 20000.0,"z": 10.0},				
-                    "rnd_shot_dist_var": 0.0,
-                    "wez_models" : "res://assets/Default_Wez_params.json"
-                },	
-                "red_agents":
-                { 
-                    "num_agents" : 2, 
-                    "base_behavior": "baseline1",
-                    "beh_config" : {
-                        "dShot" : 0.50,
-                        "lCrank": 0.40,
-                        "lBreak": 0.8
-                    },
-                    "init_position": {"x": 0.0,"y": 25000.0,"z": 30.0},
-                    "offset_pos": {"x": 0.0,"y": 0.0,"z": 0.0},
-                    "init_hdg" : 0.0,                        
-                    "target_position": {"x": 0.0,"y": 25000.0,"z": 0.0},
-                    "rnd_offset_range":{"x": 10.0,"y": 20000.0,"z": 10.0},
-                    "rnd_shot_dist_var": 0.0,
-                    "wez_models" : "res://assets/Default_Wez_params.json"
+                        "num_agents" : 1,
+                        "beh_config" : 
+                        {
+                            "dShot" : dShot,
+                            "lCrank": lCrank,
+                            "lBreak": lBreak
+                        },
+                },
+                "red_agents": { 
+                        "num_agents" : 1,
+                        "beh_config" : 
+                        {
+                            "dShot" : dShot,
+                            "lCrank": lCrank,
+                            "lBreak": lBreak
+                        },
                 }
-            }	
-}                   
+            }            
+    }
+    
+    return case
 
+#TASK Config    
+config_dict = { "EnvConfig" : 
+                {
+                    "task": "b_ace_v1",
+                    'env_path': 'BVR_AirCombat/bin/B_ACE_v9.exe',		
+                    "port": 12500,
+                    "renderize": 1,
+                    "debug_view": 0,
+                    "phy_fps": 20,
+                    "speed_up": 50000,
+                    "max_cycles": 36000,
+                    "experiment_mode"  : 1,
+                    "parallel_envs": 1,	
+                    "seed": 1,	
+                    "action_repeat": 20,	
+                    "action_type": "Low_Level_Continuous",                                            
+                                        
+                    "RewardsConfig" : {
+                        "mission_factor": 0.001,				
+                        "missile_fire_factor": -0.1,		
+                        "missile_no_fire_factor": -0.001,
+                        "missile_miss_factor": -0.5,
+                        "detect_loss_factor": -0.1,
+                        "keep_track_factor": 0.001,
+                        "hit_enemy_factor": 3.0,
+                        "hit_own_factor": -5.0,			
+                        "mission_accomplished_factor": 10.0,			
+                    }
+                },
+
+                "AgentsConfig" : 
+                {
+                    "blue_agents": { 
+                        "num_agents" : 2,
+                        
+                        "base_behavior": "baseline1",
+                        "beh_config" : {
+                            "dShot" : 0.85,
+                            "lCrank": 0.60,
+                            "lBreak": 0.95
+                        },                  
+                        
+                        "init_position": {"x": 0.0, "y": 25000.0,"z": 30.0},
+                        "offset_pos": {	"x": 0.0, "y": 0.0, "z": 0.0},
+                        "init_hdg": 0.0,                        
+                        "target_position": {"x": 0.0,"y": 25000.0,"z": -30.0},
+                        "rnd_offset_range":{"x": 0.0,"y": 0.0,"z": 0.0},				
+                        "rnd_shot_dist_var": 0.0,
+                        "wez_models" : "res://assets/wez/Default_Wez_params.json"
+                    },	
+                    "red_agents":
+                    { 
+                        "num_agents" : 2, 
+                                    
+                        "base_behavior": "baseline1",
+                        "beh_config" : {
+                            "dShot" : 0.85,
+                            "lCrank": 0.60,
+                            "lBreak": 0.95
+                        },
+                        "init_position": {"x": 0.0,"y": 25000.0,"z": -30.0},
+                        "offset_pos": {"x": 0.0,"y": 0.0,"z": 0.0},
+                        "init_hdg" : 180.0,                        
+                        "target_position": {"x": 0.0,"y": 25000.0,"z": 30.0},
+                        "rnd_offset_range":{"x": 0.0,"y": 0.0,"z": 0.0},				
+                        "rnd_shot_dist_var": 0.0,
+                        "wez_models" : "res://assets/wez/Default_Wez_params.json"
+                    }
+                },
+                
+}
+    
 
                     
-#%%%
-
-#wezFile = "res://assets//Wez_paramsPR2_MAE_121_060.json"
-#wezFile =  "res://assets//Wez_paramsPR3_MAE_074_046.json"
-wezFile = "res://assets//Wez_paramsPR4_MAE_044_037.json"
+#%%% RUN Experiments
 #wezFile = "res://assets//Default_Wez_params.json"
 
-cases =  generate_cases(20000, 20000, 180, 90, wez_file=wezFile)       
+cases = [ generate_behavior_case(dShot = 0.85, 
+                                lCrank = 0.60, 
+                                lBreak = 0.95 )]
 #print(cases)
-experimentConfig = { 'runs_per_case': 200, 'cases' : cases }
+experimentConfig = { 'runs_per_case': 30, 'cases' : cases }
 
 config_dict['ExperimentConfig'] = experimentConfig
 
@@ -157,6 +185,7 @@ flat_data = [item for sublist in results for item in sublist]
 # Create the DataFrame
 df = pd.DataFrame(flat_data)
 #print(df)
+
 #%%%
 _results = []
 
@@ -184,16 +213,15 @@ for team_name, stats in team_stats.items():
     merged_result.append({
         "team_name": team_name,
         "mean_killed": killed_mean,
-        "killed_ci_low": killed_ci_low,
-        "killed_ci_high": killed_ci_high,
+        "ci_k": f'{killed_ci_low} / {killed_ci_high}',
         "mean_missile": missile_mean,
-        "missile_ci_low": missile_ci_low,
-        "missile_ci_high": missile_ci_high,
-    })
+        "ci_m": f'{missile_ci_low} / {missile_ci_high}',        
+    })    
 
 _results.append(merged_result)
 
 df_results = pd.DataFrame(_results[0])
 
 print(df_results)
+
 # %%
