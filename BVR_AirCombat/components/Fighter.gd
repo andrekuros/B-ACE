@@ -107,12 +107,12 @@ var team_color_group
 
 #Heuristic Behavior Params
 #var max_shoot_range = 30 *  SConv.NM2GDM
-var shoot_range_variation = 0.05
-var shoot_range_error 	  = 1.0
-var crank_variation		= 0.05
-var crank_error 		= 1.0
-var break_variation		= 0.05
-var break_error		 	= 1.0
+var shoot_range_variation = 0.025
+var shoot_range_error 	  = -1
+var crank_variation		= 0.025
+var crank_error 		= -1
+var break_variation		= 0.025
+var break_error		 	= -1
 
 var defense_side = 1
 
@@ -301,9 +301,9 @@ func reset():
 	tatic_time = 0.0	
 	
 	
-	shoot_range_error 	= 1.0
-	crank_error 		= 1.0
-	break_error		 	= 1.0
+	shoot_range_error 	= -1
+	crank_error 		= -1
+	break_error		 	= -1
 		
 	HPT = null
 	HRT = null
@@ -651,24 +651,28 @@ func process_behavior(delta_s):
 					
 	elif behavior == "baseline1":
 				
+		#Define new shot distance with randominess
+		if shoot_range_error == -1:		
+			shoot_range_error =  1 + randf_range(-shoot_range_variation , shoot_range_variation)								
+		if break_error == -1:		
+			break_error =  1 + randf_range(-break_variation , break_variation)						
+		if crank_error == -1:		
+			crank_error =  1 + randf_range(-crank_variation , crank_variation)						
+				
+		
 		#print(id, " : " ,tatic_status, tatic_time, HPT)
 		if tatic_status != "Evade" and HPT != null and\
-		   HPT.detected and HPT.threat_factor > (lBreak + 0.5 * int(HPT.is_missile_support)):
+		   HPT.detected and HPT.threat_factor > (lBreak * break_error + 0.5 * int(HPT.is_missile_support)):
 			tatic_time = 0.0					
-			tatic_status = "Evade"        						
+			tatic_status = "Evade" 
+			break_error = -1       						
 			hdg_input = Calc.clamp_hdg(HPT.radial + 180.0)
 			desiredG_input = 6.0		
 
 		elif tatic_status == "Search" or tatic_status == "Return":
 			
-			if HPT != null:								
-				#Define new shot distance with randominess
-				shoot_range_error =  1 + randf_range(-shoot_range_variation , shoot_range_variation)						
-				break_error =  1 + randf_range(-break_variation , break_variation)						
-				crank_error =  1 + randf_range(-crank_variation , crank_variation)						
-				
-				print(team_id, "ErrS:", shoot_range_error, " ErrB:", break_error, " ErrC:", crank_error)
-				
+			if HPT != null:												
+				#print(team_id, "ErrS:", shoot_range_error, " ErrB:", break_error, " ErrC:", crank_error)				
 				tatic_status = "Engage"
 				defense_side = 1 - randi_range(0,1) * 2 #Choose defence side        
 				AP_mode = "FlyHdg"				
@@ -711,10 +715,10 @@ func process_behavior(delta_s):
 			
 			if HPT != null:											
 																				
-				do_crank 	= HPT.threat_factor > lCrank									
+				do_crank 	= HPT.threat_factor > lCrank * crank_error									
 				hdg_input 	= Calc.clamp_hdg(HPT.radial + 50 * int(do_crank) * defense_side)
 																										
-				if HPT.offensive_factor > dShot:					
+				if HPT.offensive_factor > dShot * shoot_range_error:					
 					#print( id, "(" ,current_time, " ) :", [HPT.offensive_factor, HPT.threat_factor,abs(HPT.aspect_angle)])					
 					if abs(HPT.aspect_angle) < 15.0 and !HPT.is_missile_support:					
 						if launch_missile_at_target(HPT):							
@@ -724,9 +728,11 @@ func process_behavior(delta_s):
 							HPT.is_missile_support = true
 							#print(tatic_status, tatic_time)
 																
-				if HPT.detected and HPT.threat_factor > (lBreak + 0.5 * int(HPT.is_missile_support)):
+				if HPT.detected and HPT.threat_factor > (lBreak * break_error + 0.5 * int(HPT.is_missile_support)):
 					tatic_time = 0.0					
-					tatic_status = "Evade"        										
+					tatic_status = "Evade" 
+					crank_error = -1
+					break_error = -1       										
 					hdg_input = Calc.clamp_hdg(HPT.radial + 180)#fmod(oposite_hdg + 180.0, 360.0) - 180.0
 					desiredG_input = 6.0		
 				
@@ -735,13 +741,15 @@ func process_behavior(delta_s):
 			   		(sign(strike_line_z) < 0 and global_transform.origin.z < strike_line_z) or\
 					global_transform.origin.x > strike_line_xR or global_transform.origin.x < strike_line_xL:					
 					desiredG_input = 5.0	
-					tatic_status = "Strike"							
+					tatic_status = "Strike"
+					crank_error = -1							
 					tatic_time = 0.0	
 					
 				if not HPT.is_alive:
 					tatic_status = "Search"					
 					hdg_input = Calc.get_hdg_2d(global_transform.origin, target_position )
-					desiredG_input = 3.0							
+					desiredG_input = 3.0
+					crank_error = -1							
 					tatic_time = 0.0	
 							
 			else:										

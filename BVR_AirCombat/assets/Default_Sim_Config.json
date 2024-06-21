@@ -43,11 +43,11 @@
 			"init_position": {"x": 0.0, "y": 25000.0,"z": 30.0},
 			"offset_pos": {	"x": 0.0, "y": 0.0, "z": 0.0},
 			"init_hdg": 0.0,                        
-			"target_position": {"x": 0.0,"y": 25000.0,"z": -30.0},
+			"target_position": {"x": 0.0,"y": 25000.0,"z": 0.0},
 			"rnd_offset_range":{"x": 0.0,"y": 0.0,"z": 0.0},				
-			"rnd_shot_dist_var": 0.05,
-			"rnd_crank_var": 0.05,
-			"rnd_break_var": 0.05,
+			"rnd_shot_dist_var": 0.025,
+			"rnd_crank_var": 0.025,
+			"rnd_break_var": 0.025,
 			"wez_models" : "res://assets/wez/Default_Wez_params.json"
 		},	
 		"red_agents":
@@ -63,11 +63,11 @@
 			"init_position": {"x": 0.0,"y": 25000.0,"z": -30.0},
 			"offset_pos": {"x": 0.0,"y": 0.0,"z": 0.0},
 			"init_hdg" : 180.0,                        
-			"target_position": {"x": 0.0,"y": 25000.0,"z": 30.0},
+			"target_position": {"x": 0.0,"y": 25000.0,"z": 0.0},
 			"rnd_offset_range":{"x": 0.0,"y": 0.0,"z": 0.0},				
-			"rnd_shot_dist_var": 0.05,
-			"rnd_crank_var": 0.05,
-			"rnd_break_var": 0.05,
+			"rnd_shot_dist_var": 0.025,
+			"rnd_crank_var": 0.025,
+			"rnd_break_var": 0.025,
 			"wez_models" : "res://assets/wez/Default_Wez_params.json"
 		}
 	},

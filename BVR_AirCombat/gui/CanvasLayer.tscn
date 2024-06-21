@@ -115,5 +115,29 @@ text = "Tactics
 
 "
 
+[node name="Blue_Score" type="RichTextLabel" parent="Control"]
+layout_mode = 0
+offset_left = 567.0
+offset_top = 9.0
+offset_right = 605.0
+offset_bottom = 32.0
+theme_override_colors/default_color = Color(0, 0.760784, 1, 1)
+text = "0
+
+"
+scroll_active = false
+
+[node name="Red_Score" type="RichTextLabel" parent="Control"]
+layout_mode = 0
+offset_left = 624.0
+offset_top = 9.0
+offset_right = 662.0
+offset_bottom = 32.0
+theme_override_colors/default_color = Color(1, 0.211765, 0.160784, 1)
+text = "0
+
+"
+scroll_active = false
+
 [connection signal="button_down" from="Control/btn_speedUp" to="Control/btn_speedUp" method="_on_button_down"]
 [connection signal="button_down" from="Control/CheckButton" to="Control/CheckButton" method="_on_button_down"]

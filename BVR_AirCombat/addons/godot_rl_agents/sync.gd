@@ -409,6 +409,7 @@ func handle_message() -> bool:
 		if len(simulation_list) == 1:			
 			var results = simulation_list[0]._collect_results()			
 			mainCanvas.update_results(results)
+			mainCanvas.update_scores(results[1]['killed'], results[0]['killed'])
 			simulation_list[0]._reset_simulation()			
 		else:
 			var index = 0
@@ -495,11 +496,12 @@ func _reset_agents_if_done():
 		var donesAgents  = sim._check_all_done_agents()
 		var donesEnemies  = sim._check_all_done_enemies()		
 				
-		if donesAgents and donesEnemies:		
+		if donesAgents and donesEnemies:								
 			n_action_steps = 0
 			finalStatus.append(sim._collect_results())			
 			var results = sim._collect_results()			
-			mainCanvas.update_results(results)
+			mainCanvas.update_results(results)			
+			mainCanvas.update_scores(results[1]['killed'], results[0]['killed'])
 			sim._reset_simulation()
 			
 		else:
@@ -609,7 +611,7 @@ func _wait_for_configuration():
 	
 func _run_experiment(agents_config_msg, experiment_config):
 	
-	print("Running experiment with configuration:", experiment_config)
+	#print("Running experiment with configuration:", experiment_config)
 	
 	experiment_runs_per_case = experiment_config.get("runs_per_case", 10)
 	envConfig["parallel_envs"] = len(experiment_config['cases'])
@@ -633,6 +635,7 @@ func _collect_experiment_result(run_num):
 		var final_results = simulation._collect_results()
 		
 		mainCanvas.update_results(final_results)		
+		mainCanvas.update_scores(final_results[1]['killed'], final_results[0]['killed'])
 		
 		var sim_result = {
 			"env_id" : simulation.id,

@@ -22,12 +22,13 @@ class GodotExperimentWrapper(GodotEnv):
         
         self.parallel_envs  = self.env_config.get("parallel_envs", 1)             
         
-        self.port = GodotExperimentWrapper.DEFAULT_PORT + random.randint(0,3100)                 
+        self.port = self.env_config.get("port", GodotExperimentWrapper.DEFAULT_PORT + random.randint(0,3100))         
         self.proc = None
         
         if self.env_path is not None and self.env_path != "debug":
             self.env_path = self._set_platform_suffix(self.env_path)
 
+            print(self.env_path)
             self.check_platform(self.env_path)  
 
             self._launch_env(self.env_path, self.port, self.show_window == 1, None, self._seed, self.action_repeat, self.speedup)
@@ -38,8 +39,8 @@ class GodotExperimentWrapper(GodotEnv):
         self.num_envs = None
         
         self._handshake()                
-        self.send_sim_config(self.experiment_config)
-        self.num_runs = self.experiment_config['runs_per_case']
+        #self.send_sim_config(self.experiment_config)
+        self.num_runs = 0#self.experiment_config['runs_per_case']        
         #self._get_env_info()                                    
         
         atexit.register(self._close)
@@ -50,31 +51,48 @@ class GodotExperimentWrapper(GodotEnv):
         message["agents_config"] = self.agents_config
         message["env_config"] = self.env_config
         message["experiment_config"] = _experiment_config
+        
+        self.num_runs = _experiment_config['runs_per_case'] 
         self._send_as_json(message)
         
         
     def watch_experiment(self):
         
         # Wait for the experiment results
-        while True:                                   
+        experimentRunning = True
+        while experimentRunning:                                   
             
             response = self._check_data()            
-            if response["type"] == "experiment_results":                
-                #print("Experiment Concluded")
-                break
-            if response["type"] == "experiment_step":                
-                print(f'{str(response["run_finished"])/{self.num_runs}}', end=f'\r' )
+            
+            for msg in response:                
+                if msg["type"] == "experiment_results":                                    
+                    experimentRunning = False
+                
+                #if msg["type"] == "experiment_step":                
+                #    print(f'{int(msg["run_finished"]) + 1 } / {self.num_runs}', end=f'\r' )
             time.sleep(1)
                             
-        experiment_results = response["results"]        
+        experiment_results = response[-1]["results"]        
         return experiment_results
     
     def _check_data(self):
-        data = self._get_data_non_blocking()        
-        if data != None:
-            return data#json.loads(data)
+        
+        data = []
+        
+        last_data = self._get_data_non_blocking()        
+        
+        if last_data == None:
+            data = [{"type" : None }]
         else:
-            return {"type" : None }
+            data.append(last_data)
+                    
+        while last_data != None:
+            last_data = self._get_data_non_blocking()
+            if last_data != None:
+                data.append(last_data)        
+        
+        return data
+                        
     
     def _get_data_non_blocking(self):
         try:

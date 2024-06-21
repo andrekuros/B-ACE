@@ -63,7 +63,7 @@ def generate_behavior_case(dShot = 0.85, lCrank = 0.60, lBreak = 0.95 ):
     case = { "AgentsConfig" : 
                 {
                 "blue_agents": { 
-                        "num_agents" : 1,
+                        "num_agents" : 4,
                         "beh_config" : 
                         {
                             "dShot" : dShot,
@@ -72,7 +72,7 @@ def generate_behavior_case(dShot = 0.85, lCrank = 0.60, lBreak = 0.95 ):
                         },
                 },
                 "red_agents": { 
-                        "num_agents" : 1,
+                        "num_agents" : 4,
                         "beh_config" : 
                         {
                             "dShot" : dShot,
@@ -89,9 +89,9 @@ def generate_behavior_case(dShot = 0.85, lCrank = 0.60, lBreak = 0.95 ):
 config_dict = { "EnvConfig" : 
                 {
                     "task": "b_ace_v1",
-                    'env_path': 'BVR_AirCombat/bin/B_ACE_v9.exe',		
+                    'env_path': 'BVR_AirCombat/bin/B_ACE_v10.exe',		
                     "port": 12500,
-                    "renderize": 1,
+                    "renderize": 0,
                     "debug_view": 0,
                     "phy_fps": 20,
                     "speed_up": 50000,
@@ -118,7 +118,7 @@ config_dict = { "EnvConfig" :
                 "AgentsConfig" : 
                 {
                     "blue_agents": { 
-                        "num_agents" : 2,
+                        "num_agents" : 1,
                         
                         "base_behavior": "baseline1",
                         "beh_config" : {
@@ -132,12 +132,14 @@ config_dict = { "EnvConfig" :
                         "init_hdg": 0.0,                        
                         "target_position": {"x": 0.0,"y": 25000.0,"z": -30.0},
                         "rnd_offset_range":{"x": 0.0,"y": 0.0,"z": 0.0},				
-                        "rnd_shot_dist_var": 0.0,
+                        "rnd_shot_dist_var": 0.025,
+                        "rnd_crank_var": 0.025,
+                        "rnd_break_var": 0.025,
                         "wez_models" : "res://assets/wez/Default_Wez_params.json"
                     },	
                     "red_agents":
                     { 
-                        "num_agents" : 2, 
+                        "num_agents" : 1, 
                                     
                         "base_behavior": "baseline1",
                         "beh_config" : {
@@ -149,8 +151,10 @@ config_dict = { "EnvConfig" :
                         "offset_pos": {"x": 0.0,"y": 0.0,"z": 0.0},
                         "init_hdg" : 180.0,                        
                         "target_position": {"x": 0.0,"y": 25000.0,"z": 30.0},
-                        "rnd_offset_range":{"x": 0.0,"y": 0.0,"z": 0.0},				
-                        "rnd_shot_dist_var": 0.0,
+                        "rnd_offset_range":{"x": 0.0,"y": 0.0,"z": 0.0},				                        
+                        "rnd_shot_dist_var": 0.025,
+                        "rnd_crank_var": 0.025,
+                        "rnd_break_var": 0.025,
                         "wez_models" : "res://assets/wez/Default_Wez_params.json"
                     }
                 },
@@ -162,9 +166,14 @@ config_dict = { "EnvConfig" :
 #%%% RUN Experiments
 #wezFile = "res://assets//Default_Wez_params.json"
 
-cases = [ generate_behavior_case(dShot = 0.85, 
+cases = []
+for case in range(30):
+    
+    dict_beh = generate_behavior_case(dShot = 0.85, 
                                 lCrank = 0.60, 
-                                lBreak = 0.95 )]
+                                lBreak = 0.95 )
+    dict_beh["EnvConfig"] = { "seed" : case}
+    cases.append(dict_beh) 
 #print(cases)
 experimentConfig = { 'runs_per_case': 30, 'cases' : cases }
 
@@ -211,11 +220,11 @@ for team_name, stats in team_stats.items():
     missile_mean, missile_ci_low, missile_ci_high = bootstrap_ci(stats, "missile" )
 
     merged_result.append({
-        "team_name": team_name,
-        "mean_killed": killed_mean,
-        "ci_k": f'{killed_ci_low} / {killed_ci_high}',
-        "mean_missile": missile_mean,
-        "ci_m": f'{missile_ci_low} / {missile_ci_high}',        
+        "team": team_name,
+        "killed": f'{killed_mean:.2f}',
+        "ci_killed": f'({killed_ci_low:.2f},{killed_ci_high:.2f})',
+        "missiles": f'{missile_mean:.2f}',
+        "ci_missiles": f'({missile_ci_low:.2f},{missile_ci_high:.2f})',        
     })    
 
 _results.append(merged_result)
