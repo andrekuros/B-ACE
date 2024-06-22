@@ -177,26 +177,25 @@ class Individual:
         env = GodotExperimentWrapper(config_dict)
         return env
     
-    def generate_behavior_case(self, agent="blue_agents"):
-        case = {
-            agent: {
-                "num_agents": 1,
-                "beh_config": self.beh_config
-            }
-        }
-        return case
+    #def generate_behavior_case(self, agent="blue_agents"):
+    #    case = {                            
+    #            "beh_config": self.beh_config
+    #           }
+    #    
+    #    return case
     
-    def evaluate_fitness(self, enemies):
-        blue_agent = self.generate_behavior_case(agent="blue_agents")
-        base_config = {"AgentsConfig": blue_agent}
-
+    def evaluate_fitness(self, enemies):        
+        
         cases = []
-        for enemy in enemies:
-            red_agent = enemy.generate_behavior_case(agent="red_agents")            
-            case_config = base_config.copy()
-            case_config["AgentsConfig"].update(red_agent)
+        for enemy in enemies:            
+                                    
+            case_config =   {"AgentsConfig" : 
+                                {   "blue_agents" : self.beh_config,
+                                    "red_agents"  : enemy.beh_config
+                                }
+                            }                        
             cases.append(case_config)
-                    
+                
         experimentConfig = {'runs_per_case': runs_per_case, 'cases': cases}
         self.env.send_sim_config(experimentConfig)
         results = self.env.watch_experiment()
@@ -437,9 +436,13 @@ wandb.finish()
 # Run the genetic algorithm and save the best population
 #best_population = genetic_algorithm(save_filename='best_population.json')
 
+
 # Load two populations
 population1 = load_population('.\GA_Results\Run_0621_15_enemies.json', start_port=13000)
 population2 = load_population('.\GA_Results\Run_0621_15_enemies2.json', start_port=13500)
+
+print_individuals_table(population1)
+print_individuals_table(population2)
 
 # Evaluate loaded populations against each other
 evaluate_loaded_populations(population1, population1)
