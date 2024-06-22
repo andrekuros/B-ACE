@@ -13,6 +13,7 @@
 		"action_repeat": 20,	
 		"action_type": "Low_Level_Continuous",                        
 		"full_observation": 1,
+		"stop_mission" : 1,
 		
 		
 		"RewardsConfig" : {
@@ -34,6 +35,7 @@
 			"num_agents" : 1,
 			
 			"base_behavior": "baseline1",
+			"mission"    : "DCA",
 			"beh_config" : {
 				"dShot" : 0.85,
 				"lCrank": 0.60,
@@ -55,6 +57,7 @@
 			"num_agents" : 1, 
 						
 			"base_behavior": "baseline1",
+			"mission"    : "DCA",
 			"beh_config" : {
 				"dShot" : 0.85,
 				"lCrank": 0.60,

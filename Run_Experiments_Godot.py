@@ -63,7 +63,7 @@ def generate_behavior_case(dShot = 0.85, lCrank = 0.60, lBreak = 0.95 ):
     case = { "AgentsConfig" : 
                 {
                 "blue_agents": { 
-                        "num_agents" : 4,
+                        "num_agents" : 1,
                         "beh_config" : 
                         {
                             "dShot" : dShot,
@@ -72,7 +72,7 @@ def generate_behavior_case(dShot = 0.85, lCrank = 0.60, lBreak = 0.95 ):
                         },
                 },
                 "red_agents": { 
-                        "num_agents" : 4,
+                        "num_agents" : 1,
                         "beh_config" : 
                         {
                             "dShot" : dShot,
@@ -91,7 +91,7 @@ config_dict = { "EnvConfig" :
                     "task": "b_ace_v1",
                     'env_path': 'BVR_AirCombat/bin/B_ACE_v10.exe',		
                     "port": 12500,
-                    "renderize": 0,
+                    "renderize": 1,
                     "debug_view": 0,
                     "phy_fps": 20,
                     "speed_up": 50000,
@@ -167,7 +167,7 @@ config_dict = { "EnvConfig" :
 #wezFile = "res://assets//Default_Wez_params.json"
 
 cases = []
-for case in range(30):
+for case in range(5):
     
     dict_beh = generate_behavior_case(dShot = 0.85, 
                                 lCrank = 0.60, 
@@ -183,6 +183,7 @@ config_dict['ExperimentConfig'] = experimentConfig
 env = GodotExperimentWrapper(config_dict)
 
 # Run the experiment
+env.send_sim_config(experimentConfig)
 results = env.watch_experiment()
 
 # Save the experiment results to a file

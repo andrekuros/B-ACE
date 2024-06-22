@@ -370,6 +370,8 @@ func _physics_process(delta):
 					_send_dict_as_json_message(reply)
 					
 					_reset_all_sims()
+			
+			
 		#var handled = handle_message()
 			
 													
@@ -381,6 +383,7 @@ func _physics_process(delta):
 				# {"turn_input": 4, "fire_input" :  0,  "level_input" : 4}] 
 				#for sim in simulation_list:		
 		
+		_check_all_sims_done()
 		#_get_obs_from_simulations()
 		_get_reward_from_simulations()
 		var obs = _get_obs_from_simulations()	
@@ -480,29 +483,26 @@ func handle_message() -> bool:
 func _check_all_sims_done():
 		
 	for sim in simulation_list:
-		var donesAgents  = sim._check_all_done_agents()
-		var donesEnemies  = sim._check_all_done_enemies()		
-		if not (donesAgents and donesEnemies):
-			return false		
+		if not sim.ready_to_reset:
+			return false
 	return true
 
 
 func _reset_agents_if_done():
-			
-	
+				
 	var index = 0
 	var finalStatus = []
 	for sim in simulation_list:
-		var donesAgents  = sim._check_all_done_agents()
-		var donesEnemies  = sim._check_all_done_enemies()		
-				
-		if donesAgents and donesEnemies:								
+		
+		if sim.ready_to_reset:								
 			n_action_steps = 0
 			finalStatus.append(sim._collect_results())			
 			var results = sim._collect_results()			
+			#if sim == simulation_list[0]:
 			mainCanvas.update_results(results)			
 			mainCanvas.update_scores(results[1]['killed'], results[0]['killed'])
 			sim._reset_simulation()
+			
 			
 		else:
 			finalStatus.append(null)
@@ -523,11 +523,12 @@ func clamp_array(arr : Array, min:float, max:float):
 	return output	
 
 func _reset_all_sims():	
-	for sim in simulation_list:
+	for sim in simulation_list:		
 		sim._reset_simulation()
 		
-func _reset_all_sim(sim_index):
+func _reset_all_sim(sim_index):	
 	simulation_list[sim_index]._reset_simulation()
+	
 		
 func _get_obs_from_simulations():
 		
@@ -634,6 +635,9 @@ func _collect_experiment_result(run_num):
 		
 		var final_results = simulation._collect_results()
 		
+		var sim = simulation
+		final_results[0]["beh"] = [sim.fighters[0].dShot, sim.fighters[0].lCrank, sim.fighters[0].lBreak]
+		final_results[1]["beh"] = [sim.fighters[1].dShot, sim.fighters[1].lCrank, sim.fighters[1].lBreak]
 		mainCanvas.update_results(final_results)		
 		mainCanvas.update_scores(final_results[1]['killed'], final_results[0]['killed'])
 		

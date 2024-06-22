@@ -37,7 +37,10 @@ var phy_fps
 var physics_updates = 0
 var elapsed_time = 0.0
 
+var stop_mission = 1
+
 var stop_simulation = false
+var ready_to_reset = true
 var initialized = false
 	
 func initialize(_id, _tree, _envConfig, _agentsConfig):
@@ -49,6 +52,7 @@ func initialize(_id, _tree, _envConfig, _agentsConfig):
 	
 	action_repeat	= int(envConfig["action_repeat"])
 	max_cycles		= int(envConfig["max_cycles"])
+	stop_mission    = int(envConfig["stop_mission"])
 	
 	agentsConfig = _agentsConfig.duplicate(true)	
 	simGroups = SimGroups.new(id)
@@ -59,15 +63,32 @@ func initialize(_id, _tree, _envConfig, _agentsConfig):
 	_reset_simulation()
 	
 	initialized = true
+	ready_to_reset = false
+	set_process_mode_recursively(self, true)
 	
+func set_process_mode_recursively(node, process_mode):
+	node.set_process(process_mode)
+	node.set_physics_process(process_mode)
+	for child in node.get_children():
+		set_process_mode_recursively(child, process_mode)
+
 
 # Called every frame. 'delta' is the elapsed time since the previous frame.
 func _physics_process(delta):
+				
+	
+	var donesAgents  =_check_all_done_agents()
+	var donesEnemies  = _check_all_done_enemies()		
+				
+	if donesAgents and donesEnemies:												
+		ready_to_reset = true
+		set_process_mode_recursively(self, false)
 		
+				
+			
 	last_team_dl_tracks = team_dl_tracks #Use last list pointer
 	team_dl_tracks = [{},{}] #reset list before agents do the updates
-	
-	
+			
 	# Increment the physics update count
 	physics_updates += 1    
 	elapsed_time += delta	
@@ -114,6 +135,8 @@ func _physics_process(delta):
 		finalState[0]["end_cond"] = "Max_Cycles"
 		finalState[1]["end_cond"] = "Max_Cycles"
 		
+		stop_simulation = true
+		
 		
 	#PROCCESS Global Rewards
 	#Enmies Rewards are actually penaulties due to the proximity to the 
@@ -129,7 +152,7 @@ func _physics_process(delta):
 			#if enemy.HPT != null:
 			#	tactics[-1] += " " + str(enemy.HPT.is_alive) + "/" + str(enemy.HPT.offensive_factor)
 			enemy_goal_reward += -1.0 / enemy.dist2go
-			if enemy.dist2go < 5.0: #500 meters
+			if enemy.dist2go < 5.0 and stop_mission == 1 and enemy.mission == "striker": #500 meters
 				enemy_on_target = true
 				finalState[1]['mission'] += 1 
 				finalState[0]["end_cond"] = "Red_Mission"
@@ -156,7 +179,7 @@ func _physics_process(delta):
 			#Add the calculated rews
 			#agent.ownRewards.add_mission_rew(enemy_goal_reward)
 			agent.ownRewards.add_mission_rew(own_goal_reward)
-
+	
 func _set_agents(_tree):	
 				
 	#Scale Vectors only for Visualization	
@@ -213,7 +236,7 @@ func _set_agents(_tree):
 			blue_config["offset_pos"] = Vector3(offset_x * 6, 0.0, 0.0)			
 			newFigther.update_init_config(blue_config, envConfig["RewardsConfig"])			
 			newFigther.reset()
-						
+											
 		else:
 			var red_config = agentsConfig["red_agents"].duplicate(true)
 			newFigther.team_id = 1
@@ -235,7 +258,7 @@ func _set_agents(_tree):
 			
 			red_config["offset_pos"] = Vector3(offset_x * 6, 0.0, 0.0)			
 			newFigther.update_init_config(red_config, envConfig["RewardsConfig"])			
-			newFigther.reset()			
+			newFigther.reset()				
 																										
 		fighters.append(newFigther)
 		teams_agents[newFigther.team_id].append(newFigther)
@@ -278,6 +301,10 @@ func _reset_simulation():
 	
 	stop_simulation = false
 	n_action_steps = 0
+	ready_to_reset = false
+	
+	set_process_mode_recursively(self, true)
+	
 
 func _reset_components():	
 	var missiles = tree.get_nodes_in_group(simGroups.MISSILE)

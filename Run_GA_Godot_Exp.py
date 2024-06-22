@@ -5,6 +5,9 @@ from GodotExperimentWrapper import GodotExperimentWrapper
 import json
 import pandas as pd
 import concurrent.futures
+import wandb
+
+
 
 # Define the parameters for the genetic algorithm
 population_size = 50
@@ -37,7 +40,8 @@ config_dict_template = { "EnvConfig" :
                     "parallel_envs": 1,	
                     "seed": 1,	
                     "action_repeat": 20,	
-                    "action_type": "Low_Level_Continuous",                                            
+                    "action_type": "Low_Level_Continuous", 
+                    "stop_mission" : 0,                                           
                                         
                     "RewardsConfig" : {
                         "mission_factor": 0.001,				
@@ -58,6 +62,7 @@ config_dict_template = { "EnvConfig" :
                         "num_agents" : 1,
                         
                         "base_behavior": "baseline1",
+                        "mission"    : "DCA",
                         "beh_config" : {
                             "dShot" : 0.85,
                             "lCrank": 0.60,
@@ -79,6 +84,7 @@ config_dict_template = { "EnvConfig" :
                         "num_agents" : 1, 
                                     
                         "base_behavior": "baseline1",
+                        "mission"    : "DCA",
                         "beh_config" : {
                             "dShot" : 0.85,
                             "lCrank": 0.60,
@@ -97,6 +103,7 @@ config_dict_template = { "EnvConfig" :
                 },
                 
 }
+
 
 def insert_inv_sorted(sorted_list, ind):
     # Find the correct position to insert the value
@@ -185,15 +192,15 @@ class Individual:
 
         cases = []
         for enemy in enemies:
-            red_agent = enemy.generate_behavior_case(agent="red_agents")
+            red_agent = enemy.generate_behavior_case(agent="red_agents")            
             case_config = base_config.copy()
-            case_config.update(red_agent)
+            case_config["AgentsConfig"].update(red_agent)
             cases.append(case_config)
-        
+                    
         experimentConfig = {'runs_per_case': runs_per_case, 'cases': cases}
         self.env.send_sim_config(experimentConfig)
         results = self.env.watch_experiment()
-        results_df = process_results(results)
+        results_df = process_results(results)        
         results_df["score"] = results_df["killed_red"] - results_df["killed_blue"]
         self.score = np.mean(results_df["score"])
         
@@ -241,16 +248,13 @@ def load_population(filename, start_port):
     return population
 
 def evaluate_loaded_populations(population1, population2):
-    for ind in population1:
-        ind.evaluate_fitness(population2)
-    for ind in population2:
-        ind.evaluate_fitness(population1)
     
-    print("Population 1 results:")
+    update_score_values(population1, population2)
+        
     print_individuals_table(population1, title="Population 1")
     
-    print("\nPopulation 2 results:")
-    print_individuals_table(population2, title="Population 2")
+    #print("\nPopulation 2 results:")
+    #print_individuals_table(population2, title="Population 2")
 
 # Select parents using tournament selection
 def tournament_selection(population, scores, k=3):
@@ -277,14 +281,14 @@ def update_enemies_list(enemies_list, population):
     population.sort(key=lambda x: x.score, reverse=True)
     new_enemies = population[:3]  # Best 3 individuals
     
-    enemies_list.sort(key=lambda x: x.score)
-    
+    enemies_list.sort(key=lambda x: x.score, reverse=True)
+    num_changes =0
     for ind in new_enemies:
         if ind.score > enemies_list[-1].score:                    
             enemies_list[-1].update(ind.beh_config, ind.score)
-            enemies_list.sort(key=lambda x: x.score)
-    
-    return enemies_list
+            enemies_list.sort(key=lambda x: x.score, reverse=True)
+            num_changes += 1
+    return num_changes
 
 def update_population(_population, new_beh):
     for i, inv in enumerate(_population):
@@ -292,6 +296,7 @@ def update_population(_population, new_beh):
         
 
 def update_score_values(population, enemies_list):
+    
     with concurrent.futures.ThreadPoolExecutor() as executor:
         future_to_ind = {executor.submit(ind.evaluate_fitness, enemies_list): ind for ind in population}
         for future in concurrent.futures.as_completed(future_to_ind):
@@ -349,19 +354,37 @@ def genetic_algorithm(save_filename=None):
     for generation in range(generations):
         update_score_values(population, enemies_list)
         
+        # Log the best fitness score of the current generation to W&B
+        mean_fitness = np.mean([ind.score for ind in population])
+        min_fitness = min([ind.score for ind in population])
+        best_fitness = max([ind.score for ind in population])
+        
+        wandb.log({"Mean_Score_Population": mean_fitness, "Max_Score_Population": best_fitness, "Min_Score_Population": min_fitness})
+        
         if save_filename != None:
             save_population(enemies_list, save_filename + str(generation) + "_agents.json")   
-                                               
+
         print(f"Generation {generation}: Best fitness = {max([ind.score for ind in population])}")
-        print_individuals_table(population, title="Population", limit=5)
+        print_individuals_table(population, title="Population", limit=population_size)
         
         if generation % update_enemies_every == 0:
             update_score_values(enemies_list, enemies_list)
-            enemies_list = update_enemies_list(enemies_list, population)
+            num_changes = update_enemies_list(enemies_list, population)
+            
             if save_filename != None:
                 save_population(enemies_list, save_filename + str(generation) + "_enemies.json")   
             
-            print_individuals_table(population, title="Enemies", limit=enemies_size)  
+            print_individuals_table(enemies_list, title="Enemies", limit=enemies_size) 
+            
+            # Log the best fitness score of the current generation to W&B
+            mean_fitness = np.mean([ind.score for ind in enemies_list])
+            min_fitness = min([ind.score for ind in enemies_list])
+            best_fitness = max([ind.score for ind in enemies_list])
+            
+            wandb.log({"Mean_Score_Enemies": mean_fitness, 
+                        "Max_Score_Enemies": best_fitness, 
+                        "Min_Score_Enemies": min_fitness,
+                        "Changes Best Group": num_changes}) 
         
         population.sort(key=lambda x: x.score, reverse=True)
         elite_population = population[:elite_size]
@@ -383,7 +406,21 @@ def genetic_algorithm(save_filename=None):
     
     return population
 
+#%%% Run GA
 
+# Initialize W&B run
+wandb.init(project="BaselineGA")
+# Log hyperparameters
+wandb.config.update({
+    "population_size": population_size,
+    "enemies_size": enemies_size,
+    "generations": generations,
+    "mutation_rate": mutation_rate,
+    "tournament_size": tournament_size,
+    "elite_size": elite_size,
+    "update_enemies_every": update_enemies_every,
+    "runs_per_case": runs_per_case
+})
 # Running the genetic algorithm
 best_population = genetic_algorithm(save_filename="GA_Results/Run_0621_")
 
@@ -391,5 +428,20 @@ best_population = genetic_algorithm(save_filename="GA_Results/Run_0621_")
 best_params = [ind.beh_config for ind in best_population]
 with open('best_parameters.json', 'w') as file:
     json.dump(best_params, file, indent=4)
+
+# Finish the W&B run
+wandb.finish()
+
+# %% Test Population
+
+# Run the genetic algorithm and save the best population
+#best_population = genetic_algorithm(save_filename='best_population.json')
+
+# Load two populations
+population1 = load_population('.\GA_Results\Run_0621_15_enemies.json', start_port=13000)
+population2 = load_population('.\GA_Results\Run_0621_15_enemies2.json', start_port=13500)
+
+# Evaluate loaded populations against each other
+evaluate_loaded_populations(population1, population1)
 
 # %%

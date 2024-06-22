@@ -86,6 +86,7 @@ var target_position = Vector3.ZERO
 var done = false
 var _heuristic = "AP" #"model" / "AP"
 var behavior = "baseline1" # baseline1 / external
+var mission = "DCA" #"striker"
 
 var dShot 	= 0.85
 var lCrank 	= 0.6
@@ -229,9 +230,13 @@ func update_init_config(config, rewConfig = {}):
 	lCrank = init_config["beh_config"]["lCrank"]
 	lBreak = init_config["beh_config"]["lBreak"]
 	
+	mission = init_config["mission"]
+		
+	
 	ownRewards = RewardsControl.new(rewConfig,self)	
 
 func set_behavior(_behavior):	
+	
 	if  _behavior == "baseline1" or _behavior == "duck" or\
 		_behavior == "wez_eval_shooter" or _behavior == "wez_eval_target_max" or _behavior == "wez_eval_target_nez"or\
 		_behavior == "external":	
@@ -681,13 +686,14 @@ func process_behavior(delta_s):
 				
 			elif tatic_status == "Search":				
 																
-				if (sign(strike_line_z) > 0 and global_transform.origin.z > strike_line_z) or\
-			   		(sign(strike_line_z) < 0 and global_transform.origin.z < strike_line_z) or\
-					global_transform.origin.x > strike_line_xR or global_transform.origin.x < strike_line_xL:					
-					desiredG_input = 5.0	
-					tatic_status = "Strike"							
-					tatic_time = 0.0					
-				
+				if mission == "striker":
+					if (sign(strike_line_z) > 0 and global_transform.origin.z > strike_line_z) or\
+				   		(sign(strike_line_z) < 0 and global_transform.origin.z < strike_line_z) or\
+						global_transform.origin.x > strike_line_xR or global_transform.origin.x < strike_line_xL:					
+						desiredG_input = 5.0	
+						tatic_status = "Strike"							
+						tatic_time = 0.0					
+					
 				#hdg_input = -90
 				if tatic_time >= 180.0:
 					hdg_input = Calc.get_hdg_2d(global_transform.origin, target_position )
@@ -737,13 +743,14 @@ func process_behavior(delta_s):
 					desiredG_input = 6.0		
 				
 				
-				if (sign(strike_line_z) > 0 and global_transform.origin.z > strike_line_z) or\
-			   		(sign(strike_line_z) < 0 and global_transform.origin.z < strike_line_z) or\
-					global_transform.origin.x > strike_line_xR or global_transform.origin.x < strike_line_xL:					
-					desiredG_input = 5.0	
-					tatic_status = "Strike"
-					crank_error = -1							
-					tatic_time = 0.0	
+				if mission == "striker":
+					if (sign(strike_line_z) > 0 and global_transform.origin.z > strike_line_z) or\
+				   		(sign(strike_line_z) < 0 and global_transform.origin.z < strike_line_z) or\
+						global_transform.origin.x > strike_line_xR or global_transform.origin.x < strike_line_xL:					
+						desiredG_input = 5.0	
+						tatic_status = "Strike"
+						crank_error = -1							
+						tatic_time = 0.0	
 					
 				if not HPT.is_alive:
 					tatic_status = "Search"					
