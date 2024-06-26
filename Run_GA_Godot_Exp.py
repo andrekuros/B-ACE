@@ -10,13 +10,14 @@ import wandb
 
 
 # Define the parameters for the genetic algorithm
-population_size = 50
-enemies_size = 10
-generations = 200
-mutation_rate = 0.1
-tournament_size = 5
-elite_size = 3  # Number of best individuals to retain each generation
-update_enemies_every = 3  # Frequency of updating the enemies list
+population_size = 30
+enemies_size = 5
+generations = 50
+mutation_rate = 0.10
+tournament_size = 3
+elite_size = 2  # Number of best individuals to retain each generation
+update_enemies_every = -1  # Frequency of updating the enemies list
+max_enemies_update = 2
 runs_per_case = 30
 
 # Define the behavior parameter ranges
@@ -108,7 +109,7 @@ config_dict_template = { "EnvConfig" :
 def insert_inv_sorted(sorted_list, ind):
     # Find the correct position to insert the value
     for i in range(len(sorted_list)):
-        if ind.score > sorted_list[i].score:
+        if ind.score[0] > sorted_list[i].score[0]:
             sorted_list.insert(i, ind)
             return True
     return False
@@ -169,7 +170,7 @@ class Individual:
         }
         self.port = port
         self.env = self.initialize_env(port)
-        self.score = None
+        self.score = [None,None,None]
     
     def initialize_env(self, port):
         config_dict = config_dict_template.copy()
@@ -190,18 +191,22 @@ class Individual:
         for enemy in enemies:            
                                     
             case_config =   {"AgentsConfig" : 
-                                {   "blue_agents" : self.beh_config,
-                                    "red_agents"  : enemy.beh_config
+                                {   "blue_agents" : { "beh_config" : self.beh_config  },
+                                    "red_agents"  : { "beh_config" : enemy.beh_config}
                                 }
                             }                        
             cases.append(case_config)
                 
         experimentConfig = {'runs_per_case': runs_per_case, 'cases': cases}
+        
+
         self.env.send_sim_config(experimentConfig)
         results = self.env.watch_experiment()
-        results_df = process_results(results)        
+        results_df = process_results(results) 
+        
         results_df["score"] = results_df["killed_red"] - results_df["killed_blue"]
-        self.score = np.mean(results_df["score"])
+        
+        self.score = [np.mean(results_df["score"]),  np.mean(results_df["killed_red"]), np.mean(results_df["killed_blue"])]
         
         return self.score
 
@@ -211,7 +216,7 @@ class Individual:
             "lCrank": round(lCrank if lCrank is not None else random.uniform(*param_ranges["lCrank"]), 2),
             "lBreak": round(lBreak if lBreak is not None else random.uniform(*param_ranges["lBreak"]), 2)
         }
-        self.score = None
+        self.score = [None,None,None]
     
     def update(self, beh_config, score):
         self.beh_config = {
@@ -219,7 +224,7 @@ class Individual:
             "lCrank": round(beh_config["lCrank"], 2),
             "lBreak": round(beh_config["lBreak"], 2)
         }
-        self.score = score
+        self.score = score.copy()
 
 def generate_initial_population(size, start_port):
     population = []
@@ -233,7 +238,7 @@ def save_population(population, filename):
     with open(filename, 'w') as file:
         json.dump(pop_data, file, indent=4)
 
-def load_population(filename, start_port):
+def load_population(filename, start_port=12500):
     with open(filename, 'r') as file:
         pop_data = json.load(file)
     population = []
@@ -277,21 +282,28 @@ def mutate(individual_beh, mutation_rate):
 
 # Update enemies list
 def update_enemies_list(enemies_list, population):
-    population.sort(key=lambda x: x.score, reverse=True)
-    new_enemies = population[:3]  # Best 3 individuals
+    population.sort(key=lambda x: x.score[0], reverse=True)
     
-    enemies_list.sort(key=lambda x: x.score, reverse=True)
-    num_changes =0
+    new_enemies = []
+    for new_enemy in population:
+        if check_unique(new_enemy.beh_config, [ind.beh_config for ind in enemies_list]):
+            new_enemies.append(new_enemy)
+        if len(new_enemies) == max_enemies_update:
+            break                
+    
+    enemies_list.sort(key=lambda x: x.score[0], reverse=True)
+    num_changes = 0
+    
     for ind in new_enemies:
-        if ind.score > enemies_list[-1].score:                    
-            enemies_list[-1].update(ind.beh_config, ind.score)
-            enemies_list.sort(key=lambda x: x.score, reverse=True)
+        if ind.score[0] > enemies_list[-1].score[0]:                    
+            enemies_list[-1].update(ind.beh_config.copy(), ind.score.copy())
+            enemies_list.sort(key=lambda x: x.score[0], reverse=True)
             num_changes += 1
     return num_changes
 
 def update_population(_population, new_beh):
     for i, inv in enumerate(_population):
-        inv.update(new_beh[i], None)
+        inv.update(new_beh[i], [None,None,None])
         
 
 def update_score_values(population, enemies_list):
@@ -306,7 +318,7 @@ def update_score_values(population, enemies_list):
                 print(f'Individual generated an exception: {exc}')
 
 def print_individuals_table(individuals, title="Individuals", limit = 10):
-    individuals.sort(key=lambda x: x.score, reverse=True)
+    individuals.sort(key=lambda x: x.score[0], reverse=True)
     print(f"{title}:")
     headers = ["Port", "dShot", "lCrank", "lBreak", "Score"]
     row_format = "{:<10} {:<10} {:<10} {:<10} {:<10}"
@@ -319,7 +331,7 @@ def print_individuals_table(individuals, title="Individuals", limit = 10):
             f"{ind.beh_config['dShot']:.2f}",
             f"{ind.beh_config['lCrank']:.2f}",
             f"{ind.beh_config['lBreak']:.2f}",
-            f"{ind.score:.2f}" if ind.score is not None else "None"
+            f"{ind.score[0]:.2f} ({ind.score[1]:.2f},{ind.score[2]:.2f})" if ind.score[0] is not None else "None"
         ]
         print(row_format.format(*row))
         
@@ -331,9 +343,9 @@ def round_params(beh_config):
         "lBreak": round(beh_config["lBreak"], 2)
     }
 
-def check_unique(individual_beh, population):
+def check_unique(individual_beh, population_dicts):
     rounded_beh = round_params(individual_beh)
-    for ind_dict in population:
+    for ind_dict in population_dicts:
         ind_beh = round_params(ind_dict)
         if (ind_beh['dShot'] == rounded_beh['dShot'] and
             ind_beh['lCrank'] == rounded_beh['lCrank'] and
@@ -345,28 +357,32 @@ def elite_to_dicts(elite_population):
     return [ind.beh_config for ind in elite_population]
 
 # Run the genetic algorithm
-def genetic_algorithm(save_filename=None):
+def genetic_algorithm(save_filename=None, enemies_load = None):
     start_port = 12500
     population = generate_initial_population(population_size, start_port)
-    enemies_list = generate_initial_population(enemies_size, start_port + population_size)
+    
+    if enemies_load != None:
+        enemies_list = load_population(enemies_load, start_port + 500)
+    else:
+        enemies_list = generate_initial_population(enemies_size, start_port + population_size)
     
     for generation in range(generations):
         update_score_values(population, enemies_list)
         
         # Log the best fitness score of the current generation to W&B
-        mean_fitness = np.mean([ind.score for ind in population])
-        min_fitness = min([ind.score for ind in population])
-        best_fitness = max([ind.score for ind in population])
+        mean_fitness = np.mean([ind.score[0] for ind in population])
+        min_fitness = min([ind.score[0] for ind in population])
+        best_fitness = max([ind.score[0] for ind in population])
         
         wandb.log({"Mean_Score_Population": mean_fitness, "Max_Score_Population": best_fitness, "Min_Score_Population": min_fitness})
         
         if save_filename != None:
             save_population(enemies_list, save_filename + str(generation) + "_agents.json")   
 
-        print(f"Generation {generation}: Best fitness = {max([ind.score for ind in population])}")
+        print(f"Generation {generation}: Best fitness = {max([ind.score[0] for ind in population])}")
         print_individuals_table(population, title="Population", limit=population_size)
         
-        if generation % update_enemies_every == 0:
+        if generation % update_enemies_every == 0 and update_enemies_every != -1:
             update_score_values(enemies_list, enemies_list)
             num_changes = update_enemies_list(enemies_list, population)
             
@@ -376,24 +392,24 @@ def genetic_algorithm(save_filename=None):
             print_individuals_table(enemies_list, title="Enemies", limit=enemies_size) 
             
             # Log the best fitness score of the current generation to W&B
-            mean_fitness = np.mean([ind.score for ind in enemies_list])
-            min_fitness = min([ind.score for ind in enemies_list])
-            best_fitness = max([ind.score for ind in enemies_list])
+            mean_fitness = np.mean([ind.score[0] for ind in enemies_list])
+            min_fitness = min([ind.score[0] for ind in enemies_list])
+            best_fitness = max([ind.score[0] for ind in enemies_list])
             
             wandb.log({"Mean_Score_Enemies": mean_fitness, 
                         "Max_Score_Enemies": best_fitness, 
                         "Min_Score_Enemies": min_fitness,
                         "Changes Best Group": num_changes}) 
         
-        population.sort(key=lambda x: x.score, reverse=True)
+        population.sort(key=lambda x: x.score[0], reverse=True)
         elite_population = population[:elite_size]
         elite_population_dicts = elite_to_dicts(elite_population)
         available_agents = population[elite_size:]
         
         new_individuals = []
         while len(new_individuals) < len(available_agents):
-            parent1 = tournament_selection(population, [ind.score for ind in population], tournament_size)
-            parent2 = tournament_selection(population, [ind.score for ind in population], tournament_size)
+            parent1 = tournament_selection(population, [ind.score[0] for ind in population], tournament_size)
+            parent2 = tournament_selection(population, [ind.score[0] for ind in population], tournament_size)
             child = mutate(crossover(parent1, parent2), mutation_rate=mutation_rate)
             
             if check_unique(child, elite_population_dicts + [ind for ind in new_individuals]):
@@ -406,6 +422,11 @@ def genetic_algorithm(save_filename=None):
     return population
 
 #%%% Run GA
+load_dir = ".\\GA_Results\\"
+enemiesLoad = load_dir + "Enemies_Gen95.json"
+name = "GA2_Phase2_"+ enemiesLoad
+
+#enemiesLoad = None
 
 # Initialize W&B run
 wandb.init(project="BaselineGA")
@@ -418,10 +439,11 @@ wandb.config.update({
     "tournament_size": tournament_size,
     "elite_size": elite_size,
     "update_enemies_every": update_enemies_every,
-    "runs_per_case": runs_per_case
+    "runs_per_case": runs_per_case,
+    "name":name
 })
 # Running the genetic algorithm
-best_population = genetic_algorithm(save_filename="GA_Results/Run_0621_")
+best_population = genetic_algorithm(save_filename="GA_Results/Run_0623_", enemies_load=enemiesLoad)
 
 # Save the best parameters found
 best_params = [ind.beh_config for ind in best_population]
@@ -431,18 +453,25 @@ with open('best_parameters.json', 'w') as file:
 # Finish the W&B run
 wandb.finish()
 
+
+
+
+
+
 # %% Test Population
 
 # Run the genetic algorithm and save the best population
 #best_population = genetic_algorithm(save_filename='best_population.json')
 
+ref50 = '.\GA_Results\RefEnemies_50Gen.json'
+refLast = '.\GA_Results\Run_0623_6_enemies.json'
 
 # Load two populations
-population1 = load_population('.\GA_Results\Run_0621_15_enemies.json', start_port=13000)
-population2 = load_population('.\GA_Results\Run_0621_15_enemies2.json', start_port=13500)
+population1 = load_population(refLast, start_port=13000)
+#population2 = load_population('.\GA_Results\Run_0621_15_enemies2.json', start_port=13500)
 
 print_individuals_table(population1)
-print_individuals_table(population2)
+#print_individuals_table(population2)
 
 # Evaluate loaded populations against each other
 evaluate_loaded_populations(population1, population1)
