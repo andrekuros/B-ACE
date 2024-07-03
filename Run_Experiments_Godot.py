@@ -235,3 +235,35 @@ df_results = pd.DataFrame(_results[0])
 print(df_results)
 
 # %%
+import pandas as pd
+
+# Data for the reward and penalty factors table
+reward_data = {
+    "Factor": [
+        "mission_accomplished_factor", "mission_factor", 
+        "missile_fire_factor", "missile_no_fire_factor", "missile_miss_factor", 
+        "detect_loss_factor", "keep_track_factor", 
+        "hit_enemy_factor", "hit_own_factor"
+    ],
+    "Default Value": [
+        10.0, 0.001, 
+        -0.1, -0.001, -0.5, 
+        -0.1, 0.001, 
+        3.0, -5.0
+    ],
+    "Explanation": [
+        "Reward for successfully completing a mission", "Shaping reward related to mission objectives", 
+        "Penalty for firing a missile", "Shaping penalty for firing when not possible", "Penalty for missing a target with a missile", 
+        "Shaping penalty for losing track of an enemy", "Shaping reward for maintaining track of an enemy", 
+        "Reward for hitting an enemy", "Penalty for being hit"
+    ]
+}
+
+# Create DataFrame
+reward_df = pd.DataFrame(reward_data)
+
+# Save to Excel file
+reward_df.to_excel("Reward_Penalty_Factors_B_ACE_Environment.xlsx", index=False)
+
+
+# %%

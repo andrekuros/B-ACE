@@ -7,8 +7,6 @@ import pandas as pd
 import concurrent.futures
 import wandb
 
-
-
 # Define the parameters for the genetic algorithm
 population_size = 30
 enemies_size = 5
@@ -16,7 +14,7 @@ generations = 50
 mutation_rate = 0.10
 tournament_size = 3
 elite_size = 2  # Number of best individuals to retain each generation
-update_enemies_every = -1  # Frequency of updating the enemies list
+update_enemies_every = 1  # Frequency of updating the enemies list
 max_enemies_update = 2
 runs_per_case = 30
 
@@ -160,7 +158,6 @@ def process_results(results):
 
     return df_grouped
 
-
 class Individual:
     def __init__(self, port, dShot=None, lCrank=None, lBreak=None):
         self.beh_config = {
@@ -238,17 +235,18 @@ def save_population(population, filename):
     with open(filename, 'w') as file:
         json.dump(pop_data, file, indent=4)
 
-def load_population(filename, start_port=12500):
+def load_population(filename, start_port=12500, limitNum = 100):
     with open(filename, 'r') as file:
         pop_data = json.load(file)
     population = []
-    for i, data in enumerate(pop_data):
+    for i, data in enumerate(pop_data[:limitNum]):
         ind = Individual(port=start_port + i, 
                          dShot=data["beh_config"]["dShot"], 
                          lCrank=data["beh_config"]["lCrank"], 
                          lBreak=data["beh_config"]["lBreak"])
         ind.score = data.get("score")
         population.append(ind)
+    population.sort(key=lambda x: x.score[0], reverse=True)
     return population
 
 def evaluate_loaded_populations(population1, population2):
@@ -345,12 +343,13 @@ def round_params(beh_config):
 
 def check_unique(individual_beh, population_dicts):
     rounded_beh = round_params(individual_beh)
+    
     for ind_dict in population_dicts:
-        ind_beh = round_params(ind_dict)
+        ind_beh = round_params(ind_dict)        
         if (ind_beh['dShot'] == rounded_beh['dShot'] and
             ind_beh['lCrank'] == rounded_beh['lCrank'] and
             ind_beh['lBreak'] == rounded_beh['lBreak']):
-            return False
+            return False    
     return True
 
 def elite_to_dicts(elite_population):
@@ -377,7 +376,7 @@ def genetic_algorithm(save_filename=None, enemies_load = None):
         wandb.log({"Mean_Score_Population": mean_fitness, "Max_Score_Population": best_fitness, "Min_Score_Population": min_fitness})
         
         if save_filename != None:
-            save_population(enemies_list, save_filename + str(generation) + "_agents.json")   
+            save_population(population, save_filename + str(generation) + "_agents.json")   
 
         print(f"Generation {generation}: Best fitness = {max([ind.score[0] for ind in population])}")
         print_individuals_table(population, title="Population", limit=population_size)
@@ -424,7 +423,7 @@ def genetic_algorithm(save_filename=None, enemies_load = None):
 #%%% Run GA
 load_dir = ".\\GA_Results\\"
 enemiesLoad = load_dir + "Enemies_Gen95.json"
-name = "GA2_Phase2_"+ enemiesLoad
+name = "GA2_Phase2_ChangeAll"+ enemiesLoad
 
 #enemiesLoad = None
 
@@ -454,26 +453,90 @@ with open('best_parameters.json', 'w') as file:
 wandb.finish()
 
 
-
-
-
-
 # %% Test Population
 
-# Run the genetic algorithm and save the best population
+# LOAD SAVED AGENTS
 #best_population = genetic_algorithm(save_filename='best_population.json')
 
 ref50 = '.\GA_Results\RefEnemies_50Gen.json'
 refLast = '.\GA_Results\Run_0623_6_enemies.json'
 
+population1 = []
+for n in range(50):
+    file = f'.\GA_Results\Run_0623_{n}_agents.json'
+    pop_n = load_population(file, start_port=12500 + n * 20, limitNum=50)
+    population1.extend(pop_n[:3])
+
+# ELIMINATE DUPLICATES
+eval_individuals = []
+for agent in population1:        
+    if check_unique(agent.beh_config, [ind.beh_config for ind in eval_individuals]):
+        eval_individuals.append(agent)
+
+
+#%% #EVALUATE AGENTS       
 # Load two populations
-population1 = load_population(refLast, start_port=13000)
+#population1 = load_population(refLast, start_port=13000)
 #population2 = load_population('.\GA_Results\Run_0621_15_enemies2.json', start_port=13500)
 
-print_individuals_table(population1)
+print_individuals_table(eval_individuals[22:])
 #print_individuals_table(population2)
 
-# Evaluate loaded populations against each other
-evaluate_loaded_populations(population1, population1)
+i = 75
+for ind in eval_individuals[i:]:
+    
+    print(f'Eval Ind {i}')
+    # Evaluate loaded populations against each other
+    evaluate_loaded_populations([eval_individuals[i]], eval_individuals)
+    print_individuals_table([eval_individuals[i]])
+    i = i + 1
+
+
+# %%
+import pandas as pd
+import matplotlib.pyplot as plt
+import numpy as np
+
+# Load the data from CSV
+df = pd.read_csv('top_agents.csv')
+
+# Function to select the top N agents based on the final score
+def select_top_agents(df, num_agents):
+    top_agents = df.nlargest(num_agents, 'final_score')
+    return top_agents
+
+# Function to generate graphs and statistics
+def analyze_diversity(agents):
+    # Scatter plot for the behavior parameters
+    plt.figure(figsize=(12, 8))
+    ax = plt.axes(projection='3d')
+    ax.scatter3D(agents['dShot'], agents['lCrank'], agents['lBreak'], c=agents['final_score'], cmap='viridis')
+    ax.set_xlabel('dShot')
+    ax.set_ylabel('lCrank')
+    ax.set_zlabel('lBreak')
+    plt.title('3D Scatter Plot of Top Agents by Behavior Parameters')
+    plt.colorbar(ax.scatter3D(agents['dShot'], agents['lCrank'], agents['lBreak'], c=agents['final_score'], cmap='viridis'))
+    plt.show()
+
+    # Statistics
+    stats = agents.describe()
+    print("Statistics of Top Agents:")
+    print(stats)
+    
+    # Pairplot
+    pd.plotting.scatter_matrix(agents[['dShot', 'lCrank', 'lBreak']], alpha=0.8, figsize=(12, 12), diagonal='hist', marker='o', c=agents['final_score'], cmap='viridis')
+    plt.suptitle('Pairplot of Behavior Parameters')
+    plt.show()
+
+# Select the top N agents
+num_agents = 87  # You can change this value to select a different number of top agents
+top_agents = select_top_agents(df, num_agents)
+
+# Analyze the diversity of the top agents
+analyze_diversity(top_agents)
+
+# Save the top agents to a new CSV file
+#top_agents.to_csv('top_agents.csv', index=False)
+#print(f"Top {num_agents} agents saved to 'top_agents.csv'.")
 
 # %%
