@@ -12,7 +12,7 @@ var mouse_sens = 0.1
 var camera_angle_v = 0
 var camera_angle_h = 0
 var zoom_level = 1500
-var move_speed = 25
+var move_speed = 30
 var fighterObj = preload("res://components/Fighter.tscn")
 var rng = RandomNumberGenerator.new()
 var numTasksDone = 0
@@ -24,6 +24,15 @@ func _ready():
 
 func _input(event):	
 	if event is InputEventKey:
+		if event.pressed and event.keycode == KEY_E:
+			# Reset camera view
+			cameraGlobal.rotate_x(deg_to_rad(-10.0))	
+		
+		if event.pressed and event.keycode == KEY_D:
+			# Reset camera view
+			cameraGlobal.rotate_x(deg_to_rad(10.0))			
+			
+		
 		if event.pressed and event.keycode == KEY_F:
 			# Reset camera view
 			cameraGlobal.rotation_degrees = Vector3(0, 1, 0)
@@ -41,7 +50,7 @@ func _input(event):
 			
 		if event.pressed and event.keycode == KEY_W:			
 			#cameraGlobal.position.y += zoom_level
-			for sim in get_node("SimManager").get_children():				
+			for sim in get_node("SimManager").get_children():												
 				sim.update_scale(2.0)
 		
 		if event.pressed and event.keycode == KEY_S:
@@ -52,6 +61,7 @@ func _input(event):
 
 	if event is InputEventMouseMotion:
 		var cam = get_camera_3d()
+		
 		if Input.is_mouse_button_pressed(MOUSE_BUTTON_LEFT):
 			cam.rotate_y(deg_to_rad(-event.relative.x * mouse_sens))
 			var change_v = -event.relative.y * mouse_sens

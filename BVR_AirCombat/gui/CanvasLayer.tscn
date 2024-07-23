@@ -99,18 +99,19 @@ text = "Speed
 [node name="LastResults" type="RichTextLabel" parent="Control"]
 layout_mode = 0
 offset_left = 15.0
-offset_top = 704.0
+offset_top = 734.0
 offset_right = 1180.0
-offset_bottom = 790.0
+offset_bottom = 796.0
 text = "Last Results
 "
 
 [node name="Tactics" type="RichTextLabel" parent="Control"]
+visible = false
 layout_mode = 0
 offset_left = 1012.0
 offset_top = 6.0
 offset_right = 1189.0
-offset_bottom = 174.0
+offset_bottom = 87.0
 text = "Tactics
 
 "

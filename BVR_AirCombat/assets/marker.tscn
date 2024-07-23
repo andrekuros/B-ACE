@@ -1,0 +1,13 @@
+[gd_scene load_steps=3 format=3 uid="uid://dbco5ongdtquo"]
+
+[sub_resource type="CylinderMesh" id="CylinderMesh_flj45"]
+top_radius = 0.0
+bottom_radius = 1.895
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_twy32"]
+albedo_color = Color(0.972549, 1, 1, 1)
+
+[node name="Target_Marker" type="MeshInstance3D"]
+transform = Transform3D(2, 0, 0, 0, 2, 0, 0, 0, 2, 0, 0, 1.04904e-05)
+mesh = SubResource("CylinderMesh_flj45")
+surface_material_override/0 = SubResource("StandardMaterial3D_twy32")

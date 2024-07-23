@@ -8,8 +8,9 @@ albedo_color = Color(0.392157, 0.392157, 0.392157, 1)
 
 [sub_resource type="Environment" id="Environment_c01bo"]
 background_mode = 1
+glow_normalized = true
 adjustment_enabled = true
-adjustment_brightness = 1.48
+adjustment_brightness = 1.56
 adjustment_contrast = 1.96
 adjustment_saturation = 1.7
 
@@ -34,7 +35,7 @@ near = 0.447
 script = ExtResource("1_ee7cu")
 
 [node name="CSGBox3D" type="CSGBox3D" parent="SubViewport"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -30.1531, 0)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -100, 0)
 size = Vector3(10000, 1, 10000)
 material = SubResource("StandardMaterial3D_cxgxf")
 
@@ -44,5 +45,6 @@ environment = SubResource("Environment_c01bo")
 [node name="DirectionalLight3D" type="DirectionalLight3D" parent="SubViewport"]
 transform = Transform3D(1, 0, 0, 0, 0.854459, 0.519519, 0, -0.519519, 0.854459, 0, 300, 0)
 layers = 15
-light_color = Color(0.819608, 0.819608, 0.819608, 1)
+light_energy = 0.7
 light_bake_mode = 0
+shadow_enabled = true

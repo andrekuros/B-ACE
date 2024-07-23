@@ -32,20 +32,20 @@
 	"AgentsConfig" : 
 	{
 		"blue_agents": { 
-			"num_agents" : 1,
+			"num_agents" : 2,
 			
 			"base_behavior": "baseline1",
 			"mission"    : "DCA",
 			"beh_config" : {
-				"dShot" : 0.85,
-				"lCrank": 0.60,
-				"lBreak": 0.95
+				"dShot" : [1.04, 0.50, 1.09],
+				"lCrank": [1.06, 0.98, 0.98],
+				"lBreak": [1.05, 1.17, 0.45]
 			},                  
 			
 			"init_position": {"x": 0.0, "y": 25000.0,"z": 30.0},
 			"offset_pos": {	"x": 0.0, "y": 0.0, "z": 0.0},
 			"init_hdg": 0.0,                        
-			"target_position": {"x": 0.0,"y": 25000.0,"z": 0.0},
+			"target_position": {"x": 0,"y": 25000.0,"z": 30.0},
 			"rnd_offset_range":{"x": 0.0,"y": 0.0,"z": 0.0},				
 			"rnd_shot_dist_var": 0.025,
 			"rnd_crank_var": 0.025,
@@ -54,19 +54,19 @@
 		},	
 		"red_agents":
 		{ 
-			"num_agents" : 1, 
+			"num_agents" : 2, 
 						
 			"base_behavior": "baseline1",
 			"mission"    : "DCA",
 			"beh_config" : {
-				"dShot" : 0.85,
-				"lCrank": 0.60,
-				"lBreak": 0.95
+				"dShot" : [1.04, 0.50, 1.09],
+				"lCrank": [1.06, 0.98, 0.98],
+				"lBreak": [1.05, 1.17, 0.45]
 			},
 			"init_position": {"x": 0.0,"y": 25000.0,"z": -30.0},
 			"offset_pos": {"x": 0.0,"y": 0.0,"z": 0.0},
 			"init_hdg" : 180.0,                        
-			"target_position": {"x": 0.0,"y": 25000.0,"z": 0.0},
+			"target_position": {"x": 0.0,"y": 25000.0,"z": 30.0},
 			"rnd_offset_range":{"x": 0.0,"y": 0.0,"z": 0.0},				
 			"rnd_shot_dist_var": 0.025,
 			"rnd_crank_var": 0.025,

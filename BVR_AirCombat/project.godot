@@ -26,6 +26,12 @@ window/vsync/vsync_mode=0
 
 project/assembly_name="FlyBy"
 
+[editor]
+
+movie_writer/mjpeg_quality=1.0
+movie_writer/movie_file="D:/Projects/B-ACE/B-ACE/BVR_AirCombat/Recorders/Record01.avi"
+movie_writer/fps=15
+
 [editor_plugins]
 
 enabled=PackedStringArray("res://addons/godot_rl_agents/plugin.cfg")

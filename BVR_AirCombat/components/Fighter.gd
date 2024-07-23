@@ -4,9 +4,19 @@ const missile = preload("res://components/missile.tscn")
 const Track   = preload("res://assets/Sim_assets.gd").Track
 const SConv   = preload("res://assets/Sim_assets.gd").SConv
 const RewardsControl = preload("res://assets/Sim_assets.gd").RewardsControl
-const Calc = preload("res://assets/Calc.gd")
+const Calc 	  = preload("res://assets/Calc.gd")
+const Marker  = preload("res://assets/marker.tscn")
 
 @onready var mainView = get_tree().root.get_node("B_ACE")
+
+var trail_node: MeshInstance3D
+var trail_mesh: ImmediateMesh
+var trail_material: StandardMaterial3D
+var trail_points = [] # Array to store the trail points
+var max_trail_points: int = 400 # Adjust based on desired trail length and update rate
+var trail_color: Color = Color(1.0, 1.0, 1.0, 0.1) # Red color with 50% alpha
+var trail_color_start: Color = Color(1.0, 1.0, 1.0, 0.0) # Starting color
+var trail_color_end: Color = Color(1.0, 1.0, 1.0, 1.0) # Ending color (transparent)
 
 #@onready var sync = get_tree().root.get_node("B_ACE/Sync")
 var manager = null
@@ -92,6 +102,9 @@ var dShot 	= 0.85
 var lCrank 	= 0.6
 var lBreak	= 0.95
 
+var dShotList 	= [0.85]
+var lCrankList 	= [0.6]
+var lBreakList	= [0.95]
 
 var AP_mode = "FlyHdg" #"GoTo" / "Hold"
 
@@ -137,13 +150,11 @@ var action_turn_len = len(turn_conv)
 var action_level_len = len(level_conv) 
 
 var radar_track_list = []
+var allied_track_list = []
 var HPT 	= null
 var HRT 	= null
 var data_link_list = []
 var in_flight_missile = null
-
-# Maximum number of points to retain in the trail
-var max_trail_points: int = 120 # Adjust based on desired trail length and update rate
 
 var len_tracks_data_obs = 0
 var len_allieds_data_obs = 0
@@ -175,13 +186,22 @@ var allied_info_null = [
 ]
 
 
-
 func is_type(type): return type == "Fighter" 
 func get_type(): return "Fighter"	
 
 func _ready():	
 	#$Radar/CollisionShape3D.disabled = true 
-	pass
+	# Initialize trail_points and other configurations
+	# Initialize trail_points and other configurations
+	trail_points = []
+
+	# Create the Trail node dynamically
+	trail_node = MeshInstance3D.new()
+	trail_node.transform = Transform3D.IDENTITY
+	# Add the trail node to the scene tree
+	get_parent().get_parent().add_child(trail_node)
+			
+	
 
 func update_init_config(config, rewConfig = {}):
 		
@@ -226,14 +246,49 @@ func update_init_config(config, rewConfig = {}):
 	rNez_calc.parse(wezModels["RNEZ_MODEL"], input_data)	
 	
 	set_behavior(init_config["base_behavior"])
-	dShot  = init_config["beh_config"]["dShot"]
-	lCrank = init_config["beh_config"]["lCrank"]
-	lBreak = init_config["beh_config"]["lBreak"]
 	
-	mission = init_config["mission"]
-		
+	dShotList  = init_config["beh_config"]["dShot"]
+	lCrankList = init_config["beh_config"]["lCrank"]
+	lBreakList = init_config["beh_config"]["lBreak"]
+	
+	if typeof(dShotList) != TYPE_ARRAY:
+		dShotList = [dShotList]
+	if typeof(lCrankList) != TYPE_ARRAY:
+		lCrankList = [lCrankList]
+	if typeof(lBreakList) != TYPE_ARRAY:
+		lBreakList = [lBreakList]
+			
+	dShot  = dShotList[0]
+	lCrank = lCrankList[0]
+	lBreak = lBreakList[0]
+	
+	mission = init_config["mission"]		
 	
 	ownRewards = RewardsControl.new(rewConfig,self)	
+	
+	if team_id == 0:
+		trail_color 		= Color(0.0, 0.0, 0.7, 1.0) # Blue color with 50% alpha
+		trail_color_start	= Color(0.0, 0.0, 0.7, 0.0) # Starting color
+		trail_color_end 	= Color(0.0, 0.0, 0.7, 1.0) # Ending color (transparent)
+	else:
+		trail_color 		= Color(0.7, 0.0, 0.0, 0.5) # Red color with 50% alpha
+		trail_color_start	= Color(0.7, 0.0, 0.0, 0.0) # Starting color
+		trail_color_end 	= Color(0.7, 0.0, 0.0, 1.0) # Ending color (transparent)
+
+	
+	update_trail_obj()
+	
+	var target_marker = Marker.instantiate()	
+	var material = target_marker.get_active_material(0)
+	var new_material = material.duplicate()  # Duplicate to avoid changing the original material used elsewhere.
+	new_material.albedo_color = trail_color						
+	target_marker.set_surface_override_material(0, new_material)
+		
+	trail_points = []			
+	
+	manager.get_parent().add_child(target_marker)										
+	target_marker.global_position = target_pos
+
 
 func set_behavior(_behavior):	
 	
@@ -267,7 +322,14 @@ func reset():
 		var x_offset = randf_range(-rnd_offset.x * SConv.NM2GDM, rnd_offset.x * SConv.NM2GDM)
 		var z_offset = randf_range(-rnd_offset.z * SConv.NM2GDM, rnd_offset.z * SConv.NM2GDM)
 		var y_offset = randf_range(-rnd_offset.y * SConv.FT2GDM, rnd_offset.y * SConv.FT2GDM)		
-		local_offset = Vector3(x_offset,y_offset, z_offset)			
+		local_offset = Vector3(x_offset,y_offset, z_offset)
+		
+		if behavior == "baseline1":
+			
+			var agent_idx = randi_range(0, len(dShotList) - 1)
+			dShot  = dShotList[agent_idx]
+			lCrank = lCrankList[agent_idx]
+			lBreak = lBreakList[agent_idx]
 		
 	position = init_position + 	local_offset
 	
@@ -314,16 +376,13 @@ func reset():
 	HRT = null
 			
 	data_link_list = {}
-	in_flight_missile = null					
-				
-	#if fullView:
-	#	$Radar/CollisionShape3D.disabled = true    
-	#else:
-		#TODO Reeset Colision detection
-	#	$Radar/CollisionShape3D.disabled = true
-		#await(0.05)
-		#$Radar/CollisionShape3D.disabled = false
+	in_flight_missile = null
+	
 	radar_track_list = []	
+	
+	trail_points = []
+	
+	
 	
 func update_scene(_tree):
 				
@@ -341,11 +400,12 @@ func update_scene(_tree):
 		var new_track = Track.new(comp.id, self, comp)					
 		radar_track_list.append(new_track)
 								
-	alliesList = []		
+	allied_track_list = []
 	for agent in tree.get_nodes_in_group(team_color_group):
 		if agent.id != id:
-			alliesList.append(agent)
-		
+			var new_track = Track.new(agent.id, self, agent)
+			allied_track_list.append(new_track)
+	
 	len_allieds_data_obs = 1 if len(alliesList) >= 1 else 0
 	len_tracks_data_obs = 2 if len(tree.get_nodes_in_group(simGroups.ENEMY)) > 1 else 1
 								
@@ -370,7 +430,7 @@ func set_done_false():
 
 func get_obs(with_labels = false):
 	
-	var own_info = [
+	var own_info = [ #9
 		["own_x_pos", global_transform.origin.x / 3000.0],
 		["own_z_pos", global_transform.origin.z / 3000.0],
 		["own_altitude", global_transform.origin.y / 150.0],
@@ -379,32 +439,34 @@ func get_obs(with_labels = false):
 		["own_current_hdg", current_hdg / 180.0],
 		["own_current_speed", current_speed / max_speed],
 		["own_missiles", missiles / 6.0],
-		["own_in_flight_missile", 1 if is_instance_valid(in_flight_missile) else 0]
+		["own_in_flight_missile", 1 if is_instance_valid(in_flight_missile) else 0]		
 	]
 
-	var allied_infos = []
+	var allied_tracks_info = []
 
-	for allied in alliesList:		
-		if len_allieds_data_obs > len(alliesList):			
-			if allied.activated:				
-				allied_infos.append_array([
-					["allied_x_pos", allied.global_transform.origin.x / 3000.0],
-					["allied_z_pos", allied.global_transform.origin.z / 3000.0],
-					["allied_altitude_pos", allied.global_transform.origin.y / 150.0],
-					["allied_dist2go", allied.dist2go / 3000.0],
-					["allied_aspect_angle", Calc.get_2d_aspect_angle(allied.current_hdg, Calc.get_hdg_2d(allied.global_transform.origin, allied.target_position)) / 180.0],
-					["allied_current_hdg", allied.current_hdg / 180.0],
-					["allied_current_speed", allied.current_speed / max_speed],
-					["allied_missiles", allied.missiles / 6.0],
-					["allied_in_flight_missile", 1 if is_instance_valid(allied.in_flight_missile) else 0]
-				])
-	
-	while len_allieds_data_obs > len(allied_infos):
-		allied_infos.append_array(allied_info_null)
+	for track in allied_track_list:
+		if track.is_alive:
+			allied_tracks_info.append_array([
+				["allied_track_alt_diff_" + str(track.id), (global_transform.origin.y - track.obj.global_transform.origin.y) / 150.0],
+				["allied_track_aspect_angle_" + str(track.id), track.aspect_angle / 180.0],
+				["allied_track_angle_off_" + str(track.id), track.angle_off / 180.0],
+				["allied_track_dist_" + str(track.id), track.dist / 3000.0],
+				["allied_track_dist2go_" + str(track.id), track.obj.dist2go / 3000.0],
+				["allied_track_detected_" + str(track.id), 1]
+			])
+		else:
+			allied_tracks_info.append_array([
+				["allied_track_alt_diff_" + str(track.id), 0.0],
+				["allied_track_aspect_angle_" + str(track.id), Calc.get_2d_aspect_angle(current_hdg, 0.0) / 180.0],
+				["allied_track_angle_off_" + str(track.id), 0.0],
+				["allied_track_dist_" + str(track.id), -1.0],
+				["allied_track_dist2go_" + str(track.id), 0.5],
+				["allied_track_detected_" + str(track.id), 0]
+			])
 	
 	var tracks_info = []	
 	
-	var track_info_null = [
+	var track_info_null = [ #13
 			["track_alt_diff", 0.0],
 			["track_aspect_angle", Calc.get_2d_aspect_angle(current_hdg, 0.0) / 180.0],
 			["track_angle_off", 0.0],
@@ -419,33 +481,45 @@ func get_obs(with_labels = false):
 			["track_is_missile_support", 0.0],
 			["track_detected", 0]
 		]
-
+	
 	for track in radar_track_list:		
-		if len_tracks_data_obs > len(tracks_info) and track.is_alive:			
+		if track.is_alive:			
 							
 			tracks_info.append_array([
-				["track_alt_diff", (global_transform.origin.y - track.obj.global_transform.origin.y) / 150.0],
-				["track_aspect_angle", track.aspect_angle / 180.0],
-				["track_angle_off", track.angle_off / 180.0],
-				["track_dist", track.dist / 3000.0],
-				["track_dist2go", track.obj.dist2go / 3000.0],
-				["track_own_missile_RMax", track.own_missile_RMax / 926.0],
-				["track_own_missile_Nez", track.own_missile_Nez / 926.0],
-				["track_enemy_missile_RMax", track.enemy_missile_RMax / 926.0],
-				["track_enemy_missile_Nez", track.enemy_missile_Nez / 926.0],
-				["track_threat_factor", track.threat_factor - 1],
-				["track_offensive_factor", track.offensive_factor - 1],
-				["track_is_missile_support", track.is_missile_support],
-				["track_detected", 1 if track.detected else 0]
+				["track_alt_diff_" + str(track.id), (global_transform.origin.y - track.obj.global_transform.origin.y) / 150.0],
+				["track_aspect_angle_" + str(track.id), track.aspect_angle / 180.0],
+				["track_angle_off_" + str(track.id), track.angle_off / 180.0],
+				["track_dist_" + str(track.id), track.dist / 3000.0],
+				["track_dist2go_" + str(track.id), track.obj.dist2go / 3000.0],
+				["track_own_missile_RMax_" + str(track.id), track.own_missile_RMax / 926.0],
+				["track_own_missile_Nez_" + str(track.id), track.own_missile_Nez / 926.0],
+				["track_enemy_missile_RMax_" + str(track.id), track.enemy_missile_RMax / 926.0],
+				["track_enemy_missile_Nez_" + str(track.id), track.enemy_missile_Nez / 926.0],
+				["track_threat_factor_" + str(track.id), track.threat_factor - 1],
+				["track_offensive_factor_" + str(track.id), track.offensive_factor - 1],
+				["track_is_missile_support_" + str(track.id), track.is_missile_support],
+				["track_detected_" + str(track.id), 1 if track.detected else 0]
 			])
+		else:
+			tracks_info.append_array([ #13
+			["track_alt_diff_" + str(track.id), 0.0],
+			["track_aspect_angle_" + str(track.id), Calc.get_2d_aspect_angle(current_hdg, 0.0) / 180.0],
+			["track_angle_off_" + str(track.id), 0.0],
+			["track_dist_" + str(track.id), -1.0],
+			["track_dist2go_" + str(track.id), 0.5],
+			["track_own_missile_RMax_" + str(track.id), 0.0],
+			["track_own_missile_Nez_" + str(track.id), 0.0],
+			["track_enemy_missile_RMax_" + str(track.id), 0.0],
+			["track_enemy_missile_Nez_" + str(track.id), 0.0],
+			["track_threat_factor_" + str(track.id), 0.0],
+			["track_offensive_factor_" + str(track.id), 0.0],
+			["track_is_missile_support_" + str(track.id), 0.0],
+			["track_detected_" + str(track.id), 0]
+		])
 			
-	while len_tracks_data_obs > len(tracks_info):
-		tracks_info.append_array(track_info_null)
+			
 	
-	var obs = own_info + tracks_info
-	
-	if len_allieds_data_obs > 0:
-		obs += allied_infos
+	var obs = own_info + tracks_info + allied_tracks_info
 	
 	var obs_values = obs.map(func(item): return item[1])
 	
@@ -571,7 +645,7 @@ func process_tracks():
 			track.dl_track = false
 			
 			if track.just_detected:			
-				track.just_detected = false
+				track.just_detected = false				
 				
 				if track.is_missile_support:
 					if is_instance_valid(in_flight_missile):			
@@ -875,7 +949,7 @@ func get_wez_for_track(track):
 		enemyRNez	= 0.01
 	
 	return [ownRMax, ownRNez, enemyRMax, enemyRNez]
-		
+
 func _physics_process(delta: float) -> void:
 	
 	current_time += delta
@@ -888,7 +962,8 @@ func _physics_process(delta: float) -> void:
 	if n_steps % action_repeat == 0:
 		
 		dist2go = Calc.distance2D_to_pos(global_transform.origin, target_position)			
-		process_tracks()	
+		process_tracks()		
+		process_allied_tracks()	
 		if behavior != "external":						
 			process_behavior(delta * (n_steps - last_beh_proc))
 			last_beh_proc = n_steps
@@ -917,13 +992,16 @@ func _physics_process(delta: float) -> void:
 	current_speed = max_speed * altitude_speed_factor(current_level)	
 	
 	velocity = -transform.basis.z.normalized() * current_speed	
-	
-	# Handle landing/taking unchecked
+		
 	set_velocity(velocity)
 	set_up_direction(Vector3.UP)
 	move_and_slide()
 	
 	n_steps += 1
+	
+	# Update the trail
+	if n_steps%10 ==0:
+		update_trail()
 			
 func process_manouvers_action():
 	
@@ -1089,5 +1167,57 @@ func load_json_file(file_path):
 		print("File not found: ", file_path)
 		return null
 
+func update_trail():
+	trail_points.append(global_transform.origin)
+	if trail_points.size() > max_trail_points:
+		trail_points.pop_front()
 
+	draw_trail()
 
+func draw_trail():
+	if trail_points.size() < 2:
+		return
+
+	# Clear previous surfaces
+	trail_mesh.clear_surfaces()
+	trail_mesh.surface_begin(Mesh.PRIMITIVE_LINE_STRIP)
+
+	for i in range(trail_points.size()):
+		var point = trail_points[i]
+		var t = float(i) / float(trail_points.size() - 1)
+		var color = trail_color_start.lerp(trail_color_end, t)
+		trail_mesh.surface_set_color(color)
+		trail_mesh.surface_add_vertex(point)
+
+	trail_mesh.surface_end()
+
+func process_allied_tracks():
+	for track in allied_track_list:
+		
+		if track.obj.activated:
+			track.update_allied_track(self, track.obj, current_time)
+		else:
+			track.is_alive = false
+	
+func update_trail_obj():
+	
+	
+	# Create the ImmediateMesh and the material once
+	trail_mesh = ImmediateMesh.new()
+		
+	trail_material = StandardMaterial3D.new()
+	trail_material.albedo_color = trail_color
+	trail_material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	trail_material.flags_transparent = true # Ensure transparency is enabled
+	trail_material.flags_unshaded = true # Disable lighting for the material
+	trail_material.vertex_color_use_as_albedo = true # Use vertex color as albedo
+	trail_mesh.surface_set_material(0, trail_material)
+	trail_node.mesh = trail_mesh
+	
+	var override_material = trail_material.duplicate()
+	override_material.albedo_color = trail_color
+	override_material.flags_unshaded = true
+	override_material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	override_material.flags_transparent = true
+	override_material.vertex_color_use_as_albedo = true
+	trail_node.material_override = override_material

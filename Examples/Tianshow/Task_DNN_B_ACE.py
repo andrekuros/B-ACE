@@ -43,13 +43,14 @@ class Task_DNN_B_ACE(nn.Module):
         # obs shape is expected to be [batch_size, num_tasks, num_features_per_task]
                 
         
-        #print("MHA", [obs, info])
+
         if isinstance(obs, np.ndarray):
-            observation = torch.tensor(np.array(obs), dtype=torch.float32).to(self.device)
-            mask =  info.info["mask"]
-        else:
-            observation = torch.tensor(np.array(obs["agent_0"].obs), dtype=torch.float32).to(self.device)
-            mask =  obs["agent_0"].mask
+            observation = torch.tensor(np.array(obs), dtype=torch.float32).to(self.device)            
+            mask = info.mask
+        else:            
+            observation = torch.tensor(np.array(obs[info].obs), dtype=torch.float32).to(self.device)
+            mask =  obs[info].mask
+                    
             
         
         

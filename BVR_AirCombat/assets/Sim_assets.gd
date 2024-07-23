@@ -142,7 +142,38 @@ class Track:
 			if detected:
 				just_lost = true			
 				detected = false
+
+	func update_allied_track(fighter, track_obj,time_detected):
+								
+		dist 			  = fighter.global_transform.origin.distance_to(track_obj.global_transform.origin)
+		radial			  = Calc.get_hdg_2d(fighter.global_transform.origin, track_obj.global_transform.origin)
 		
+		vert_aspect_angle 	= Calc.get_vertical_aspect_angle(fighter, track_obj)
+		angle_off 		  	= Calc.get_2d_angle_off(fighter.current_hdg, track_obj.current_hdg )
+		aspect_angle 	  	= Calc.get_2d_aspect_angle(fighter.current_hdg, radial)
+		
+		inv_angle_off 	  	= -angle_off
+		inv_aspect_angle	= Calc.get_2d_aspect_angle(track_obj.current_hdg, radial - 180)
+		
+		#print(fighter.id, ":ASPECT: ", aspect_angle, " AOff: ", angle_off, " Rad: ", radial, " HDG: ", fighter.current_hdg)
+		#print(fighter.id, ":invASPECT: ", inv_aspect_angle, " InvAOff: ", inv_angle_off)
+				
+		vert_aspect_angleR	= deg_to_rad(vert_aspect_angle)
+		angle_offR 		  	= deg_to_rad(angle_off)
+		aspect_angleR 	  	= deg_to_rad(aspect_angle)
+		inv_angle_offR 	  	= deg_to_rad(inv_angle_off)
+		inv_aspect_angleR	= deg_to_rad(inv_aspect_angle)
+				
+		is_alive = fighter.activated
+				
+		if is_alive:			
+			last_know_pos = track_obj.global_transform.origin
+			last_track_hdg = track_obj.current_hdg 
+			last_detection = time_detected			
+		else:			
+			if time_detected - last_detection > 10.0:
+				is_alive = false
+						
 	
 	func update_wez_data(wez_ranges):
 		

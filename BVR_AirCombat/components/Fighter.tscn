@@ -1,4 +1,4 @@
-[gd_scene load_steps=11 format=3 uid="uid://3xxv82w5v8bo"]
+[gd_scene load_steps=12 format=3 uid="uid://3xxv82w5v8bo"]
 
 [ext_resource type="Script" path="res://components/Fighter.gd" id="2"]
 [ext_resource type="Script" path="res://components/Detection.gd" id="2_7x3gy"]
@@ -16,8 +16,7 @@ material = SubResource("StandardMaterial3D_7poeg")
 left_to_right = -0.2
 size = Vector3(9, 2, 1)
 
-[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_y8agd"]
-metallic = 0.1
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_1p6ca"]
 
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_15eh7"]
 albedo_color = Color(0.0666667, 0.0313726, 1, 1)
@@ -25,6 +24,10 @@ albedo_color = Color(0.0666667, 0.0313726, 1, 1)
 [sub_resource type="PrismMesh" id="PrismMesh_o8vq1"]
 material = SubResource("StandardMaterial3D_15eh7")
 size = Vector3(10, 8, 0.5)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_y8agd"]
+emission = Color(0.264862, 0.480182, 0.987935, 1)
+emission_energy_multiplier = 1.88
 
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_563rj"]
 transparency = 1
@@ -50,7 +53,7 @@ transform = Transform3D(-1, 0, 1.50996e-07, 0, 1, 0, -1.50996e-07, 0, -1, 0, 0, 
 [node name="Vertical" type="MeshInstance3D" parent="RenderModel"]
 transform = Transform3D(-4.35694e-08, 3.52081e-09, -1, 0.0805469, 0.996751, 0, 0.996751, -0.0805469, -4.37114e-08, -4.78053e-08, 0.712482, 1.09366)
 mesh = SubResource("PrismMesh_7c5vi")
-surface_material_override/0 = SubResource("StandardMaterial3D_y8agd")
+surface_material_override/0 = SubResource("StandardMaterial3D_1p6ca")
 
 [node name="Wings" type="MeshInstance3D" parent="RenderModel"]
 transform = Transform3D(1, 1.42109e-14, 4.37114e-08, 4.37114e-08, 0, -1, 0, 1, 1.91069e-15, -1.42109e-14, 5.96046e-08, 2.14578e-21)
@@ -58,12 +61,11 @@ mesh = SubResource("PrismMesh_o8vq1")
 surface_material_override/0 = SubResource("StandardMaterial3D_y8agd")
 
 [node name="Radar" type="Area3D" parent="."]
-transform = Transform3D(1.5, 0, 0, 0, 1.5, 0, 0, 0, 1.5, 0, 0, 0)
 collision_layer = 4
 script = ExtResource("2_7x3gy")
 
 [node name="MeshInstance3D" type="MeshInstance3D" parent="Radar"]
-transform = Transform3D(-1, 0, -8.74228e-08, 0, 1, 0, 8.74228e-08, 0, -1, 0, 0, 0)
+transform = Transform3D(-455, 0, 788.083, 0, 100, 0, -788.083, 0, -455, 0, 0, 0)
 mesh = ExtResource("3_oycbp")
 surface_material_override/0 = SubResource("StandardMaterial3D_563rj")
 

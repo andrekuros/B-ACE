@@ -510,12 +510,12 @@ def analyze_diversity(agents):
     # Scatter plot for the behavior parameters
     plt.figure(figsize=(12, 8))
     ax = plt.axes(projection='3d')
-    ax.scatter3D(agents['dShot'], agents['lCrank'], agents['lBreak'], c=agents['final_score'], cmap='viridis')
+    ax.scatter3D(agents['dShot'], agents['lCrank'], agents['lBreak'], c=agents['blue_kills'], cmap='viridis')
     ax.set_xlabel('dShot')
     ax.set_ylabel('lCrank')
     ax.set_zlabel('lBreak')
     plt.title('3D Scatter Plot of Top Agents by Behavior Parameters')
-    plt.colorbar(ax.scatter3D(agents['dShot'], agents['lCrank'], agents['lBreak'], c=agents['final_score'], cmap='viridis'))
+    plt.colorbar(ax.scatter3D(agents['dShot'], agents['lCrank'], agents['lBreak'], c=agents['blue_kills'], cmap='viridis'))
     plt.show()
 
     # Statistics

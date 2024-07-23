@@ -106,10 +106,14 @@ func _send_env_info():
 	var json_dict = _get_dict_json_message()
 	assert(json_dict["type"] == "env_info")
 		
+	var observation_labels = {}
+	for agent in simulation_list[0].agents:
+		observation_labels[agent.id] = agent.get_obs(true)["labels"]
+	
 	var message = {
 		"type" : "env_info",		
 		"observation_space" : simulation_list[0].agents[0].get_obs_space(),
-		"observation_labels": simulation_list[0].agents[0].get_obs(true)["labels"],
+		"observation_labels": observation_labels,
 		"action_space": simulation_list[0].agents[0].get_action_space(),
 		"n_agents": len(simulation_list[0].agents)
 		}		
@@ -189,7 +193,8 @@ func _create_simulations(_agents_config_dict, _experiment_cases=null):
 		# Set the render target of the viewport
 		viewport.render_target_update_mode = SubViewport.UPDATE_WHEN_VISIBLE
 		viewport.render_target_clear_mode = SubViewport.CLEAR_MODE_ALWAYS
-
+		
+		
 		# Set the position of the ViewportContainer
 		viewport_container.anchor_left = float(x) / cols
 		viewport_container.anchor_right = viewport_container.anchor_left + 1.0 / cols
@@ -386,8 +391,13 @@ func _physics_process(delta):
 		_check_all_sims_done()
 		#_get_obs_from_simulations()
 		_get_reward_from_simulations()
-		var obs = _get_obs_from_simulations()	
-		#print(obs)
+		var obs = _get_obs_from_simulations()
+		
+		#var observation_labels = {}
+		#for agent in simulation_list[0].agents:
+	#		observation_labels[agent.id] = agent.get_obs(true)["labels"]	
+		
+		#print(observation_labels)
 		
 		#var done = _get_dones_from_simulations_agents()
 		#_reset_agents_if_done() # this ensures the new observation is from the next env instance : NEEDS REFACTOR			

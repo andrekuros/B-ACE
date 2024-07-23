@@ -20,6 +20,8 @@ MHA_task_B_ACE/*
 __pycache__/*
 DNN_task_B_ACE/*
 Task_MHA_B_ACEDQN/*
+Task_DNN_B_ACEDQN/*
 
 wandb/debug-cli.andre.log
 GA_Results/*
+

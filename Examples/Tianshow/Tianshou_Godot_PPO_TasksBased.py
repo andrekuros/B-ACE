@@ -54,14 +54,14 @@ test_num  =  "_B_ACE02"
 policyModel  =  "DQN"
 name = model + test_num
 
-train_env_num = 10
-test_env_num  = 10
+train_env_num = 4
+test_env_num  = 15
 
 now = datetime.datetime.now().strftime("%y%m%d-%H%M%S")
 log_name = name + str(now)
 log_path = os.path.join('./', "Logs", "dqn_sisl", log_name)
 
-load_policy_name = f'policy_Task_MHA_B_ACE_B_ACE02240528-113023_73_BestRew.pth'
+load_policy_name = f'policy_Task_MHA_B_ACE_B_ACE02240721-151049_1261_BestRew.pth'
 save_policy_name = f'policy_{log_name}'
 policy_path = model + policyModel
 
@@ -81,7 +81,7 @@ B_ACE_Config = {
                     "EnvConfig" : 
                     {
                         "task": "b_ace_v1",
-                        "env_path": "BVR_AirCombat/bin/B_ACE_v10.exe",
+                        "env_path": "BVR_AirCombat/bin/B_ACE_v11.exe",
                         "port": 12500,
                         "renderize": 0,
                         "debug_view": 0,
@@ -94,6 +94,7 @@ B_ACE_Config = {
                         "action_repeat": 20,	
                         "action_type": "Low_Level_Continuous",                        
                         "stop_mission" : 1,
+                        
                         
                         "RewardsConfig" : {
                             "mission_factor": 0.001,
@@ -114,10 +115,10 @@ B_ACE_Config = {
                             "num_agents" : 2,
                             "mission"    : "DCA",
                             "beh_config" : {
-                                "dShot" : 0.85,
-                                "lCrank": 0.60,
-                                "lBreak": 0.95
-                            },
+                                            "dShot" : [1.04, 0.50, 1.09],
+                                            "lCrank": [1.06, 0.98, 0.98],
+                                            "lBreak": [1.05, 1.17, 0.45]
+                                        },
                             "base_behavior": "external",                  
                             "init_position": {"x": 0.0, "y": 25000.0,"z": 30.0},
                             "offset_pos": {	"x": 0.0, "y": 0.0, "z": 0.0},
@@ -129,13 +130,13 @@ B_ACE_Config = {
                         },	
                         "red_agents":
                         { 
-                            "num_agents" : 4, 
+                            "num_agents" : 2, 
                             "base_behavior": "baseline1",
                             "mission"    : "striker",
                             "beh_config" : {
-                                "dShot" : 0.85,
-                                "lCrank": 0.60,
-                                "lBreak": 0.95
+                                "dShot" : [1.04, 0.50, 1.09],
+                                "lCrank": [1.06, 0.98, 0.98],
+                                "lBreak": [1.05, 1.17, 0.45]
                             },
                             "init_position": {"x": 0.0,"y": 25000.0,"z": -30.0},
                             "offset_pos": {"x": 0.0,"y": 0.0,"z": 0.0},
@@ -192,7 +193,9 @@ trainer_params = {"max_epoch": 200,
                   "episode_per_test": 30,                  
                   "tn_eps_max": 0.15,
                   "ts_eps_max": 0.01,
-                  "warmup_size" : 1
+                  "warmup_size" : 1,
+                  "train_envs" : train_env_num,
+                  "test_envs" : test_env_num
 }
 #agent_learn = PPOPolicy(**policy_params)
 
@@ -237,7 +240,7 @@ def _get_agents(
             if model == "Task_MHA_B_ACE":
                 net = Task_MHA_B_ACE(
                     #obs_shape=agent_observation_space.shape,                                                  
-                    num_tasks = 20,
+                    num_tasks = 25,
                     num_features_per_task= 14,                    
                     nhead = 4,
                     device="cuda" if torch.cuda.is_available() else "cpu"
@@ -247,7 +250,7 @@ def _get_agents(
             if model == "Task_DNN_B_ACE":
                 net = Task_DNN_B_ACE(
                     #obs_shape=agent_observation_space.shape,                                                  
-                    num_tasks = 20,
+                    num_tasks = 25,
                     num_features_per_task= 14,                    
                     nhead = 4,
                     device="cuda" if torch.cuda.is_available() else "cpu"
@@ -259,7 +262,7 @@ def _get_agents(
             agent_learn = DQNPolicy(
                 model=net,
                 optim=optim,
-                action_space = Discrete(20),
+                action_space = Discrete(25),
                 discount_factor= dqn_params["discount_factor"],
                 estimation_step=dqn_params["estimation_step"],
                 target_update_freq=dqn_params["target_update_freq"],
@@ -384,7 +387,7 @@ if __name__ == "__main__":
         train_collector = Collector(
             policy,
             train_envs,
-            VectorReplayBuffer(30_000, len(train_envs)),
+            VectorReplayBuffer(100_000, len(train_envs)),
             #PrioritizedVectorReplayBuffer( 300_000, len(train_envs), alpha=0.6, beta=0.4) , 
             #ListReplayBuffer(100000)       
             # buffer = StateMemoryVectorReplayBuffer(
@@ -444,7 +447,7 @@ if __name__ == "__main__":
         update_interval = runConfig["EnvConfig"]["max_cycles"] / 400,
         save_interval = 1,
         write_flush = True,
-        project = "B_ACE01",
+        project = "B_ACE_EVAL",
         name = log_name,
         entity = None,
         run_id = log_name,
@@ -526,7 +529,7 @@ if __name__ == "__main__":
                 
         global_step_holder[0] +=1 
         #print(rews)
-        return np.mean(rews)#np.sum(rews)
+        return rews#np.mean(rews)#np.sum(rews)
 
 
 
