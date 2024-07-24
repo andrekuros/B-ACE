@@ -112,7 +112,7 @@ B_ACE_Config = {
                     "AgentsConfig" : 
                     {
                         "blue_agents": { 
-                            "num_agents" : 2,
+                            "num_agents" : 4,
                             "mission"    : "DCA",
                             "beh_config" : {
                                             "dShot" : [1.04, 0.50, 1.09],
@@ -130,8 +130,8 @@ B_ACE_Config = {
                         },	
                         "red_agents":
                         { 
-                            "num_agents" : 2, 
-                            "base_behavior": "baseline1",
+                            "num_agents" : 4, 
+                            "base_behavior": "duck",
                             "mission"    : "striker",
                             "beh_config" : {
                                 "dShot" : [1.04, 0.50, 1.09],
@@ -158,7 +158,8 @@ dqn_params =    {
                 "reward_normalization" : False,
                 "clip_loss_grad" : False,
                 "optminizer": "Adam",
-                "lr": 0.000016 
+                "lr": 0.000016, 
+                "max_tasks" : 35
                 }
 
 PPO_params= {    
@@ -240,7 +241,7 @@ def _get_agents(
             if model == "Task_MHA_B_ACE":
                 net = Task_MHA_B_ACE(
                     #obs_shape=agent_observation_space.shape,                                                  
-                    num_tasks = 25,
+                    num_tasks = dqn_params["max_tasks"],
                     num_features_per_task= 14,                    
                     nhead = 4,
                     device="cuda" if torch.cuda.is_available() else "cpu"
@@ -250,7 +251,7 @@ def _get_agents(
             if model == "Task_DNN_B_ACE":
                 net = Task_DNN_B_ACE(
                     #obs_shape=agent_observation_space.shape,                                                  
-                    num_tasks = 25,
+                    num_tasks = dqn_params["max_tasks"],
                     num_features_per_task= 14,                    
                     nhead = 4,
                     device="cuda" if torch.cuda.is_available() else "cpu"
@@ -262,7 +263,7 @@ def _get_agents(
             agent_learn = DQNPolicy(
                 model=net,
                 optim=optim,
-                action_space = Discrete(25),
+                action_space = Discrete(dqn_params["max_tasks"]),
                 discount_factor= dqn_params["discount_factor"],
                 estimation_step=dqn_params["estimation_step"],
                 target_update_freq=dqn_params["target_update_freq"],

@@ -32,7 +32,7 @@
 	"AgentsConfig" : 
 	{
 		"blue_agents": { 
-			"num_agents" : 2,
+			"num_agents" : 1,
 			
 			"base_behavior": "baseline1",
 			"mission"    : "DCA",
@@ -54,10 +54,10 @@
 		},	
 		"red_agents":
 		{ 
-			"num_agents" : 2, 
+			"num_agents" : 1, 
 						
 			"base_behavior": "baseline1",
-			"mission"    : "DCA",
+			"mission"    : "striker",
 			"beh_config" : {
 				"dShot" : [1.04, 0.50, 1.09],
 				"lCrank": [1.06, 0.98, 0.98],
