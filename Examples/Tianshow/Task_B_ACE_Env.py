@@ -263,7 +263,7 @@ class B_ACE_TaskEnv(GodotRLPettingZooWrapper):
         self.agent_name_mapping = dict(zip(self.agents, list(range(self.num_agents))))                
         
         #Env modification for Task based policy
-        self.max_tasks = 35  # Maximum number of tasks
+        self.max_tasks = 100  # Maximum number of tasks
         self.act_space = spaces.Discrete(self.max_tasks)
         self.action_space = spaces.Discrete(self.max_tasks)
         #self.action_spaces = dict(zip(self.agents, self.action_space))

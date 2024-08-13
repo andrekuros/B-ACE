@@ -707,7 +707,12 @@ func process_behavior(delta_s):
 	tatic_time += delta_s		
 	
 	if behavior == "duck":			
+		
 		hdg_input = Calc.clamp_hdg(Calc.get_hdg_2d(global_transform.origin, target_position ))			
+		#hdg_input = current_hdg + 45#Calc.clamp_hdg(Calc.get_hdg_2d(global_transform.origin, target_position ))			
+		#desiredG_input = 5
+		#level_input = 45000
+		
 		return
 		
 	elif behavior == "test" or behavior == "wez_eval_target_max":		

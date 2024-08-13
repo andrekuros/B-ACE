@@ -81,7 +81,7 @@ if __name__ == "__main__":
     experiment_config = ExperimentConfig.get_from_yaml()
 
     experiment_config.sampling_device = 'cpu'
-    experiment_config.train_device = 'cuda'
+    experiment_config.train_device = 'cpu'
     experiment_config.max_n_iters = 500
     experiment_config.checkpoint_interval = 120000
     
@@ -105,9 +105,9 @@ if __name__ == "__main__":
     
     # ----- Off Policy Configuration -----   #
     
-    experiment_config.off_policy_collected_frames_per_batch: 6000
+    experiment_config.off_policy_collected_frames_per_batch: 12000
     experiment_config.off_policy_n_optimizer_steps= 64    
-    experiment_config.off_policy_train_batch_size= 512    
+    experiment_config.off_policy_train_batch_size= 256    
     experiment_config.off_policy_memory_size: 100_000    
     experiment_config.off_policy_init_random_frames= 0
        
@@ -138,15 +138,17 @@ if __name__ == "__main__":
                         "stop_mission" : 1,
                         
                         "RewardsConfig" : {
-                            "mission_factor": 0.001,
-                            "missile_fire_factor": -0.1,
-                            "missile_no_fire_factor": -0.001,
-                            "missile_miss_factor": -0.5,
-                            "detect_loss_factor": -0.1,
-                            "keep_track_factor": 0.001,
+                            "mission_factor": 0.00,
+                            "missile_fire_factor": -0.0,
+                            "missile_no_fire_factor": -0.00,
+                            "missile_miss_factor": -0.0,
+                            "detect_loss_factor": -0.0,
+                            "keep_track_factor": 0.000,
                             "hit_enemy_factor": 3.0,
                             "hit_own_factor": -5.0,                            
                             "mission_accomplished_factor": 10.0
+                            
+                            
                         }
                     },
 
@@ -166,13 +168,15 @@ if __name__ == "__main__":
                             "init_hdg": 0.0,                        
                             "target_position": {"x": 0.0,"y": 25000.0,"z": 30.0},
                             "rnd_offset_range":{"x": 10.0,"y": 10000.0,"z": 5.0},				
-                            "rnd_shot_dist_var": 0.0,
+                            "rnd_shot_dist_var": 0.025,
+                            "rnd_crank_var": 0.025,
+                            "rnd_break_var": 0.025,
                             "wez_models" : "res://assets/wez/Default_Wez_params.json"
                         },	
                         "red_agents":
                         { 
                             "num_agents" : 2, 
-                            "base_behavior": "duck",
+                            "base_behavior": "baseline1",
                             "mission"    : "striker",
                             "beh_config" : {
                                             "dShot" : [1.04, 0.50, 1.09],
@@ -184,7 +188,9 @@ if __name__ == "__main__":
                             "init_hdg" : 180.0,                        
                             "target_position": {"x": 0.0,"y": 25000.0,"z": 30.0},
                             "rnd_offset_range":{"x": 10.0,"y": 10000.0,"z": 5.0},				
-                            "rnd_shot_dist_var": 0.0,
+                            "rnd_shot_dist_var": 0.025,
+                            "rnd_crank_var": 0.025,
+                            "rnd_break_var": 0.025,
                             "wez_models" : "res://assets/wez/Default_Wez_params.json"
                         }
                     }	
@@ -230,7 +236,7 @@ if __name__ == "__main__":
         algorithm_config = MaddpgConfig.get_from_yaml()
     else:  # 'iddpg'
         #algorithm_config = MAPpoConfig.get_from_yaml()
-        algorithm_config = MappoConfig.get_from_yaml()
+        algorithm_config = MaddpgConfig.get_from_yaml()
         #algorithm_config.share_param_critic = True
         
     #algorithm_config.share_param_critic = True
@@ -242,14 +248,14 @@ if __name__ == "__main__":
 
     model_config.layers = [256,256,256]
     
-    #experiment_config.evaluation = True  # Enable evaluation mode
-    #experiment_config.restore_file = "D:\Projects\B-ACE\B-ACE\Results\ippo_b_ace_mlp__5ccae4a3_24_06_04-06_18_04\checkpoints\checkpoint_3000000.pt"
+    #experiment_config.evaluation = False  # Enable evaluation mode
+    #experiment_config.restore_file = "D:\Projects\B-ACE\B-ACE\Results\iddpg_b_ace_mlp__861c72db_24_07_25-09_33_27\checkpoints\checkpoint_480000.pt"
     #experiment_config.loggers = []
     
     if False:
         
         
-        experiment_config.restore_file = "D:\Projects\B-ACE\B-ACE\Results\ippo_b_ace_mlp__5ccae4a3_24_06_04-06_18_04\checkpoints\checkpoint_3000000.pt"
+        experiment_config.restore_file = "D:\Projects\B-ACE\B-ACE\Results\iddpg_b_ace_mlp__861c72db_24_07_25-09_33_27\checkpoints\checkpoint_480000.pt"
         
         experiment_to_load = Experiment(
             task=task,

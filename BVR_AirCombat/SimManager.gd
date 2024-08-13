@@ -75,17 +75,14 @@ func set_process_mode_recursively(node, process_mode):
 
 # Called every frame. 'delta' is the elapsed time since the previous frame.
 func _physics_process(delta):
-				
-	
+					
 	var donesAgents  =_check_all_done_agents()
 	var donesEnemies  = _check_all_done_enemies()		
 				
 	if donesAgents and donesEnemies:												
 		ready_to_reset = true
 		set_process_mode_recursively(self, false)
-		
-				
-			
+									
 	last_team_dl_tracks = team_dl_tracks #Use last list pointer
 	team_dl_tracks = [{},{}] #reset list before agents do the updates
 			
@@ -118,20 +115,23 @@ func _physics_process(delta):
 				agent.ownRewards.add_final_episode_reward("Enemies_Killed", (max_cycles - n_action_steps) / action_repeat, agent.missiles)					
 			#print("Sync::INFO::EnemyKilled" )
 				
-	if n_action_steps % action_repeat != 0 and not stop_simulation:
+	if n_action_steps % action_repeat != 0 or stop_simulation:
 		n_action_steps += 1	
 		return
 			
 	#Reach This part only every ActionRepeat Steps
 	n_action_steps += 1
 		
-	if n_action_steps >= max_cycles:
+	if n_action_steps >= max_cycles:		
+		
 		for enemy in enemies:
 			enemy.done = true 
-			
+			enemy.ownRewards.add_final_episode_reward("Max_Cycles", (max_cycles - n_action_steps) / action_repeat, enemy.missiles)
+					
 		for agent in agents:
-			agent.done = true 
+			agent.done = true 						
 			agent.ownRewards.add_final_episode_reward("Max_Cycles", (max_cycles - n_action_steps) / action_repeat, agent.missiles)
+					
 		finalState[0]["end_cond"] = "Max_Cycles"
 		finalState[1]["end_cond"] = "Max_Cycles"
 		

@@ -23,7 +23,7 @@ from tianshou.trainer import OnpolicyTrainer
 from tianshou.utils.net.common import ActorCritic, DataParallelNet, Net
 from tianshou.utils.net.continuous import Actor, Critic
 
-from tianshou.policy import BasePolicy, DQNPolicy, MultiAgentPolicyManager, RandomPolicy, RainbowPolicy
+from tianshou.policy import BasePolicy, DQNPolicy, MultiAgentPolicyManager, DDPGPolicy
 from tianshou.trainer import OffpolicyTrainer
 from torch.utils.tensorboard import SummaryWriter
 from DNN_B_ACE_ACTOR import DNN_B_ACE_ACTOR
@@ -90,19 +90,19 @@ B_ACE_Config = {
                         "max_cycles": 36000,
                         "experiment_mode"  : 0,
                         "parallel_envs": 1,	
-                        "seed": 2,	
+                        "seed": 0,	
                         "action_repeat": 20,	
                         "action_type": "Low_Level_Continuous",                        
                         "stop_mission" : 1,
                         
                         
                         "RewardsConfig" : {
-                            "mission_factor": 0.001,
-                            "missile_fire_factor": -0.1,
-                            "missile_no_fire_factor": -0.001,
-                            "missile_miss_factor": -0.5,
-                            "detect_loss_factor": -0.1,
-                            "keep_track_factor": 0.001,
+                            "mission_factor": 0.000,
+                            "missile_fire_factor": -0.0,
+                            "missile_no_fire_factor": -0.00,
+                            "missile_miss_factor": -0.0,
+                            "detect_loss_factor": -0.0,
+                            "keep_track_factor": 0.000,
                             "hit_enemy_factor": 3.0,
                             "hit_own_factor": -5.0,                            
                             "mission_accomplished_factor": 10.0
@@ -112,7 +112,7 @@ B_ACE_Config = {
                     "AgentsConfig" : 
                     {
                         "blue_agents": { 
-                            "num_agents" : 4,
+                            "num_agents" : 8,
                             "mission"    : "DCA",
                             "beh_config" : {
                                             "dShot" : [1.04, 0.50, 1.09],
@@ -125,13 +125,15 @@ B_ACE_Config = {
                             "init_hdg": 0.0,                        
                             "target_position": {"x": 0.0,"y": 25000.0,"z": 30.0},
                             "rnd_offset_range":{"x": 10.0,"y": 10000.0,"z": 5.0},				
-                            "rnd_shot_dist_var": 0.0,
+                            "rnd_shot_dist_var": 0.025,
+                            "rnd_crank_var": 0.025,
+                            "rnd_break_var": 0.025,
                             "wez_models" : "res://assets/wez/Default_Wez_params.json"
                         },	
                         "red_agents":
                         { 
-                            "num_agents" : 4, 
-                            "base_behavior": "duck",
+                            "num_agents" : 8, 
+                            "base_behavior": "baseline1",
                             "mission"    : "striker",
                             "beh_config" : {
                                 "dShot" : [1.04, 0.50, 1.09],
@@ -143,7 +145,9 @@ B_ACE_Config = {
                             "init_hdg" : 180.0,                        
                             "target_position": {"x": 0.0,"y": 25000.0,"z": 30.0},
                             "rnd_offset_range":{"x": 10.0,"y": 10000.0,"z": 5.0},				
-                            "rnd_shot_dist_var": 0.0,
+                            "rnd_shot_dist_var": 0.025,
+                            "rnd_crank_var": 0.025,
+                            "rnd_break_var": 0.025,
                             "wez_models" : "res://assets/wez/Default_Wez_params.json"
                         }
                     }	
@@ -154,12 +158,12 @@ B_ACE_Config = {
 dqn_params =    {
                 "discount_factor": 0.99, 
                 "estimation_step": 180, 
-                "target_update_freq": 3000 * 4,#max_cycles * n_agents,
+                "target_update_freq": 6000 * 3 ,#max_cycles * n_agents,
                 "reward_normalization" : False,
                 "clip_loss_grad" : False,
                 "optminizer": "Adam",
-                "lr": 0.000016, 
-                "max_tasks" : 35
+                "lr": 0.00005, 
+                "max_tasks" : 100
                 }
 
 PPO_params= {    
@@ -181,18 +185,18 @@ PPO_params= {
             }
 
 
-trainer_params = {"max_epoch": 200,
-                  "step_per_epoch": 24000,#5 * (150 * n_agents),
-                  "step_per_collect": 3000,# * (10 * n_agents),
+trainer_params = {"max_epoch": 500,
+                  "step_per_epoch": 18000,#5 * (150 * n_agents),
+                  "step_per_collect": 6000,# * (10 * n_agents),
                   
-                  "batch_size" : 1000,
+                  "batch_size" : 1024,
                   
                   "update_per_step": 1 / (100), #Off-Policy Only (run after close a Collect (run many times as necessary to meet the value))
                   
-                  "repeat_per_collect": 64, #On-Policy Only
+                  "repeat_per_collect": 32, #On-Policy Only
                   
                   "episode_per_test": 30,                  
-                  "tn_eps_max": 0.15,
+                  "tn_eps_max": 0.25,
                   "ts_eps_max": 0.01,
                   "warmup_size" : 1,
                   "train_envs" : train_env_num,

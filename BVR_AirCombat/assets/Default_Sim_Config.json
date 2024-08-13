@@ -34,7 +34,7 @@
 		"blue_agents": { 
 			"num_agents" : 1,
 			
-			"base_behavior": "baseline1",
+			"base_behavior": "duck",
 			"mission"    : "DCA",
 			"beh_config" : {
 				"dShot" : [1.04, 0.50, 1.09],
