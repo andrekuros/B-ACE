@@ -168,6 +168,13 @@ func _create_simulations(_agents_config_dict, _experiment_cases=null):
 	var sim_width = main_view_size.x / cols
 	var sim_height = main_view_size.y / rows
 	
+	# Define a small border size (in pixels)
+	var border_size = 1.0
+	
+	# Calculate the normalized border size as a fraction of the viewport size
+	var border_x = border_size / main_view_size.x
+	var border_y = border_size / main_view_size.y
+	
 	var x = 0
 	var y = 0
 	
@@ -176,7 +183,7 @@ func _create_simulations(_agents_config_dict, _experiment_cases=null):
 		var case_config = _agents_config_dict.duplicate()
 		
 		if _experiment_cases != null:
-			assert(len(_experiment_cases)==parallel_envs)
+			assert(len(_experiment_cases) == parallel_envs)
 			case_config = _agents_config_dict.duplicate()
 			update_dict(case_config, _experiment_cases[i]["AgentsConfig"])			
 			
@@ -195,21 +202,16 @@ func _create_simulations(_agents_config_dict, _experiment_cases=null):
 		viewport.render_target_clear_mode = SubViewport.CLEAR_MODE_ALWAYS
 		
 		
-		# Set the position of the ViewportContainer
-		viewport_container.anchor_left = float(x) / cols
-		viewport_container.anchor_right = viewport_container.anchor_left + 1.0 / cols
-		viewport_container.anchor_top = float(y) / rows
-		viewport_container.anchor_bottom = viewport_container.anchor_top + 1.0 / rows
+		# Set the position of the ViewportContainer with a border
+		viewport_container.anchor_left = float(x) / cols + (border_x * x)
+		viewport_container.anchor_right = viewport_container.anchor_left + 1.0 / cols - 2 * border_x
+		viewport_container.anchor_top = float(y) / rows + (border_y * y)
+		viewport_container.anchor_bottom = viewport_container.anchor_top + 1.0 / rows - 2 * border_y
 
 		mainViewPort.add_child(viewport_container)
-		#mainViewPort.call_deferred("add_child", viewport_container)
 		
 		var _tree = get_tree()
 		new_simulation.tree = _tree	
-		
-		# Create a new thread for the simulation (TODO: Not workiong)
-		#var thread = Thread.new()
-		#thread.start(Callable(self, "_initialize_simulation").bind(new_simulation, i, _tree, envConfig, case_sim_config))				
 		
 		new_simulation.initialize(i, _tree, envConfig, case_config)
 		viewport.uavs = new_simulation.fighters
@@ -220,6 +222,7 @@ func _create_simulations(_agents_config_dict, _experiment_cases=null):
 		if x >= cols:
 			x = 0
 			y += 1
+
 							
 func _initialize_simulation(new_simulation, i, _tree, envConfig, case_config):
 	new_simulation.initialize(i, _tree, envConfig, case_config)

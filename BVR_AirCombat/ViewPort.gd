@@ -51,12 +51,17 @@ func _input(event):
 		if event.pressed and event.keycode == KEY_W:			
 			#cameraGlobal.position.y += zoom_level
 			for sim in get_node("SimManager").get_children():												
-				sim.update_scale(2.0)
+				sim.update_scale(1.5)
 		
 		if event.pressed and event.keycode == KEY_S:
 			#cameraGlobal.position.y += zoom_level
 			for sim in get_node("SimManager").get_children():				
-				sim.update_scale(0.5)
+				sim.update_scale(0.75)
+		
+		if Input.is_action_pressed("Pause"):			
+			get_tree().paused = not get_tree().paused			 
+			
+			
 		
 
 	if event is InputEventMouseMotion:

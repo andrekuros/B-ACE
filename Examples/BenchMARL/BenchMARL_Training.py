@@ -82,11 +82,11 @@ if __name__ == "__main__":
 
     experiment_config.sampling_device = 'cpu'
     experiment_config.train_device = 'cpu'
-    experiment_config.max_n_iters = 500
-    experiment_config.checkpoint_interval = 120000
+    experiment_config.max_n_iters = 300
+    experiment_config.checkpoint_interval = 12000000
     
     # Whether to share the parameters of the policy within agent groups
-    experiment_config.share_policy_params= False
+    experiment_config.share_policy_params= True
     experiment_config.prefer_continuous_actions = True  
     experiment_config.evaluation_interval = 36000
     experiment_config.evaluation_episodes = 30   
@@ -122,7 +122,7 @@ if __name__ == "__main__":
                     "EnvConfig" : 
                     {
                         "task": "b_ace_v1",
-                        "env_path": "BVR_AirCombat/bin/B_ACE_v11.exe",
+                        "env_path": "../../BVR_AirCombat/bin/B_ACE_v12.exe",
                         "port": 12500,
                         "renderize": 0,
                         "debug_view": 0,
@@ -138,24 +138,22 @@ if __name__ == "__main__":
                         "stop_mission" : 1,
                         
                         "RewardsConfig" : {
-                            "mission_factor": 0.00,
-                            "missile_fire_factor": -0.0,
-                            "missile_no_fire_factor": -0.00,
-                            "missile_miss_factor": -0.0,
-                            "detect_loss_factor": -0.0,
-                            "keep_track_factor": 0.000,
-                            "hit_enemy_factor": 3.0,
-                            "hit_own_factor": -5.0,                            
-                            "mission_accomplished_factor": 10.0
-                            
-                            
-                        }
+                    			"mission_factor": 0.001,				
+                    			"missile_fire_factor": -0.1,		
+                    			"missile_no_fire_factor": -0.001,
+                    			"missile_miss_factor": -0.5,
+                    			"detect_loss_factor": -0.1,
+                    			"keep_track_factor": 0.001,
+                    			"hit_enemy_factor": 3.0,
+                    			"hit_own_factor": -5.0,			
+                    			"mission_accomplished_factor": 10.0,			
+                    		}
                     },
 
                     "AgentsConfig" : 
                     {
                         "blue_agents": { 
-                            "num_agents" : 2,
+                            "num_agents" : 4,
                             "mission"    : "DCA",
                             "beh_config" : {
                                             "dShot" : [1.04, 0.50, 1.09],
@@ -175,14 +173,14 @@ if __name__ == "__main__":
                         },	
                         "red_agents":
                         { 
-                            "num_agents" : 2, 
+                            "num_agents" : 4, 
                             "base_behavior": "baseline1",
                             "mission"    : "striker",
                             "beh_config" : {
-                                            "dShot" : [1.04, 0.50, 1.09],
-                                            "lCrank": [1.06, 0.98, 0.98],
-                                            "lBreak": [1.05, 1.17, 0.45]
-                                            },
+                                "dShot" : [1.04],#, 0.50, 1.09],
+                                "lCrank": [1.06],#, 0.98, 0.98],
+                                "lBreak": [1.05]#, 1.17, 0.45]
+                            },
                             "init_position": {"x": 0.0,"y": 25000.0,"z": -30.0},
                             "offset_pos": {"x": 0.0,"y": 0.0,"z": 0.0},
                             "init_hdg" : 180.0,                        
@@ -236,7 +234,7 @@ if __name__ == "__main__":
         algorithm_config = MaddpgConfig.get_from_yaml()
     else:  # 'iddpg'
         #algorithm_config = MAPpoConfig.get_from_yaml()
-        algorithm_config = MaddpgConfig.get_from_yaml()
+        algorithm_config = MappoConfig.get_from_yaml()
         #algorithm_config.share_param_critic = True
         
     #algorithm_config.share_param_critic = True

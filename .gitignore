@@ -27,3 +27,8 @@ GA_Results/*
 
 
 
+Examples/Tianshow/__pycache__/*
+Examples/Tianshow/Logs/dqn_sisl/*
+Examples/Tianshow/Task_MHA_B_ACEDQN/*
+
+Examples/Tianshow/wandb/*

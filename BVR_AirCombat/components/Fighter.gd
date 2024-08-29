@@ -13,10 +13,12 @@ var trail_node: MeshInstance3D
 var trail_mesh: ImmediateMesh
 var trail_material: StandardMaterial3D
 var trail_points = [] # Array to store the trail points
-var max_trail_points: int = 400 # Adjust based on desired trail length and update rate
+var max_trail_points: int = 180 * 4 # Adjust based on desired trail length and update rate
+var trail_update_rate = 5 #Update the trail every 20 steps
 var trail_color: Color = Color(1.0, 1.0, 1.0, 0.1) # Red color with 50% alpha
 var trail_color_start: Color = Color(1.0, 1.0, 1.0, 0.0) # Starting color
 var trail_color_end: Color = Color(1.0, 1.0, 1.0, 1.0) # Ending color (transparent)
+
 
 #@onready var sync = get_tree().root.get_node("B_ACE/Sync")
 var manager = null
@@ -1005,7 +1007,7 @@ func _physics_process(delta: float) -> void:
 	n_steps += 1
 	
 	# Update the trail
-	if n_steps%10 ==0:
+	if n_steps % trail_update_rate == 0:
 		update_trail()
 			
 func process_manouvers_action():
@@ -1180,7 +1182,7 @@ func update_trail():
 	draw_trail()
 
 func draw_trail():
-	if trail_points.size() < 2:
+	if trail_points.size() < 3:
 		return
 
 	# Clear previous surfaces
@@ -1195,6 +1197,7 @@ func draw_trail():
 		trail_mesh.surface_add_vertex(point)
 
 	trail_mesh.surface_end()
+	
 
 func process_allied_tracks():
 	for track in allied_track_list:
@@ -1210,12 +1213,7 @@ func update_trail_obj():
 	# Create the ImmediateMesh and the material once
 	trail_mesh = ImmediateMesh.new()
 		
-	trail_material = StandardMaterial3D.new()
-	trail_material.albedo_color = trail_color
-	trail_material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
-	trail_material.flags_transparent = true # Ensure transparency is enabled
-	trail_material.flags_unshaded = true # Disable lighting for the material
-	trail_material.vertex_color_use_as_albedo = true # Use vertex color as albedo
+	trail_material = StandardMaterial3D.new()			
 	trail_mesh.surface_set_material(0, trail_material)
 	trail_node.mesh = trail_mesh
 	

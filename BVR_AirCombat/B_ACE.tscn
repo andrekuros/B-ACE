@@ -13,3 +13,5 @@ follow_viewport_enabled = true
 
 [node name="Simulations" type="SubViewportContainer" parent="."]
 custom_minimum_size = Vector2(1200, 800)
+offset_right = 1204.0
+offset_bottom = 800.0

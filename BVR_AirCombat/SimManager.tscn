@@ -4,7 +4,7 @@
 [ext_resource type="Script" path="res://ViewPort.gd" id="2_47jrj"]
 
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_cxgxf"]
-albedo_color = Color(0.392157, 0.392157, 0.392157, 1)
+albedo_color = Color(0.333333, 0.333333, 0.333333, 1)
 
 [sub_resource type="Environment" id="Environment_c01bo"]
 background_mode = 1

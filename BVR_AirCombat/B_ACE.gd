@@ -67,11 +67,12 @@ func _input(event):
 			uavCamId = uavCamId + 1			
 			cameraUav =  uavs[uavCamId].get_node("Camera3D")
 			#debug_text.add_text("\n" + uavs[uavCamId]._heuristic + " - " + uavs[uavCamId].AP_mode)
-			cameraUav.make_current()
+			cameraUav.make_current()			
 		else:
 			cameraUav = uavs[0].get_node("Camera3D")
 			cameraUav.make_current()
-			uavCamId = 0			
+			uavCamId = 0
+			
 
 func _process(delta):
 	# Movement logic based on arrow key input
@@ -85,6 +86,8 @@ func _process(delta):
 		move_vec.z -= move_speed
 	elif Input.is_action_pressed("ui_down"):
 		move_vec.z += move_speed
-	# Adjust the camera movement vector based on the camera's orientation
+		
+	#move_vec.z += move_speed
+	#Adjust the camera movement vector based on the camera's orientation
 	move_vec = move_vec.rotated(Vector3.UP, cam.global_transform.basis.get_euler().y)	
 	cam.global_position += move_vec * delta

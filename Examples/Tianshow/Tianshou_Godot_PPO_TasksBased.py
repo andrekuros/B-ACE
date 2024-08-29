@@ -50,11 +50,11 @@ from tianshou.utils import WandbLogger
 
 
 model  =  "Task_MHA_B_ACE"#"SISL_Task_MultiHead" #"CNN_ATT_SISL" #"MultiHead_SISL" 
-test_num  =  "_B_ACE02"
+test_num  =  "_B_ACE03"
 policyModel  =  "DQN"
 name = model + test_num
 
-train_env_num = 4
+train_env_num = 10
 test_env_num  = 15
 
 now = datetime.datetime.now().strftime("%y%m%d-%H%M%S")
@@ -72,7 +72,7 @@ os.makedirs(os.path.join(policy_path), exist_ok=True)
 os.makedirs(os.path.join(log_path), exist_ok=True)
 
 Policy_Config = {
-    "same_policy" : True,
+    "same_policy" : False,
     "load_model" : False,
     "freeze_CNN" : False     
                 }
@@ -81,7 +81,7 @@ B_ACE_Config = {
                     "EnvConfig" : 
                     {
                         "task": "b_ace_v1",
-                        "env_path": "BVR_AirCombat/bin/B_ACE_v11.exe",
+                        "env_path": "..\..\BVR_AirCombat/bin/B_ACE_v12.exe",
                         "port": 12500,
                         "renderize": 0,
                         "debug_view": 0,
@@ -90,29 +90,29 @@ B_ACE_Config = {
                         "max_cycles": 36000,
                         "experiment_mode"  : 0,
                         "parallel_envs": 1,	
-                        "seed": 0,	
+                        "seed": 1,	
                         "action_repeat": 20,	
                         "action_type": "Low_Level_Continuous",                        
                         "stop_mission" : 1,
                         
                         
                         "RewardsConfig" : {
-                            "mission_factor": 0.000,
-                            "missile_fire_factor": -0.0,
-                            "missile_no_fire_factor": -0.00,
-                            "missile_miss_factor": -0.0,
-                            "detect_loss_factor": -0.0,
-                            "keep_track_factor": 0.000,
-                            "hit_enemy_factor": 3.0,
-                            "hit_own_factor": -5.0,                            
-                            "mission_accomplished_factor": 10.0
-                        }
+                                    "mission_factor": 0.001,				
+                                    "missile_fire_factor": -0.1,		
+                                    "missile_no_fire_factor": -0.001,
+                                    "missile_miss_factor": -0.5,
+                                    "detect_loss_factor": -0.1,
+                                    "keep_track_factor": 0.001,
+                                    "hit_enemy_factor": 3.0,
+                                    "hit_own_factor": -5.0,			
+                                    "mission_accomplished_factor": 10.0,			
+                                }
                     },
 
                     "AgentsConfig" : 
                     {
                         "blue_agents": { 
-                            "num_agents" : 8,
+                            "num_agents" : 4,
                             "mission"    : "DCA",
                             "beh_config" : {
                                             "dShot" : [1.04, 0.50, 1.09],
@@ -132,13 +132,13 @@ B_ACE_Config = {
                         },	
                         "red_agents":
                         { 
-                            "num_agents" : 8, 
+                            "num_agents" : 4, 
                             "base_behavior": "baseline1",
                             "mission"    : "striker",
                             "beh_config" : {
-                                "dShot" : [1.04, 0.50, 1.09],
-                                "lCrank": [1.06, 0.98, 0.98],
-                                "lBreak": [1.05, 1.17, 0.45]
+                                "dShot" : [1.04],#, 0.50, 1.09],
+                                "lCrank": [1.06],#, 0.98, 0.98],
+                                "lBreak": [1.05]#, 1.17, 0.45]
                             },
                             "init_position": {"x": 0.0,"y": 25000.0,"z": -30.0},
                             "offset_pos": {"x": 0.0,"y": 0.0,"z": 0.0},
@@ -163,7 +163,7 @@ dqn_params =    {
                 "clip_loss_grad" : False,
                 "optminizer": "Adam",
                 "lr": 0.00005, 
-                "max_tasks" : 100
+                "max_tasks" : 30
                 }
 
 PPO_params= {    
@@ -193,10 +193,10 @@ trainer_params = {"max_epoch": 500,
                   
                   "update_per_step": 1 / (100), #Off-Policy Only (run after close a Collect (run many times as necessary to meet the value))
                   
-                  "repeat_per_collect": 32, #On-Policy Only
+                  "repeat_per_collect": 64, #On-Policy Only
                   
                   "episode_per_test": 30,                  
-                  "tn_eps_max": 0.25,
+                  "tn_eps_max": 0.20,
                   "ts_eps_max": 0.01,
                   "warmup_size" : 1,
                   "train_envs" : train_env_num,
