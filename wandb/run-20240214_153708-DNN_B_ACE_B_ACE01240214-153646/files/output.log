@@ -1,3 +1,0 @@
-([{'obs': {'own_info': {'altitude': 0.406399993896484, 'heading': 0, 'in_flight_missile': 0, 'missiles': 1, 'pos_x': 0, 'pos_z': 0.24637607828776, 'speed': 0.846153846153846}, 'tracks_info': []}}, {'obs': {'own_info': {'altitude': 0.406399993896484, 'heading': 0, 'in_flight_missile': 0, 'missiles': 1, 'pos_x': 0.0308666661580404, 'pos_z': 0.24637607828776, 'speed': 0.846153846153846}, 'tracks_info': []}}], {})
-2
-{}
