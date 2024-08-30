@@ -1,6 +1,0 @@
-{
-    "python.analysis.extraPaths": [
-        "./BenchMARL"
-    ],
-    "python.REPL.enableREPLSmartSend": false
-}
