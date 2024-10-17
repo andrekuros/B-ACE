@@ -54,7 +54,7 @@ test_num  =  "_B_ACE03"
 policyModel  =  "DQN"
 name = model + test_num
 
-train_env_num = 10
+train_env_num = 4
 test_env_num  = 15
 
 now = datetime.datetime.now().strftime("%y%m%d-%H%M%S")
@@ -72,7 +72,7 @@ os.makedirs(os.path.join(policy_path), exist_ok=True)
 os.makedirs(os.path.join(log_path), exist_ok=True)
 
 Policy_Config = {
-    "same_policy" : False,
+    "same_policy" : True,
     "load_model" : False,
     "freeze_CNN" : False     
                 }
@@ -112,7 +112,7 @@ B_ACE_Config = {
                     "AgentsConfig" : 
                     {
                         "blue_agents": { 
-                            "num_agents" : 4,
+                            "num_agents" : 1,
                             "mission"    : "DCA",
                             "beh_config" : {
                                             "dShot" : [1.04, 0.50, 1.09],
@@ -132,13 +132,13 @@ B_ACE_Config = {
                         },	
                         "red_agents":
                         { 
-                            "num_agents" : 4, 
+                            "num_agents" : 1, 
                             "base_behavior": "baseline1",
                             "mission"    : "striker",
                             "beh_config" : {
-                                "dShot" : [1.04],#, 0.50, 1.09],
-                                "lCrank": [1.06],#, 0.98, 0.98],
-                                "lBreak": [1.05]#, 1.17, 0.45]
+                                "dShot" : [1.04, 0.50, 1.09],
+                                "lCrank": [1.06, 0.98, 0.98],
+                                "lBreak": [1.05, 1.17, 0.45]
                             },
                             "init_position": {"x": 0.0,"y": 25000.0,"z": -30.0},
                             "offset_pos": {"x": 0.0,"y": 0.0,"z": 0.0},
@@ -193,7 +193,7 @@ trainer_params = {"max_epoch": 500,
                   
                   "update_per_step": 1 / (100), #Off-Policy Only (run after close a Collect (run many times as necessary to meet the value))
                   
-                  "repeat_per_collect": 64, #On-Policy Only
+                  "repeat_per_collect": 32, #On-Policy Only
                   
                   "episode_per_test": 30,                  
                   "tn_eps_max": 0.20,
@@ -238,7 +238,7 @@ def _get_agents(
 
     for _ in range(policies_number):      
         
-        print(agent_observation_space)
+        #print(agent_observation_space)
         
         if policyModel == "DQN":
 
@@ -341,7 +341,7 @@ def _get_agents(
     else:
         for _ in range(len(env.agents) - policies_number):
             agents.append(agents[0])
-
+    
     policy = MultiAgentPolicyManager(policies = agents, env=env)  
     #policy = MAParalellPolicy(policies = agents, env=env, device="cuda" if torch.cuda.is_available() else "cpu" )  
         

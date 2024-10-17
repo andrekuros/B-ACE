@@ -5,6 +5,7 @@
 *.pck
 *.x86_64
 *.apk
+*.pyc
 ippo*/
 maddpg*/
 mappo*/
@@ -25,10 +26,11 @@ Task_DNN_B_ACEDQN/*
 wandb/debug-cli.andre.log
 GA_Results/*
 
-
-
 Examples/Tianshow/__pycache__/*
 Examples/Tianshow/Logs/dqn_sisl/*
 Examples/Tianshow/Task_MHA_B_ACEDQN/*
 
 Examples/Tianshow/wandb/*
+Examples/Tianshow/__pycache__/*
+
+
