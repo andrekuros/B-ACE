@@ -295,8 +295,15 @@ func _reset_simulation():
 		runs_count = runs_count + 1 	
 		
 		if finalState != null:
-			var lastResults = finalState.duplicate(true)
-			lastResults.append({"run_number": runs_count, "steps" : n_action_steps}	)
+			var lastResults = finalState.duplicate(true)						
+			var enemy_agent = teams_agents[1][0]			
+			
+			lastResults.append({"run_number": runs_count, 
+								"steps"      : n_action_steps,								
+								"base_beh"	 : enemy_agent.behavior,
+								"beh_params" : [enemy_agent.dShot, enemy_agent.lCrank, enemy_agent.lBreak],
+								}	
+							)
 			allFinalStates.append(lastResults)
 	
 	finalState = []
