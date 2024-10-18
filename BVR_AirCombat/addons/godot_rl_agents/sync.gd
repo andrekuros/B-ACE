@@ -342,7 +342,7 @@ func _physics_process(delta):
 					"type": "step",
 					"obs": obs_dict,
 					"reward": reward_dict,
-					"done": done_dict
+					"done": done_dict					
 				}
 				_send_dict_as_json_message(reply)
 								
@@ -421,12 +421,18 @@ func handle_message() -> bool:
 		return true
 		
 	if message["type"] == "reset":		
-						
+								
 		if len(simulation_list) == 1:			
 			var results = simulation_list[0]._collect_results()			
 			mainCanvas.update_results(results)
 			mainCanvas.update_scores(results[1]['killed'], results[0]['killed'])
-			simulation_list[0]._reset_simulation()			
+			simulation_list[0]._reset_simulation()	
+			
+			#var reply = {
+			#	"type": "final_results",			
+			#	"result": results
+			#}				#        
+			#_send_dict_as_json_message(reply) 		
 		else:
 			var index = 0
 			for sim in simulation_list:
@@ -442,23 +448,30 @@ func handle_message() -> bool:
 #        RenderingServer.force_draw()
 #        var obs = _get_obs_from_agents()
 #        print("obs ", obs)
-#        var reply = {
-#            "type": "reset",
-#            "obs": obs
-#        }
-#        _send_dict_as_json_message(reply)   
+		
+		
 		return true
 		
-#	if message["type"] == "call":
-#		var method = message["method"]
-#		var returns = _call_method_on_agents(method)
-#		var reply = {
-#			"type": "call",
-#			"returns": returns
-#		}
+	if message["type"] == "call":
+		var method = message["method"]
+		
+		var results = ""
+		if method == "last":
+			results = simulation_list[0]._collect_last_results()	
+			#var returns = _call_method_on_agents(method)			
+		else:
+			results = simulation_list[0]._collect_last_results()	
+				
+		var reply = {
+			"type": "call",
+			"returns": results
+		} 
+			
 		#print("calling method from Python")
-#		_send_dict_as_json_message(reply)   
-#		return handle_message()
+		_send_dict_as_json_message(reply)		
+		get_tree().set_pause(false)   
+		
+		return true
 	
 	if message["type"] == "action":
 		

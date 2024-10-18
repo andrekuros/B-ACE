@@ -115,9 +115,9 @@ B_ACE_Config = {
                             "num_agents" : 1,
                             "mission"    : "DCA",
                             "beh_config" : {
-                                            "dShot" : [1.04, 0.50, 1.09],
-                                            "lCrank": [1.06, 0.98, 0.98],
-                                            "lBreak": [1.05, 1.17, 0.45]
+                                            "dShot" : [1.04, 1.04, 1.04], #[1.04, 0.50, 1.09]
+                                            "lCrank": [1.06, 0.98, 0.98], #1.06, 0.98, 0.98
+                                            "lBreak": [1.05, 1.05, 1.05], #1.05, 1.17, 0.45
                                         },
                             "base_behavior": "external",                  
                             "init_position": {"x": 0.0, "y": 25000.0,"z": 30.0},
@@ -133,13 +133,13 @@ B_ACE_Config = {
                         "red_agents":
                         { 
                             "num_agents" : 1, 
-                            "base_behavior": "baseline1",
+                            "base_behavior": "duck",
                             "mission"    : "striker",
                             "beh_config" : {
-                                "dShot" : [1.04, 0.50, 1.09],
-                                "lCrank": [1.06, 0.98, 0.98],
-                                "lBreak": [1.05, 1.17, 0.45]
-                            },
+                                            "dShot" : [1.04, 1.04, 1.04], #[1.04, 0.50, 1.09]
+                                            "lCrank": [1.06, 1.06, 1.06], #1.06, 0.98, 0.98
+                                            "lBreak": [1.05, 1.05, 1.05], #1.05, 1.17, 0.45
+                                        },
                             "init_position": {"x": 0.0,"y": 25000.0,"z": -30.0},
                             "offset_pos": {"x": 0.0,"y": 0.0,"z": 0.0},
                             "init_hdg" : 180.0,                        

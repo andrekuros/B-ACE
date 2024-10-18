@@ -703,6 +703,10 @@ class B_ACE_TaskEnv(GodotRLPettingZooWrapper):
         # self.tasks = active_evaders + self.tasks_basic 
         # self.tasks = self.tasks_basic.copy()
 
+
+    def call_results(self):
+        resp = self.call("last")       
+        return resp
                 
 def env(**kwargs):
     environment = B_ACE_TaskEnv(**kwargs)

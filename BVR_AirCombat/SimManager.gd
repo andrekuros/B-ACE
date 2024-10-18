@@ -10,7 +10,9 @@ var tree = null
 
 #const RewardsControl = preload("res://Sim_assets.gd").RewardsControl
 
-var finalState 
+var finalState = null 
+var allFinalStates = []
+var runs_count = 0
 
 var id
 
@@ -30,7 +32,7 @@ var last_team_dl_tracks = [{},{}] #True of False to share the track id by Data L
 var agents_alive_control
 var enemies_alive_control
 
-var n_action_steps
+var n_action_steps = 0
 var action_repeat
 var max_cycles
 var phy_fps
@@ -66,6 +68,7 @@ func initialize(_id, _tree, _envConfig, _agentsConfig):
 	ready_to_reset = false
 	set_process_mode_recursively(self, true)
 	
+	
 func set_process_mode_recursively(node, process_mode):
 	node.set_process(process_mode)
 	node.set_physics_process(process_mode)
@@ -80,7 +83,7 @@ func _physics_process(delta):
 	var donesEnemies  = _check_all_done_enemies()		
 				
 	if donesAgents and donesEnemies:												
-		ready_to_reset = true
+		ready_to_reset = true		
 		set_process_mode_recursively(self, false)
 									
 	last_team_dl_tracks = team_dl_tracks #Use last list pointer
@@ -287,6 +290,14 @@ func _reset_simulation():
 	
 	agents_alive_control = len(agents)
 	enemies_alive_control = len(enemies)
+					
+	if n_action_steps > 3:
+		runs_count = runs_count + 1 	
+		
+		if finalState != null:
+			var lastResults = finalState.duplicate(true)
+			lastResults.append({"run_number": runs_count, "steps" : n_action_steps}	)
+			allFinalStates.append(lastResults)
 	
 	finalState = []
 	
@@ -295,15 +306,16 @@ func _reset_simulation():
 				"killed" 	: 0,
 				"mission"	: 0,
 				"reward"  	: 0.0,
-				"missile"	: 0,
+				"missile"	: 0,				
 				"end_cond"  : null
 				})
+	
 	
 	stop_simulation = false
 	n_action_steps = 0
 	ready_to_reset = false
 	
-	set_process_mode_recursively(self, true)
+	set_process_mode_recursively(self, true)	
 	
 
 func _reset_components():	
@@ -371,6 +383,11 @@ func _set_heuristic(heuristic):
 
 func _collect_results():	
 	return finalState
+	
+func _collect_last_results():	
+	var finalResults = allFinalStates.duplicate(true)
+	#allFinalStates = []
+	return finalResults
 	
 	
 func inform_state(team_id, condition):	
