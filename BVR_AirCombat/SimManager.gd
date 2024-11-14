@@ -300,8 +300,8 @@ func _reset_simulation():
 			
 			lastResults.append({"run_number": runs_count, 
 								"steps"      : n_action_steps,								
-								"base_beh"	 : enemy_agent.behavior,
-								"beh_params" : [enemy_agent.dShot, enemy_agent.lCrank, enemy_agent.lBreak],
+								"enemy_behavior": enemy_agent.behavior,
+								"enemy_params" : [enemy_agent.dShot, enemy_agent.lCrank, enemy_agent.lBreak],
 								}	
 							)
 			allFinalStates.append(lastResults)

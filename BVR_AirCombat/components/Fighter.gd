@@ -804,6 +804,9 @@ func process_behavior(delta_s):
 																				
 				do_crank 	= HPT.threat_factor > lCrank * crank_error									
 				hdg_input 	= Calc.clamp_hdg(HPT.radial + 50 * int(do_crank) * defense_side)
+				
+				if HPT.last_know_pos.y > level_input:
+					level_input = HPT.last_know_pos.y
 																										
 				if HPT.offensive_factor > dShot * shoot_range_error:					
 					#print( id, "(" ,current_time, " ) :", [HPT.offensive_factor, HPT.threat_factor,abs(HPT.aspect_angle)])					

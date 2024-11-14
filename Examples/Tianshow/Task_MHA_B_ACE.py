@@ -14,15 +14,15 @@ class Task_MHA_B_ACE(nn.Module):
 
         self.device = device
         self.num_tasks = num_tasks  # Number of max tasks (e.g., 20)
-        self.embedding_size = 128  # Customizable
+        self.embedding_size = 256  # Customizable
 
         # Task encoder: Fully connected layers
         # Each task has num_features_per_task feature      
 
         self.task_encoder = nn.Sequential(
-            nn.Linear(num_features_per_task, 16),
+            nn.Linear(num_features_per_task, 32),
             nn.ReLU(),
-            nn.Linear(16, 64),
+            nn.Linear(32, 64),
             nn.ReLU(),
             nn.Linear(64, 128),
             nn.ReLU(),

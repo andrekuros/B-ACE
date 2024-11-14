@@ -35,3 +35,4 @@ Examples/Tianshow/__pycache__/*
 
 
 Examples/Tianshow/__pycache__/GodotRLPettingZooWrapper.cpython-311.pyc
+Examples/Tianshow/*.csv

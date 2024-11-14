@@ -112,7 +112,7 @@ B_ACE_Config = {
                     "AgentsConfig" : 
                     {
                         "blue_agents": { 
-                            "num_agents" : 1,
+                            "num_agents" : 2,
                             "mission"    : "DCA",
                             "beh_config" : {
                                             "dShot" : [1.04, 1.04, 1.04], #[1.04, 0.50, 1.09]
@@ -132,14 +132,26 @@ B_ACE_Config = {
                         },	
                         "red_agents":
                         { 
-                            "num_agents" : 1, 
-                            "base_behavior": "duck",
+                            "num_agents" : 2, 
+                            "base_behavior": "baseline1",
                             "mission"    : "striker",
+                            # "beh_config" : {
+                            #                "dShot" : [0.50, 0.99, 1.04, 0.50, 0.99, 0.93, 0.57, 0.50, 0.50, 0.50],
+                            #                "lCrank": [0.64, 0.96, 1.14, 0.69, 0.96, 0.69, 1.07, 0.20, 0.98, 0.69],
+                            #                 "lBreak": [1.17, 0.51, 1.05, 0.25, 0.84, 0.51, 0.61, 0.37, 1.17, 0.51]  
+                            #              },
+                            
                             "beh_config" : {
-                                            "dShot" : [1.04, 1.04, 1.04], #[1.04, 0.50, 1.09]
-                                            "lCrank": [1.06, 1.06, 1.06], #1.06, 0.98, 0.98
-                                            "lBreak": [1.05, 1.05, 1.05], #1.05, 1.17, 0.45
+                                            "dShot" : [0.50, 0.99, 1.04],
+                                            "lCrank": [0.98, 0.96, 1.14],
+                                            "lBreak": [1.17, 0.51, 1.05]
                                         },
+                            # "beh_config" : {
+                            #                 "dShot" : [1.04],
+                            #                 "lCrank": [1.06],
+                            #                  "lBreak": [1.05]  
+                            #               },
+                         
                             "init_position": {"x": 0.0,"y": 25000.0,"z": -30.0},
                             "offset_pos": {"x": 0.0,"y": 0.0,"z": 0.0},
                             "init_hdg" : 180.0,                        
@@ -197,7 +209,7 @@ trainer_params = {"max_epoch": 500,
                   
                   "episode_per_test": 30,                  
                   "tn_eps_max": 0.20,
-                  "ts_eps_max": 0.01,
+                  "ts_eps_max": 0.001,
                   "warmup_size" : 1,
                   "train_envs" : train_env_num,
                   "test_envs" : test_env_num
