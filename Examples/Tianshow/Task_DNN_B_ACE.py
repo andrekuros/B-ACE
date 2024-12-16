@@ -50,12 +50,7 @@ class Task_DNN_B_ACE(nn.Module):
         else:            
             observation = torch.tensor(np.array(obs[info].obs), dtype=torch.float32).to(self.device)
             mask =  obs[info].mask
-                    
-            
-        
-        
-        mask = ~mask #for pythorch
-        mask = torch.tensor(mask, dtype=torch.bool).to(self.device)
+                            
         # Process each task independently through the task encoder
         batch_size, num_tasks, num_features = observation.shape
                 

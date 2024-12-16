@@ -49,19 +49,20 @@ from tianshou.utils import WandbLogger
 ####---------------------------#######
 
 
-model  =  "Task_MHA_B_ACE"#"SISL_Task_MultiHead" #"CNN_ATT_SISL" #"MultiHead_SISL" 
-test_num  =  "_B_ACE03"
+model  =  "Task_DNN"#Task_MHA_B_ACE"#"SISL_Task_MultiHead" #"CNN_ATT_SISL" #"MultiHead_SISL" Task_DNN_B_ACE
+test_num  =  "_B_ACE_Eval"
 policyModel  =  "DQN"
-name = model + test_num
+name = model + "_" + policyModel + "_" + test_num
 
 train_env_num = 4
 test_env_num  = 15
+
 
 now = datetime.datetime.now().strftime("%y%m%d-%H%M%S")
 log_name = name + str(now)
 log_path = os.path.join('./', "Logs", "dqn_sisl", log_name)
 
-load_policy_name = f'policy_Task_MHA_B_ACE_B_ACE02240721-151049_1261_BestRew.pth'
+load_policy_name = f'policy_Task_MHA_B_ACE_B_ACE03241118-103140_573_BestRew.pth'
 save_policy_name = f'policy_{log_name}'
 policy_path = model + policyModel
 
@@ -73,8 +74,7 @@ os.makedirs(os.path.join(log_path), exist_ok=True)
 
 Policy_Config = {
     "same_policy" : True,
-    "load_model" : False,
-    "freeze_CNN" : False     
+    "load_model" : False    
                 }
 
 B_ACE_Config = { 	
@@ -90,7 +90,7 @@ B_ACE_Config = {
                         "max_cycles": 36000,
                         "experiment_mode"  : 0,
                         "parallel_envs": 1,	
-                        "seed": 1,	
+                        "seed": 2,	
                         "action_repeat": 20,	
                         "action_type": "Low_Level_Continuous",                        
                         "stop_mission" : 1,
@@ -141,16 +141,16 @@ B_ACE_Config = {
                             #                 "lBreak": [1.17, 0.51, 1.05, 0.25, 0.84, 0.51, 0.61, 0.37, 1.17, 0.51]  
                             #              },
                             
-                            "beh_config" : {
-                                            "dShot" : [0.50, 0.99, 1.04],
-                                            "lCrank": [0.98, 0.96, 1.14],
-                                            "lBreak": [1.17, 0.51, 1.05]
-                                        },
                             # "beh_config" : {
-                            #                 "dShot" : [1.04],
-                            #                 "lCrank": [1.06],
-                            #                  "lBreak": [1.05]  
-                            #               },
+                            #                 "dShot" : [0.50, 0.99, 1.04],
+                            #                 "lCrank": [0.98, 0.96, 1.14],
+                            #                 "lBreak": [1.17, 0.51, 1.05]
+                            #             },
+                            "beh_config" : {
+                                            "dShot" : [1.04],
+                                            "lCrank": [1.06],
+                                             "lBreak": [1.05]  
+                                          },
                          
                             "init_position": {"x": 0.0,"y": 25000.0,"z": -30.0},
                             "offset_pos": {"x": 0.0,"y": 0.0,"z": 0.0},
@@ -172,14 +172,14 @@ dqn_params =    {
                 "estimation_step": 180, 
                 "target_update_freq": 6000 * 3 ,#max_cycles * n_agents,
                 "reward_normalization" : False,
-                "clip_loss_grad" : False,
+                "clip_loss_grad" : True,
                 "optminizer": "Adam",
                 "lr": 0.00005, 
                 "max_tasks" : 30
                 }
 
 PPO_params= {    
-                'action_scaling': True,
+                'action_scaling': False,
                 'discount_factor': 0.98,
                 'max_grad_norm': 0.5,
                 'eps_clip': 0.2,
@@ -218,6 +218,9 @@ trainer_params = {"max_epoch": 500,
 
 
 runConfig = dqn_params
+runConfig["Training"] = policyModel 
+runConfig["Model"] = model 
+
 runConfig.update(Policy_Config)
 runConfig.update(B_ACE_Config)
 runConfig.update(trainer_params) 
@@ -254,7 +257,7 @@ def _get_agents(
         
         if policyModel == "DQN":
 
-            if model == "Task_MHA_B_ACE":
+            if model == "Task_MHA":
                 net = Task_MHA_B_ACE(
                     #obs_shape=agent_observation_space.shape,                                                  
                     num_tasks = dqn_params["max_tasks"],
@@ -264,7 +267,7 @@ def _get_agents(
                     
                 ).to(device) 
             
-            if model == "Task_DNN_B_ACE":
+            if model == "Task_DNN":
                 net = Task_DNN_B_ACE(
                     #obs_shape=agent_observation_space.shape,                                                  
                     num_tasks = dqn_params["max_tasks"],
@@ -287,19 +290,37 @@ def _get_agents(
                 clip_loss_grad = dqn_params["clip_loss_grad"]
             )                   
         
-        elif model == "PPO_DNN":
+        elif policyModel == "PPO":
             
-            actor = DNN_B_ACE_ACTOR(
-                obs_shape=agent_observation_space.shape[0],                
-                action_shape=4,                
-                device="cuda" if torch.cuda.is_available() else "cpu"                
-            ).to(device)
+            if model == "Task_DNN":
+                actor = DNN_B_ACE_ACTOR(
+                    obs_shape=agent_observation_space.shape[0],                
+                    action_shape=4,                
+                    device="cuda" if torch.cuda.is_available() else "cpu"                
+                ).to(device)
 
-            critic = DNN_B_ACE_CRITIC(
-                obs_shape=agent_observation_space.shape[0],                
-                action_shape=4,                
-                device="cuda" if torch.cuda.is_available() else "cpu"                
-            ).to(device)
+                critic = DNN_B_ACE_CRITIC(
+                    obs_shape=agent_observation_space.shape[0],                
+                    action_shape=4,                
+                    device="cuda" if torch.cuda.is_available() else "cpu"                
+                ).to(device)
+            
+            
+            if model == "Task_MHA":
+                # PPO-specific setup with MHA architecture
+                actor = Task_MHA_B_ACE(
+                    num_tasks=dqn_params["max_tasks"],
+                    num_features_per_task=14,
+                    nhead=4,
+                    device=device,
+                ).to(device)
+
+                critic = Task_MHA_B_ACE(
+                    num_tasks=dqn_params["max_tasks"],
+                    num_features_per_task=14,
+                    nhead=4,
+                    device=device,
+                ).to(device)
             
                                     
             actor_critic = ActorCritic(actor, critic)

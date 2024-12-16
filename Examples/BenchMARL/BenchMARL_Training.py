@@ -12,7 +12,7 @@ from benchmarl.environments.godotrl import b_ace
 from benchmarl.experiment import Experiment, ExperimentConfig
 from benchmarl.models.mlp import MlpConfig
 from benchmarl.algorithms import IppoConfig, IsacConfig, IqlConfig, IddpgConfig
-from benchmarl.algorithms import QmixConfig, VdnConfig, MappoConfig, MaddpgConfig
+from benchmarl.algorithms import QmixConfig, VdnConfig, MappoConfig, MaddpgConfig, MasacConfig
 from benchmarl.models.gnn import GnnConfig
 from benchmarl.experiment.callback import Callback
 
@@ -82,32 +82,31 @@ if __name__ == "__main__":
 
     experiment_config.sampling_device = 'cpu'
     experiment_config.train_device = 'cpu'
-    experiment_config.max_n_iters = 300
+    experiment_config.max_n_frames = 3e6
+    experiment_config.m = 500
     experiment_config.checkpoint_interval = 12000000
     
     # Whether to share the parameters of the policy within agent groups
     experiment_config.share_policy_params= True
     experiment_config.prefer_continuous_actions = True  
-    experiment_config.evaluation_interval = 36000
+    experiment_config.evaluation_interval = 6000000
     experiment_config.evaluation_episodes = 30   
-    experiment_config.evaluation_deterministic_actions = True  
+    experiment_config.evaluation_deterministic_actions = False  
     
     experiment_config.exploration_eps_init = 0.50
     experiment_config.exploration_eps_end = 0.01   
     
     # ----- On policy Configuration ----- #
     experiment_config.on_policy_collected_frames_per_batch = 12000    
-    experiment_config.on_policy_n_minibatch_iters = 1     
-    experiment_config.on_policy_minibatch_size = 1
-    
+    experiment_config.on_policy_n_minibatch_iters = 32     
+    experiment_config.on_policy_minibatch_size = 1024        
     
     #-------------------------------------------#
     
-    # ----- Off Policy Configuration -----   #
-    
+    # ----- Off Policy Configuration -----   #    
     experiment_config.off_policy_collected_frames_per_batch: 12000
-    experiment_config.off_policy_n_optimizer_steps= 64    
-    experiment_config.off_policy_train_batch_size= 256    
+    experiment_config.off_policy_n_optimizer_steps= 32    
+    experiment_config.off_policy_train_batch_size= 1024    
     experiment_config.off_policy_memory_size: 100_000    
     experiment_config.off_policy_init_random_frames= 0
        
@@ -118,11 +117,12 @@ if __name__ == "__main__":
     experiment_config.lr = 0.000005
     
     #TASK Config    
+ 
     b_ace_config = { 	
                     "EnvConfig" : 
                     {
                         "task": "b_ace_v1",
-                        "env_path": "../../BVR_AirCombat/bin/B_ACE_v12.exe",
+                        "env_path": "..\..\BVR_AirCombat/bin/B_ACE_v12.exe",
                         "port": 12500,
                         "renderize": 0,
                         "debug_view": 0,
@@ -131,35 +131,34 @@ if __name__ == "__main__":
                         "max_cycles": 36000,
                         "experiment_mode"  : 0,
                         "parallel_envs": 1,	
-                        "seed": 0,	
+                        "seed": 1,	
                         "action_repeat": 20,	
                         "action_type": "Low_Level_Continuous",                        
-                        "full_observation": 1,
                         "stop_mission" : 1,
-                        
+                                                
                         "RewardsConfig" : {
-                    			"mission_factor": 0.001,				
-                    			"missile_fire_factor": -0.1,		
-                    			"missile_no_fire_factor": -0.001,
-                    			"missile_miss_factor": -0.5,
-                    			"detect_loss_factor": -0.1,
-                    			"keep_track_factor": 0.001,
-                    			"hit_enemy_factor": 3.0,
-                    			"hit_own_factor": -5.0,			
-                    			"mission_accomplished_factor": 10.0,			
-                    		}
+                                    "mission_factor": 0.001 ,				
+                                    "missile_fire_factor": -0.1,		
+                                    "missile_no_fire_factor": -0.001,
+                                    "missile_miss_factor": -0.5,
+                                    "detect_loss_factor": -0.1,
+                                    "keep_track_factor": 0.001,
+                                    "hit_enemy_factor": 3.0,
+                                    "hit_own_factor": -5.0,			
+                                    "mission_accomplished_factor": 10.0,			
+                                }
                     },
 
                     "AgentsConfig" : 
                     {
                         "blue_agents": { 
-                            "num_agents" : 4,
+                            "num_agents" : 2,
                             "mission"    : "DCA",
                             "beh_config" : {
-                                            "dShot" : [1.04, 0.50, 1.09],
-                                            "lCrank": [1.06, 0.98, 0.98],
-                                            "lBreak": [1.05, 1.17, 0.45]
-                                            },
+                                            "dShot" : [1.04],
+                                            "lCrank": [1.06],
+                                            "lBreak": [1.05]  
+                                           },
                             "base_behavior": "external",                  
                             "init_position": {"x": 0.0, "y": 25000.0,"z": 30.0},
                             "offset_pos": {	"x": 0.0, "y": 0.0, "z": 0.0},
@@ -173,14 +172,26 @@ if __name__ == "__main__":
                         },	
                         "red_agents":
                         { 
-                            "num_agents" : 4, 
-                            "base_behavior": "baseline1",
+                            "num_agents" : 2, 
+                            "base_behavior": "duck",
                             "mission"    : "striker",
+                            # "beh_config" : {
+                            #                "dShot" : [0.50, 0.99, 1.04, 0.50, 0.99, 0.93, 0.57, 0.50, 0.50, 0.50],
+                            #                "lCrank": [0.64, 0.96, 1.14, 0.69, 0.96, 0.69, 1.07, 0.20, 0.98, 0.69],
+                            #                 "lBreak": [1.17, 0.51, 1.05, 0.25, 0.84, 0.51, 0.61, 0.37, 1.17, 0.51]  
+                            #              },
+                            
+                            # "beh_config" : {
+                            #                 "dShot" : [0.50, 0.99, 1.04],
+                            #                 "lCrank": [0.98, 0.96, 1.14],
+                            #                 "lBreak": [1.17, 0.51, 1.05]
+                            #             },
                             "beh_config" : {
-                                "dShot" : [1.04],#, 0.50, 1.09],
-                                "lCrank": [1.06],#, 0.98, 0.98],
-                                "lBreak": [1.05]#, 1.17, 0.45]
-                            },
+                                            "dShot" : [1.04],
+                                            "lCrank": [1.06],
+                                            "lBreak": [1.05]  
+                                           },
+                         
                             "init_position": {"x": 0.0,"y": 25000.0,"z": -30.0},
                             "offset_pos": {"x": 0.0,"y": 0.0,"z": 0.0},
                             "init_hdg" : 180.0,                        
@@ -192,7 +203,8 @@ if __name__ == "__main__":
                             "wez_models" : "res://assets/wez/Default_Wez_params.json"
                         }
                     }	
-}
+            }
+
         
     task = b_ace.B_ACE.b_ace.get_from_yaml()
  
@@ -233,9 +245,10 @@ if __name__ == "__main__":
     elif args.algorithm == 'maddpg':
         algorithm_config = MaddpgConfig.get_from_yaml()
     else:  # 'iddpg'
-        #algorithm_config = MAPpoConfig.get_from_yaml()
-        algorithm_config = MappoConfig.get_from_yaml()
+        #algorithm_config = MaddpgConfig.get_from_yaml()
+        #algorithm_config = IddpgConfig.get_from_yaml()
         #algorithm_config.share_param_critic = True
+        algorithm_config = MasacConfig.get_from_yaml()
         
     #algorithm_config.share_param_critic = True
     # Loads from "benchmarl/conf/model/layers/mlp.yaml"

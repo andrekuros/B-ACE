@@ -427,6 +427,7 @@ class B_ACE_TaskEnv(GodotRLPettingZooWrapper):
                 last_tasks.extend([self.task_null for _ in range( self.max_tasks - len(last_tasks) )])            
             else:
                 last_tasks = self.last_tasks[agent][:self.max_tasks]
+                print (f'Tasks Over Limit: {len(last_tasks)} /{self.max_tasks}' )
 
             self.last_tasks[agent] = last_tasks
             
@@ -693,17 +694,6 @@ class B_ACE_TaskEnv(GodotRLPettingZooWrapper):
             exit(-1)
         
         
-
-    def update_tasks(self):
-                
-        return#active_evaders = [self.tasks_evaders[i] for i in range(len(self.tasks_evaders)) if not self.env.evaders_gone[i]]
-        
-        #self.tasks = active_evaders + self.tasks_allies #+ self.tasks_basic 
-
-        # self.tasks = active_evaders + self.tasks_basic 
-        # self.tasks = self.tasks_basic.copy()
-
-
     def call_results(self):
         resp = self.call("last")       
         return resp

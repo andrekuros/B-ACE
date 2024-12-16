@@ -33,6 +33,9 @@ Examples/Tianshow/Task_MHA_B_ACEDQN/*
 Examples/Tianshow/wandb/*
 Examples/Tianshow/__pycache__/*
 
-
-Examples/Tianshow/__pycache__/GodotRLPettingZooWrapper.cpython-311.pyc
 Examples/Tianshow/*.csv
+Examples/Tianshow/Task_DNNDQN/*
+Examples/Tianshow/Task_DNN_B_ACEDQN/*
+Examples/Tianshow/Task_MHADQN/*
+Examples/Tianshow/__pycache__/*
+Examples/BenchMARL/__pycache__/*.pyc

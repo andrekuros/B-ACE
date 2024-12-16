@@ -97,6 +97,7 @@ class Task_MHA_B_ACE(nn.Module):
         # attention_output2 = self.norm2(attention_output2)
         # attention_output2 = attention_output2.masked_fill(mask_expanded, 0.0)       
 
+        #task_q_values = self.output(attention_output1)                   
         task_q_values = self.output(attention_output2)                   
         task_q_values = torch.squeeze(task_q_values, -1).to(self.device)           
 
