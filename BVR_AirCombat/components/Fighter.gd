@@ -28,6 +28,8 @@ var max_cycles = -1
 #@onready var actionsPanel = env.get_node("CanvasLayer/Control/ActionPanel")
 
 var alliesList = []
+var share_states = true
+var share_tracks = true
 # Assume you have a Missile scene set up with its own script for homing in on targets
 var phy_fps
 var action_repeat
@@ -248,6 +250,8 @@ func update_init_config(config, rewConfig = {}):
 	rNez_calc.parse(wezModels["RNEZ_MODEL"], input_data)	
 	
 	set_behavior(init_config["base_behavior"])
+	share_tracks = init_config["share_tracks"] == 1
+	share_states = init_config["share_states"] == 1
 	
 	dShotList  = init_config["beh_config"]["dShot"]
 	lCrankList = init_config["beh_config"]["lCrank"]
@@ -447,7 +451,7 @@ func get_obs(with_labels = false):
 	var allied_tracks_info = []
 
 	for track in allied_track_list:
-		if track.is_alive:
+		if track.is_alive and share_tracks:
 			allied_tracks_info.append_array([
 				["allied_track_alt_diff_" + str(track.id), (global_transform.origin.y - track.obj.global_transform.origin.y) / 150.0],
 				["allied_track_aspect_angle_" + str(track.id), track.aspect_angle / 180.0],
