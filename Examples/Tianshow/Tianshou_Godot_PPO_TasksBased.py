@@ -81,7 +81,7 @@ B_ACE_Config = {
                     "EnvConfig" : 
                     {
                         "task": "b_ace_v1",
-                        "env_path": "..\..\BVR_AirCombat/bin/B_ACE_v12.exe",
+                        "env_path": "..\..\BVR_AirCombat/bin/B_ACE_v13.exe",
                         "port": 12500,
                         "renderize": 0,
                         "debug_view": 0,
@@ -114,7 +114,7 @@ B_ACE_Config = {
                         "blue_agents": { 
                             "num_agents" : 2,
                             "share_states" : 0, 
-                            "share_states" : 0,
+                            "share_tracks" : 0,
                             "mission"    : "DCA",
                             "beh_config" : {
                                             "dShot" : [1.04, 1.04, 1.04], #[1.04, 0.50, 1.09]
@@ -136,8 +136,8 @@ B_ACE_Config = {
                         { 
                             "num_agents" : 2,
                             "share_states" : 0, 
-                            "share_states" : 0,
-                            "base_behavior": "baseline1",
+                            "share_tracks" : 0,
+                            "base_behavior": "baseline2",
                             "mission"    : "striker",
                             # "beh_config" : {
                             #                "dShot" : [0.50, 0.99, 1.04, 0.50, 0.99, 0.93, 0.57, 0.50, 0.50, 0.50],

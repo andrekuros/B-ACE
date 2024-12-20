@@ -298,7 +298,7 @@ func update_init_config(config, rewConfig = {}):
 
 func set_behavior(_behavior):	
 	
-	if  _behavior == "baseline1" or _behavior == "duck" or\
+	if  _behavior == "baseline1" or _behavior == "baseline2" or _behavior == "duck" or\
 		_behavior == "wez_eval_shooter" or _behavior == "wez_eval_target_max" or _behavior == "wez_eval_target_nez"or\
 		_behavior == "external":	
 		behavior = _behavior
@@ -319,7 +319,7 @@ func reset():
 		
 	var local_offset = Vector3(0.0,0.0,0.0)
 	
-	if behavior == "duck" or behavior == "baseline1":
+	if behavior == "duck" or behavior == "baseline1" or behavior == "baseline2":
 				
 		var rnd_offset = Vector3(init_config['rnd_offset_range']['x'],
 								 init_config['rnd_offset_range']['y'],
@@ -330,7 +330,7 @@ func reset():
 		var y_offset = randf_range(-rnd_offset.y * SConv.FT2GDM, rnd_offset.y * SConv.FT2GDM)		
 		local_offset = Vector3(x_offset,y_offset, z_offset)
 		
-		if behavior == "baseline1":
+		if behavior == "baseline1" or behavior == "baseline2":
 			
 			var agent_idx = randi_range(0, len(dShotList) - 1)
 			dShot  = dShotList[agent_idx]
