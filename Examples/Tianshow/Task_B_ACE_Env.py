@@ -251,7 +251,7 @@ class Task:
         elif ref == "ally":
             return current_obs[self.obs_map["allied_track_dist_" + self.target_object]] >= 0.0
         else:
-            return True
+            return False
     
         
     def get_one_hot(self):                   
@@ -316,9 +316,9 @@ class B_ACE_TaskEnv(GodotRLPettingZooWrapper):
         
         if self.enable_summary_output or self.enable_log_output:
             # Create a directory with a timestamp
-            self.output_dir = datetime.now().strftime("%Y%m%d_%H%M%S")
+            self.output_dir = f'./Logs/Tasks/{self.num_agents}_shares_{self.share_states}_{self.share_tracks}_{datetime.now().strftime("%Y%m%d_%H%M%S")}'
             os.makedirs(self.output_dir, exist_ok=True)
-    
+                
     def reset(self, seed=0, options = None):
         
         if self.enable_summary_output and self.task_usage_log != []:
@@ -327,6 +327,10 @@ class B_ACE_TaskEnv(GodotRLPettingZooWrapper):
         if not all(value == 0 for value in self.task_selection_count.values()):        
             if self.enable_log_output and self.task_selection_count:
                 self.write_log_file()
+        
+        # Reset selection statistics
+        self.task_selection_count = {task_type: 0 for task_type in TASK_TYPES}
+        self.task_usage_log = []  # To log (task, step)
             
         # Call the base environment's reset
         self.raw_observations, self.info  = super().reset(self, options=options)
@@ -394,8 +398,8 @@ class B_ACE_TaskEnv(GodotRLPettingZooWrapper):
         self.prepare_next_tasks()
                 
         
-        self.terminations = False
-        self.truncations = False        
+        self.terminations = True
+        self.truncations = True        
         self.rewards = 0.0
         
         for i, agent in enumerate(self.possible_agents):
@@ -415,7 +419,7 @@ class B_ACE_TaskEnv(GodotRLPettingZooWrapper):
             
             #Stop 1 died
             self.terminations = self.terminations and dones[agent]
-            self.truncations = self.truncations or truncs[agent]            
+            self.truncations = self.truncations and truncs[agent]            
             
             
             self.rewards += reward[agent] #torch.tensor([reward[i]], dtype=torch.float32).to('cuda')
@@ -488,7 +492,7 @@ class B_ACE_TaskEnv(GodotRLPettingZooWrapper):
                 self.tasks_enemies[agent].append(new_task)
                 self.tasks_map[new_task.id] = new_task 
                 
-            if self.share_state == 1:
+            if self.share_states == 1:
                 for id in [idx for idx in agents_id if idx != agent_id]:                
                                                                     
                     new_task = Task('follow_ally', str(id), self.obs_map[agent])
@@ -721,24 +725,23 @@ class B_ACE_TaskEnv(GodotRLPettingZooWrapper):
     def write_summary_file(self):
         if not self.enable_summary_output:
             return
-        save_path = self.output_dir + "task_summary_{self.resets}.csv"
+        save_path = self.output_dir + f'/task_summary_{self.resets}.csv'
         
-        with open(filename=save_path, mode="w", newline="") as file:
+        with open(file=save_path, mode="w", newline="") as file:
             writer = csv.writer(file)
             writer.writerow(["Task Type", "Selection Count"])
             for task_type, count in self.task_selection_count.items():
                 writer.writerow([task_type, count])
 
-    def write_log_file(self, filename="task_log.csv"):
+    def write_log_file(self):
         if not self.enable_log_output:
             return
         
-        save_path = self.output_dir + "all_tasks_{self.resets}.csv"
-        with open(save_path, mode="w", newline="") as file:
-            writer = csv.writer(file)
-            writer.writerow("Task Type")
-            for task_type, step in self.task_usage_log:
-                writer.writerow(task_type)    
+        save_path = self.output_dir + f'/all_tasks_{self.resets}.csv'
+        with open(file=save_path, mode="w", newline="") as file:
+                                    
+            for task_type in self.task_usage_log:
+                file.write(task_type+ "\n")    
         
     def call_results(self):
         resp = self.call("last")       
