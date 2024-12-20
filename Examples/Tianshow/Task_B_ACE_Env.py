@@ -464,7 +464,7 @@ class B_ACE_TaskEnv(GodotRLPettingZooWrapper):
                 self.tasks_enemies[agent].append(new_task)
                 self.tasks_map[new_task.id] = new_task 
                 
-            if self.share_state == 1:
+            if self.share_states == 1:
                 for id in [idx for idx in agents_id if idx != agent_id]:                
                                                                     
                     new_task = Task('follow_ally', str(id), self.obs_map[agent])
