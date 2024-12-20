@@ -42,7 +42,7 @@ class GodotRLPettingZooWrapper(GodotEnv, ParallelEnv):
         self.agents_config = config_kwargs.get("AgentsConfig", "")
         self._num_agents = int(self.agents_config["blue_agents"].get("num_agents", 1))
         
-        self.share_state  = int(self.agents_config["blue_agents"].get("share_state", 1))
+        self.share_states  = int(self.agents_config["blue_agents"].get("share_states", 1))
         self.share_tracks = int(self.agents_config["blue_agents"].get("share_tracks", 1))
        
         self.port = GodotRLPettingZooWrapper.DEFAULT_PORT + random.randint(0,3100)                 
