@@ -4,6 +4,10 @@ import time
 import math
 import random
 from collections import deque
+import csv
+import os
+from datetime import datetime
+
 
 from gymnasium import spaces
 from GodotRLPettingZooWrapper import GodotRLPettingZooWrapper
@@ -301,8 +305,29 @@ class B_ACE_TaskEnv(GodotRLPettingZooWrapper):
 
         self.tasks_map = {}
         self.allocation_table = []
+        
+        # Track task selection statistics
+        self.task_selection_count = {task_type: 0 for task_type in TASK_TYPES}
+        self.task_usage_log = []  # To log (task, step)
+
+        # Configuration for outputs
+        self.enable_summary_output = "log_tasks_summary" in self.additional_config
+        self.enable_log_output = "log_all_tasks" in self.additional_config
+        
+        if self.enable_summary_output or self.enable_log_output:
+            # Create a directory with a timestamp
+            self.output_dir = datetime.now().strftime("%Y%m%d_%H%M%S")
+            os.makedirs(self.output_dir, exist_ok=True)
     
     def reset(self, seed=0, options = None):
+        
+        if self.enable_summary_output and self.task_usage_log != []:
+            self.write_summary_file()
+        
+        if not all(value == 0 for value in self.task_selection_count.values()):        
+            if self.enable_log_output and self.task_selection_count:
+                self.write_log_file()
+            
         # Call the base environment's reset
         self.raw_observations, self.info  = super().reset(self, options=options)
 
@@ -344,10 +369,11 @@ class B_ACE_TaskEnv(GodotRLPettingZooWrapper):
         for agent, action_selected in task_actions.items():
                                                                         
             task = self.last_tasks[agent][action_selected]            
-            #if agent == "agent_0":
-            #    task = self.tasks_allies[agent][3]
             
-            #last_task_data = self.last_actions[agent]                             
+            self.task_selection_count[task.type] += 1
+            if self.enable_log_output:
+                self.task_usage_log.append(task.type)
+                        
             actions[agent] = self.convert_task2action( agent, task, self.raw_observations[agent]) 
                                     
             
@@ -440,8 +466,6 @@ class B_ACE_TaskEnv(GodotRLPettingZooWrapper):
             self.observations[agent] = {"obs" : task_features, "mask" : mask}#, "agent_id" : agent }
             self.infos[agent] = {"agent_id" : agent, "mask": mask}
                             
-    
-    
     def generate_tasks(self):
                         
         
@@ -692,7 +716,28 @@ class B_ACE_TaskEnv(GodotRLPettingZooWrapper):
         else:
             print(f'Error: Unknown task type {task.type} when converting to action')
             exit(-1)
+    
+    def write_summary_file(self):
+        if not self.enable_summary_output:
+            return
+        save_path = self.output_dir + "task_summary_{self.resets}.csv"
         
+        with open(filename=save_path, mode="w", newline="") as file:
+            writer = csv.writer(file)
+            writer.writerow(["Task Type", "Selection Count"])
+            for task_type, count in self.task_selection_count.items():
+                writer.writerow([task_type, count])
+
+    def write_log_file(self, filename="task_log.csv"):
+        if not self.enable_log_output:
+            return
+        
+        save_path = self.output_dir + "all_tasks_{self.resets}.csv"
+        with open(save_path, mode="w", newline="") as file:
+            writer = csv.writer(file)
+            writer.writerow("Task Type")
+            for task_type, step in self.task_usage_log:
+                writer.writerow(task_type)    
         
     def call_results(self):
         resp = self.call("last")       
