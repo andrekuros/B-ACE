@@ -49,7 +49,7 @@ from tianshou.utils import WandbLogger
 ####---------------------------#######
 
 
-model  =  "Task_DNN"#Task_MHA_B_ACE"#"SISL_Task_MultiHead" #"CNN_ATT_SISL" #"MultiHead_SISL" Task_DNN_B_ACE
+model  =  "Task_MHA"#Task_MHA_B_ACE"#"SISL_Task_MultiHead" #"CNN_ATT_SISL" #"MultiHead_SISL" Task_DNN_B_ACE
 test_num  =  "_B_ACE_Eval"
 policyModel  =  "DQN"
 name = model + "_" + policyModel + "_" + test_num
@@ -113,6 +113,8 @@ B_ACE_Config = {
                     {
                         "blue_agents": { 
                             "num_agents" : 2,
+                            "share_states" : 0, 
+                            "share_states" : 0,
                             "mission"    : "DCA",
                             "beh_config" : {
                                             "dShot" : [1.04, 1.04, 1.04], #[1.04, 0.50, 1.09]
@@ -132,7 +134,9 @@ B_ACE_Config = {
                         },	
                         "red_agents":
                         { 
-                            "num_agents" : 2, 
+                            "num_agents" : 2,
+                            "share_states" : 0, 
+                            "share_states" : 0,
                             "base_behavior": "baseline1",
                             "mission"    : "striker",
                             # "beh_config" : {

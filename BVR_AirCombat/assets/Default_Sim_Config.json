@@ -33,7 +33,8 @@
 	{
 		"blue_agents": { 
 			"num_agents" : 2,
-			
+			"share_states" : 1,
+			"share_tracks" : 1,	
 			"base_behavior": "baseline1",
 			"mission"    : "DCA",
 			"beh_config" : {
@@ -55,7 +56,8 @@
 		"red_agents":
 		{ 
 			"num_agents" : 2, 
-						
+			"share_states" : 1,	
+			"share_tracks" : 1,		
 			"base_behavior": "baseline1",
 			"mission"    : "striker",
 			"beh_config" : {
