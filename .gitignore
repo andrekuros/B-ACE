@@ -27,15 +27,14 @@ wandb/debug-cli.andre.log
 GA_Results/*
 
 Examples/Tianshow/__pycache__/*
-Examples/Tianshow/Logs/dqn_sisl/*
 Examples/Tianshow/Task_MHA_B_ACEDQN/*
-
 Examples/Tianshow/wandb/*
-Examples/Tianshow/__pycache__/*
 
 Examples/Tianshow/*.csv
 Examples/Tianshow/Task_DNNDQN/*
 Examples/Tianshow/Task_DNN_B_ACEDQN/*
 Examples/Tianshow/Task_MHADQN/*
-Examples/Tianshow/__pycache__/*
-Examples/BenchMARL/__pycache__/*.pyc
+Examples/Tianshow/Logs/*
+
+Examples/BenchMARL/__pycache__/*
+

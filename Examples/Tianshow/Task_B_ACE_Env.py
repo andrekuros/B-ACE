@@ -247,7 +247,7 @@ class Task:
         elif ref == "ally":
             return current_obs[self.obs_map["allied_track_dist_" + self.target_object]] >= 0.0
         else:
-            return True
+            return False
     
         
     def get_one_hot(self):                   
@@ -301,8 +301,29 @@ class B_ACE_TaskEnv(GodotRLPettingZooWrapper):
 
         self.tasks_map = {}
         self.allocation_table = []
-    
+        
+        # Track task selection statistics
+        self.task_selection_count = {task_type: 0 for task_type in TASK_TYPES}
+        self.task_usage_log = []  # To log (task, step)
+
+        # Configuration for outputs
+        self.enable_summary_output = "log_tasks_summary" in self.additional_config
+        self.enable_log_output = "log_all_tasks" in self.additional_config
+        
+        if self.enable_summary_output or self.enable_log_output:
+            # Create a directory with a timestamp
+            self.output_dir = f'./Logs/Tasks/{self.num_agents}_shares_{self.share_states}_{self.share_tracks}_{datetime.now().strftime("%Y%m%d_%H%M%S")}'
+            os.makedirs(self.output_dir, exist_ok=True)
+                
     def reset(self, seed=0, options = None):
+        
+        if self.enable_summary_output and self.task_usage_log != []:
+            self.write_summary_file()
+        
+        if not all(value == 0 for value in self.task_selection_count.values()):        
+            if self.enable_log_output and self.task_selection_count:
+                self.write_log_file()
+            
         # Call the base environment's reset
         self.raw_observations, self.info  = super().reset(self, options=options)
 
@@ -368,8 +389,8 @@ class B_ACE_TaskEnv(GodotRLPettingZooWrapper):
         self.prepare_next_tasks()
                 
         
-        self.terminations = False
-        self.truncations = False        
+        self.terminations = True
+        self.truncations = True        
         self.rewards = 0.0
         
         for i, agent in enumerate(self.possible_agents):
@@ -389,7 +410,7 @@ class B_ACE_TaskEnv(GodotRLPettingZooWrapper):
             
             #Stop 1 died
             self.terminations = self.terminations and dones[agent]
-            self.truncations = self.truncations or truncs[agent]            
+            self.truncations = self.truncations and truncs[agent]            
             
             
             self.rewards += reward[agent] #torch.tensor([reward[i]], dtype=torch.float32).to('cuda')
@@ -692,7 +713,28 @@ class B_ACE_TaskEnv(GodotRLPettingZooWrapper):
         else:
             print(f'Error: Unknown task type {task.type} when converting to action')
             exit(-1)
+    
+    def write_summary_file(self):
+        if not self.enable_summary_output:
+            return
+        save_path = self.output_dir + "task_summary_{self.resets}.csv"
         
+        with open(filename=save_path, mode="w", newline="") as file:
+            writer = csv.writer(file)
+            writer.writerow(["Task Type", "Selection Count"])
+            for task_type, count in self.task_selection_count.items():
+                writer.writerow([task_type, count])
+
+    def write_log_file(self, filename="task_log.csv"):
+        if not self.enable_log_output:
+            return
+        
+        save_path = self.output_dir + "all_tasks_{self.resets}.csv"
+        with open(save_path, mode="w", newline="") as file:
+            writer = csv.writer(file)
+            writer.writerow("Task Type")
+            for task_type, step in self.task_usage_log:
+                writer.writerow(task_type)    
         
     def call_results(self):
         resp = self.call("last")       
