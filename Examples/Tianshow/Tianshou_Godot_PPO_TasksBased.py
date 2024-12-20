@@ -114,7 +114,7 @@ B_ACE_Config = {
                         "blue_agents": { 
                             "num_agents" : 2,
                             "share_states" : 0, 
-                            "share_tracks" : 0,
+                            "share_states" : 0,
                             "mission"    : "DCA",
                             "beh_config" : {
                                             "dShot" : [1.04, 1.04, 1.04], #[1.04, 0.50, 1.09]
@@ -137,7 +137,7 @@ B_ACE_Config = {
                             "num_agents" : 4,
                             "share_states" : 0, 
                             "share_tracks" : 0,
-                            "base_behavior": "baseline1",
+                            "base_behavior": "baseline2",
                             "mission"    : "striker",
                             # "beh_config" : {
                             #                "dShot" : [0.50, 0.99, 1.04, 0.50, 0.99, 0.93, 0.57, 0.50, 0.50, 0.50],
