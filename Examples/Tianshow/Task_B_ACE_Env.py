@@ -4,10 +4,6 @@ import time
 import math
 import random
 from collections import deque
-import csv
-import os
-from datetime import datetime
-
 
 from gymnasium import spaces
 from GodotRLPettingZooWrapper import GodotRLPettingZooWrapper
@@ -327,10 +323,6 @@ class B_ACE_TaskEnv(GodotRLPettingZooWrapper):
         if not all(value == 0 for value in self.task_selection_count.values()):        
             if self.enable_log_output and self.task_selection_count:
                 self.write_log_file()
-        
-        # Reset selection statistics
-        self.task_selection_count = {task_type: 0 for task_type in TASK_TYPES}
-        self.task_usage_log = []  # To log (task, step)
             
         # Call the base environment's reset
         self.raw_observations, self.info  = super().reset(self, options=options)
@@ -373,11 +365,10 @@ class B_ACE_TaskEnv(GodotRLPettingZooWrapper):
         for agent, action_selected in task_actions.items():
                                                                         
             task = self.last_tasks[agent][action_selected]            
+            #if agent == "agent_0":
+            #    task = self.tasks_allies[agent][3]
             
-            self.task_selection_count[task.type] += 1
-            if self.enable_log_output:
-                self.task_usage_log.append(task.type)
-                        
+            #last_task_data = self.last_actions[agent]                             
             actions[agent] = self.convert_task2action( agent, task, self.raw_observations[agent]) 
                                     
             
@@ -474,6 +465,8 @@ class B_ACE_TaskEnv(GodotRLPettingZooWrapper):
             self.observations[agent] = {"obs" : task_features, "mask" : mask}#, "agent_id" : agent }
             self.infos[agent] = {"agent_id" : agent, "mask": mask}
                             
+    
+    
     def generate_tasks(self):
                         
         
@@ -513,9 +506,8 @@ class B_ACE_TaskEnv(GodotRLPettingZooWrapper):
                     
                     new_task = Task('diverge_ally_left', str(id), self.obs_map[agent])            
                     self.tasks_allies[agent].append(new_task)
-                    self.tasks_map[new_task.id] = new_task               
-                
-        
+                    self.tasks_map[new_task.id] = new_task                      
+                        
             #Main Target-based Task            
             new_task = Task('fly_direction', "101", self.obs_map[agent])            
             self.tasks_positioning[agent].append(new_task)
@@ -729,23 +721,24 @@ class B_ACE_TaskEnv(GodotRLPettingZooWrapper):
     def write_summary_file(self):
         if not self.enable_summary_output:
             return
-        save_path = self.output_dir + f'/task_summary_{self.resets}.csv'
+        save_path = self.output_dir + "task_summary_{self.resets}.csv"
         
-        with open(file=save_path, mode="w", newline="") as file:
+        with open(filename=save_path, mode="w", newline="") as file:
             writer = csv.writer(file)
             writer.writerow(["Task Type", "Selection Count"])
             for task_type, count in self.task_selection_count.items():
                 writer.writerow([task_type, count])
 
-    def write_log_file(self):
+    def write_log_file(self, filename="task_log.csv"):
         if not self.enable_log_output:
             return
         
-        save_path = self.output_dir + f'/all_tasks_{self.resets}.csv'
-        with open(file=save_path, mode="w", newline="") as file:
-                                    
-            for task_type in self.task_usage_log:
-                file.write(task_type+ "\n")    
+        save_path = self.output_dir + "all_tasks_{self.resets}.csv"
+        with open(save_path, mode="w", newline="") as file:
+            writer = csv.writer(file)
+            writer.writerow("Task Type")
+            for task_type, step in self.task_usage_log:
+                writer.writerow(task_type)    
         
     def call_results(self):
         resp = self.call("last")       

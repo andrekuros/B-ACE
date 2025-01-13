@@ -38,6 +38,7 @@ class GodotRLPettingZooWrapper(GodotEnv, ParallelEnv):
         self.speedup        = int(self.env_config.get("speedup", 1000))                          
         self.parallel_envs  = int(self.env_config.get("parallel_envs", 1))  
          
+        
         self.agents_config = config_kwargs.get("AgentsConfig", "")
         self._num_agents = int(self.agents_config["blue_agents"].get("num_agents", 1))
         
@@ -65,7 +66,8 @@ class GodotRLPettingZooWrapper(GodotEnv, ParallelEnv):
         self.send_sim_config(self.env_config, self.agents_config)                
         
         env_info = self._get_env_info()  
-                     
+        
+             
         self.observation_labels = env_info["observation_labels"]
                 
         # sf2 requires a tuple action space
@@ -94,8 +96,6 @@ class GodotRLPettingZooWrapper(GodotEnv, ParallelEnv):
         self.truncations =  {agent : False  for agent in self.possible_agents} 
         self.observations =  {agent : {}  for agent in self.possible_agents}  
         self.info =  {agent : {}  for agent in self.possible_agents}  
-        
-        self.resets = 0
                             
     def send_sim_config(self, _env_config, _agents_config):
         message = {"type": "config"}        
@@ -107,7 +107,6 @@ class GodotRLPettingZooWrapper(GodotEnv, ParallelEnv):
     def reset(self, seed=0, options = None):
         
         result  = super().reset()
-        self.resets += 1
         
         observations = []
         self.observations = {}          

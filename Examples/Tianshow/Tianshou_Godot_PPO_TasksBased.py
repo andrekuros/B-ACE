@@ -81,7 +81,7 @@ B_ACE_Config = {
                     "EnvConfig" : 
                     {
                         "task": "b_ace_v1",
-                        "env_path": "..\..\BVR_AirCombat/bin/B_ACE_v13.exe",
+                        "env_path": "..\..\BVR_AirCombat/bin/B_ACE_v12.exe",
                         "port": 12500,
                         "renderize": 0,
                         "debug_view": 0,
