@@ -281,7 +281,11 @@ func _physics_process(delta):
 		fps_show.text = str(Performance.get_monitor(Performance.TIME_FPS))
 		
 		if renderize:
-			Engine.max_fps = sim_speed * 4#physics_updates / phy_fps * 10.0
+			if  sim_speed * 4 > 30:
+				Engine.max_fps = sim_speed * 4#physics_updates / phy_fps * 10.0
+			else:
+				Engine.max_fps = 30
+				
 		physics_updates = 0.0
 		last_check = Time.get_ticks_msec()
 		

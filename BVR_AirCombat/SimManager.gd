@@ -235,6 +235,8 @@ func _set_agents(_tree):
 			
 			newFigther.team_color = "BLUE"
 			newFigther.team_color_group = simGroups.BLUE
+			
+			newFigther.max_trail_points = envConfig["max_trail_size"] * 4
 									
 			blue_config["offset_pos"] = Vector3(offset_x * 6, 0.0, 0.0)			
 			newFigther.update_init_config(blue_config, envConfig["RewardsConfig"])			
@@ -258,6 +260,8 @@ func _set_agents(_tree):
 			newFigther.set_meta('id', 200 +  len(enemies))
 			newFigther.team_color = "RED"
 			newFigther.team_color_group = simGroups.RED
+			
+			newFigther.max_trail_points = envConfig["max_trail_size"] * 4
 			
 			red_config["offset_pos"] = Vector3(offset_x * 6, 0.0, 0.0)			
 			newFigther.update_init_config(red_config, envConfig["RewardsConfig"])			

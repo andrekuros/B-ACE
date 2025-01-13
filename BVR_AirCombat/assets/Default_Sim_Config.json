@@ -14,6 +14,7 @@
 		"action_type": "Low_Level_Continuous",                        
 		"full_observation": 1,
 		"stop_mission" : 1,
+		"max_trail_size" : 240,
 		
 		
 		"RewardsConfig" : {
