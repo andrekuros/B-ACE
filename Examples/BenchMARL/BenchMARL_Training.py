@@ -83,7 +83,7 @@ if __name__ == "__main__":
     experiment_config.sampling_device = 'cpu'
     experiment_config.train_device = 'cuda'
     experiment_config.max_n_frames = 3e6
-    experiment_config.m = 500
+    experiment_config.max_n_iters = 500
     experiment_config.checkpoint_interval = 12000000
     
     # Whether to share the parameters of the policy within agent groups
@@ -114,7 +114,7 @@ if __name__ == "__main__":
     experiment_config.off_policy_n_envs_per_worker= 4
     experiment_config.on_policy_n_envs_per_worker= 4
  
-    experiment_config.lr = 0.000005
+    experiment_config.lr = 0.0000005
     
     #TASK Config    
  
@@ -122,7 +122,7 @@ if __name__ == "__main__":
                     "EnvConfig" : 
                     {
                         "task": "b_ace_v1",
-                        "env_path": "..\..\BVR_AirCombat/bin/B_ACE_v12.exe",
+                        "env_path": "..\..\BVR_AirCombat/bin/B_ACE_v13.exe",
                         "port": 12500,
                         "renderize": 0,
                         "debug_view": 0,
@@ -152,7 +152,7 @@ if __name__ == "__main__":
                     "AgentsConfig" : 
                     {
                         "blue_agents": { 
-                            "num_agents" : 1,
+                            "num_agents" : 2,
                             "mission"    : "DCA",
                             "beh_config" : {
                                             "dShot" : [1.04],
@@ -172,8 +172,8 @@ if __name__ == "__main__":
                         },	
                         "red_agents":
                         { 
-                            "num_agents" : 1, 
-                            "base_behavior": "duck",
+                            "num_agents" : 2, 
+                            "base_behavior": "baseline1",
                             "mission"    : "striker",
                             # "beh_config" : {
                             #                "dShot" : [0.50, 0.99, 1.04, 0.50, 0.99, 0.93, 0.57, 0.50, 0.50, 0.50],
@@ -181,16 +181,16 @@ if __name__ == "__main__":
                             #                 "lBreak": [1.17, 0.51, 1.05, 0.25, 0.84, 0.51, 0.61, 0.37, 1.17, 0.51]  
                             #              },
                             
-                            # "beh_config" : {
-                            #                 "dShot" : [0.50, 0.99, 1.04],
-                            #                 "lCrank": [0.98, 0.96, 1.14],
-                            #                 "lBreak": [1.17, 0.51, 1.05]
-                            #             },
                             "beh_config" : {
-                                            "dShot" : [1.04],
-                                            "lCrank": [1.06],
-                                            "lBreak": [1.05]  
-                                           },
+                                            "dShot" : [0.50, 0.99, 1.04],
+                                            "lCrank": [0.98, 0.96, 1.14],
+                                            "lBreak": [1.17, 0.51, 1.05]
+                                        },
+                            # "beh_config" : {
+                            #                 "dShot" : [1.04],
+                            #                 "lCrank": [1.06],
+                            #                 "lBreak": [1.05]  
+                                        #    },
                          
                             "init_position": {"x": 0.0,"y": 25000.0,"z": -30.0},
                             "offset_pos": {"x": 0.0,"y": 0.0,"z": 0.0},
@@ -245,11 +245,11 @@ if __name__ == "__main__":
     elif args.algorithm == 'maddpg':
         algorithm_config = MaddpgConfig.get_from_yaml()
     else:  # 'iddpg'
-        #algorithm_config = MaddpgConfig.get_from_yaml()
+        algorithm_config = MaddpgConfig.get_from_yaml()
         #algorithm_config = IddpgConfig.get_from_yaml()
         #algorithm_config.share_param_critic = True
         #algorithm_config = MasacConfig.get_from_yaml()
-        algorithm_config = IppoConfig.get_from_yaml()
+        #algorithm_config = MappoConfig.get_from_yaml()
         #algorithm_config = IsacConfig.get_from_yaml()
         
     #algorithm_config.share_param_critic = True
@@ -286,7 +286,7 @@ if __name__ == "__main__":
     else:        
         experiment_config.save_folder = "Results"
     
-    for i in range (0,1):
+    for i in range (0,3):
 
         experiment = Experiment(
             task=task,

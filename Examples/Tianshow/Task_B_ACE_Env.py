@@ -398,8 +398,9 @@ class B_ACE_TaskEnv(GodotRLPettingZooWrapper):
         self.prepare_next_tasks()
                 
         
-        self.terminations = True
-        self.truncations = True        
+        
+        self.terminations = False
+        self.truncations = False        
         self.rewards = 0.0
         
         for i, agent in enumerate(self.possible_agents):
@@ -418,8 +419,11 @@ class B_ACE_TaskEnv(GodotRLPettingZooWrapper):
             #self.truncations[agent] = truncs[agent]#torch.tensor([False], dtype=torch.bool).to('cuda')  # Assuming False for all
             
             #Stop 1 died
-            self.terminations = self.terminations and dones[agent]
-            self.truncations = self.truncations and truncs[agent]            
+            #self.terminations = self.terminations or dones[agent]
+            #self.truncations = self.truncations and truncs[agent]  
+            
+            self.terminations = self.terminations or dones[agent]
+            self.truncations = self.truncations and truncs[agent]           
             
             
             self.rewards += reward[agent] #torch.tensor([reward[i]], dtype=torch.float32).to('cuda')
