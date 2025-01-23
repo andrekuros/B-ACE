@@ -81,7 +81,7 @@ if __name__ == "__main__":
     experiment_config = ExperimentConfig.get_from_yaml()
 
     experiment_config.sampling_device = 'cpu'
-    experiment_config.train_device = 'cuda'
+    experiment_config.train_device = 'cpu'
     experiment_config.max_n_frames = 3e6
     experiment_config.max_n_iters = 500
     experiment_config.checkpoint_interval = 12000000
@@ -114,7 +114,7 @@ if __name__ == "__main__":
     experiment_config.off_policy_n_envs_per_worker= 4
     experiment_config.on_policy_n_envs_per_worker= 4
  
-    experiment_config.lr = 0.0000005
+    experiment_config.lr = 0.000005
     
     #TASK Config    
  
@@ -152,7 +152,7 @@ if __name__ == "__main__":
                     "AgentsConfig" : 
                     {
                         "blue_agents": { 
-                            "num_agents" : 2,
+                            "num_agents" : 1,
                             "mission"    : "DCA",
                             "beh_config" : {
                                             "dShot" : [1.04],
@@ -172,7 +172,7 @@ if __name__ == "__main__":
                         },	
                         "red_agents":
                         { 
-                            "num_agents" : 2, 
+                            "num_agents" : 1, 
                             "base_behavior": "baseline1",
                             "mission"    : "striker",
                             # "beh_config" : {
@@ -190,7 +190,7 @@ if __name__ == "__main__":
                             #                 "dShot" : [1.04],
                             #                 "lCrank": [1.06],
                             #                 "lBreak": [1.05]  
-                                        #    },
+                            #                },
                          
                             "init_position": {"x": 0.0,"y": 25000.0,"z": -30.0},
                             "offset_pos": {"x": 0.0,"y": 0.0,"z": 0.0},
@@ -245,12 +245,13 @@ if __name__ == "__main__":
     elif args.algorithm == 'maddpg':
         algorithm_config = MaddpgConfig.get_from_yaml()
     else:  # 'iddpg'
-        algorithm_config = MaddpgConfig.get_from_yaml()
+        #algorithm_config = MasacConfig.get_from_yaml()
         #algorithm_config = IddpgConfig.get_from_yaml()
         #algorithm_config.share_param_critic = True
         #algorithm_config = MasacConfig.get_from_yaml()
         #algorithm_config = MappoConfig.get_from_yaml()
-        #algorithm_config = IsacConfig.get_from_yaml()
+        algorithm_config = IsacConfig.get_from_yaml()
+        #algorithm_config = MaddpgConfig.get_from_yaml()
         
     #algorithm_config.share_param_critic = True
     # Loads from "benchmarl/conf/model/layers/mlp.yaml"
@@ -286,7 +287,7 @@ if __name__ == "__main__":
     else:        
         experiment_config.save_folder = "Results"
     
-    for i in range (0,3):
+    for i in range (3,5):
 
         experiment = Experiment(
             task=task,

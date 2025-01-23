@@ -70,12 +70,12 @@ func _input(event):
 		if event.pressed and event.keycode == KEY_W:			
 			#cameraGlobal.position.y += zoom_level
 			for sim in get_node("SimManager").get_children():												
-				sim.update_scale(1.5)
+				sim.update_scale(1.1)
 		
 		if event.pressed and event.keycode == KEY_S:
 			#cameraGlobal.position.y += zoom_level
 			for sim in get_node("SimManager").get_children():				
-				sim.update_scale(0.75)
+				sim.update_scale(0.9)
 		
 		if Input.is_action_pressed("Pause"):			
 			get_tree().paused = not get_tree().paused	
@@ -178,7 +178,7 @@ func create_cross():
 
 	# Create a shared material for both arms
 	var material = StandardMaterial3D.new()
-	material.albedo_color = Color(0.3, 0.3, 0.3, 0.8)  # Red color with 50% transparency
+	material.albedo_color = Color(0.6, 0.6, 0.6, 0.9)  # Red color with 50% transparency
 	material.flags_transparent = true  # Enable transparency
 	material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA  # Use alpha transparency
 
@@ -205,6 +205,6 @@ func create_grid_material() -> StandardMaterial3D:
 	material.flags_unshaded = true  # Prevent lighting effects
 	material.vertex_color_use_as_albedo = true  # Use vertex colors for rendering
 	material.flags_transparent = true  # Disable transparency for the grid
-	material.albedo_color = Color(0.3, 0.3, 0.3, 0.3)  # Set your desired grid color (pure white as an example)
+	material.albedo_color = Color(0.4, 0.4, 0.4, 0.4)  # Set your desired grid color (pure white as an example)
 	return material
 

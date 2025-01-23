@@ -62,7 +62,7 @@ now = datetime.datetime.now().strftime("%y%m%d-%H%M%S")
 log_name = name + str(now)
 log_path = os.path.join('./', "Logs", "dqn_sisl", log_name)
 
-load_policy_name = f'2x2_FSMG3_last_policy_Task_MHA_DQN__B_ACE_Eval241230-094422_985_BestRew.pth'
+load_policy_name = f'2x2_duck2_policy_Task_MHA_DQN__B_ACE_Eval241225-100957_609_BestRew.pth'
 save_policy_name = f'policy_{log_name}'
 policy_path = model + policyModel
 
@@ -74,14 +74,14 @@ os.makedirs(os.path.join(log_path), exist_ok=True)
 
 Policy_Config = {
     "same_policy" : True,
-    "load_model" : True    
+    "load_model" : False    
                 }
 
 B_ACE_Config = { 	
                     "EnvConfig" : 
                     {
                         "task": "b_ace_v1",
-                        "env_path": "..\..\BVR_AirCombat/bin/B_ACE_v12.exe",
+                        "env_path": "..\..\BVR_AirCombat/bin/B_ACE_v13.exe",
                         "port": 12500,
                         "renderize": 0,
                         "debug_view": 0,
@@ -90,7 +90,7 @@ B_ACE_Config = {
                         "max_cycles": 36000,
                         "experiment_mode"  : 0,
                         "parallel_envs": 1,	
-                        "seed": 2,	
+                        "seed": 0,	
                         "action_repeat": 20,	
                         "action_type": "Low_Level_Continuous",                        
                         "stop_mission" : 1,
@@ -112,7 +112,7 @@ B_ACE_Config = {
                     "AgentsConfig" : 
                     {
                         "blue_agents": { 
-                            "num_agents" : 2,
+                            "num_agents" : 1,
                             "share_states" : 1, 
                             "share_tracks" : 1,
                             "mission"    : "DCA",
@@ -134,7 +134,7 @@ B_ACE_Config = {
                         },	
                         "red_agents":
                         { 
-                            "num_agents" : 2,
+                            "num_agents" : 1,
                             "share_states" : 1, 
                             "share_tracks" : 1,
                             "base_behavior": "baseline1",
@@ -145,16 +145,16 @@ B_ACE_Config = {
                             #                 "lBreak": [1.17, 0.51, 1.05, 0.25, 0.84, 0.51, 0.61, 0.37, 1.17, 0.51]  
                             #              },
                             
-                            "beh_config" : {
-                                            "dShot" : [0.50, 0.99, 1.04],
-                                            "lCrank": [0.98, 0.96, 1.14],
-                                            "lBreak": [1.17, 0.51, 1.05]
-                                        },
                             # "beh_config" : {
-                            #                 "dShot" : [1.04],
-                            #                 "lCrank": [1.06],
-                            #                  "lBreak": [1.05]  
-                            #               },
+                            #                 "dShot" : [0.50, 0.99, 1.04],
+                            #                 "lCrank": [0.98, 0.96, 1.14],
+                            #                 "lBreak": [1.17, 0.51, 1.05]
+                            #             },
+                            "beh_config" : {
+                                            "dShot" : [1.04],
+                                            "lCrank": [1.06],
+                                             "lBreak": [1.05]  
+                                          },
                          
                             "init_position": {"x": 0.0,"y": 25000.0,"z": -30.0},
                             "offset_pos": {"x": 0.0,"y": 0.0,"z": 0.0},
@@ -201,7 +201,7 @@ PPO_params= {
             }
 
 
-trainer_params = {"max_epoch": 250,
+trainer_params = {"max_epoch": 100,
                   "step_per_epoch": 18000 * 2,#5 * (150 * n_agents),
                   "step_per_collect": 6000 * 2,# * (10 * n_agents),
                   
@@ -212,7 +212,7 @@ trainer_params = {"max_epoch": 250,
                   "repeat_per_collect": 32, #On-Policy Only
                   
                   "episode_per_test": 30,                  
-                  "tn_eps_max": 0.10,
+                  "tn_eps_max": 0.30,
                   "ts_eps_max": 0.001,
                   "warmup_size" : 1,
                   "train_envs" : train_env_num,

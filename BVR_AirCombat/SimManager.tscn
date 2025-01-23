@@ -4,10 +4,16 @@
 [ext_resource type="Script" path="res://ViewPort.gd" id="2_47jrj"]
 
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_cxgxf"]
-albedo_color = Color(0, 0, 0, 1)
+albedo_color = Color(0.215686, 0.215686, 0.215686, 1)
+distance_fade_max_distance = 398.25
 
 [sub_resource type="Environment" id="Environment_c28if"]
 background_mode = 1
+ambient_light_source = 1
+adjustment_enabled = true
+adjustment_brightness = 1.04
+adjustment_contrast = 1.15
+adjustment_saturation = 1.01
 
 [node name="SubViewportContainer" type="SubViewportContainer"]
 offset_right = 40.0
@@ -16,6 +22,7 @@ offset_bottom = 40.0
 [node name="SubViewport" type="SubViewport" parent="."]
 handle_input_locally = false
 msaa_3d = 3
+size = Vector2i(40, 40)
 render_target_update_mode = 4
 script = ExtResource("2_47jrj")
 
@@ -39,7 +46,5 @@ material = SubResource("StandardMaterial3D_cxgxf")
 environment = SubResource("Environment_c28if")
 
 [node name="DirectionalLight3D" type="DirectionalLight3D" parent="SubViewport"]
-transform = Transform3D(1, 0, 0, 0, 0.854459, 0.519519, 0, -0.519519, 0.854459, 0, 227.029, 0)
+transform = Transform3D(1, 0, 0, 0, -4.37114e-08, 1, 0, -1, -4.37114e-08, 0, 3000, 0)
 layers = 15
-light_energy = 2.481
-shadow_enabled = true

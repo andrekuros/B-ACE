@@ -177,7 +177,7 @@ func _physics_process(delta):
 			#own_goal_reward += agent.dist2go / 185200
 			own_goal_reward += 1.0 + (-0.99)/(1 + exp(-0.02 * (agent.dist2go - 370.4)))
 				
-			#print([own_goal_reward, agent.dist2go])
+			print([own_goal_reward, agent.dist2go])
 			#print([enemy_goal_reward, own_goal_reward, enemies_alive_control])
 			#Add the calculated rews
 			#agent.ownRewards.add_mission_rew(enemy_goal_reward)

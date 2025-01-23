@@ -14,7 +14,7 @@
 		"action_type": "Low_Level_Continuous",                        
 		"full_observation": 1,
 		"stop_mission" : 1,
-		"max_trail_size" : 240,
+		"max_trail_size" : 3,
 		
 		
 		"RewardsConfig" : {
@@ -60,7 +60,7 @@
 			"share_states" : 1,	
 			"share_tracks" : 1,		
 			"base_behavior": "baseline1",
-			"mission"    : "striker",
+			"mission"    : "DCA",
 			"beh_config" : {
 				"dShot" : [1.04, 0.50, 1.09],
 				"lCrank": [1.06, 0.98, 0.98],

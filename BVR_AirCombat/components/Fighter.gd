@@ -19,7 +19,9 @@ var trail_color: Color = Color(1.0, 1.0, 1.0, 0.1) # Red color with 50% alpha
 var trail_color_start: Color = Color(1.0, 1.0, 1.0, 0.0) # Starting color
 var trail_color_end: Color = Color(1.0, 1.0, 1.0, 1.0) # Ending color (transparent)
 var trail_start_alpha: float =  1.0  # Start color: red, semi-transparent
-var trail_end_alpha: float = 0.0  
+var trail_end_alpha: float = 0.0
+
+var trail_thickness: float = 8.0  # Set the thickness of the trail  
 
 
 #@onready var sync = get_tree().root.get_node("B_ACE/Sync")
@@ -1138,7 +1140,7 @@ func _set_trail_destroyed_visuals():
 	
 func _reset_trail_visuals():
 	trail_start_alpha = 0.1  # Start color: red, semi-transparent
-	trail_end_alpha = 1.0    # End color: red, less transparent
+	trail_end_alpha = 0.95    # End color: red, less transparent
 	update_trail_obj()  # Refresh the trail material
 	#update_trail()
 
@@ -1186,6 +1188,7 @@ func inform_missile_miss(_missile):
 func update_scale(_factor):
 	var current_scale =get_node("RenderModel").get_scale()
 	get_node("RenderModel").set_scale(current_scale * _factor)
+	trail_thickness = trail_thickness * _factor
 
 # Recursively traverses the node tree to find MeshInstance nodes and changes their material color.
 func change_mesh_instance_colors(node: Node, new_color: Color) -> void:
@@ -1244,9 +1247,8 @@ func update_trail():
 func draw_trail():
 	if trail_points.size() < 3:  # Need at least 2 points to draw a line
 		return
-
-	var thickness = 12.0  # Set the thickness of the trail
-	var half_thickness = thickness / 2.0
+	
+	var half_thickness = trail_thickness / 2.0
 
 	# Clear previous surfaces
 	trail_mesh.clear_surfaces()
@@ -1294,13 +1296,13 @@ func process_allied_tracks():
 func update_trail_obj():
 	
 	if team_id == 0:
-		trail_color 		= Color(0.0, 0.0, 0.7, 0.5) # Blue color with 50% alpha
-		trail_color_start	= Color(0.0, 0.0, 0.7, trail_start_alpha) # Starting color
-		trail_color_end 	= Color(0.0, 0.0, 0.7, trail_end_alpha) # Ending color (transparent)
+		trail_color 		= Color(0.0, 0.0, 0.5, 0.5) # Blue color with 50% alpha
+		trail_color_start	= Color(0.0, 0.0, 0.5, trail_start_alpha) # Starting color
+		trail_color_end 	= Color(0.0, 0.0, 0.5, trail_end_alpha) # Ending color (transparent)
 	else:
-		trail_color 		= Color(0.7, 0.0, 0.0, 0.5) # Red color with 50% alpha
-		trail_color_start	= Color(0.7, 0.0, 0.0, trail_start_alpha) # Starting color
-		trail_color_end 	= Color(0.7, 0.0, 0.0, trail_end_alpha) # Ending color (transparent)
+		trail_color 		= Color(0.5, 0.0, 0.0, 0.5) # Red color with 50% alpha
+		trail_color_start	= Color(0.5, 0.0, 0.0, trail_start_alpha) # Starting color
+		trail_color_end 	= Color(0.5, 0.0, 0.0, trail_end_alpha) # Ending color (transparent)
 	# Create the ImmediateMesh and the material once
 	trail_mesh = ImmediateMesh.new()
 

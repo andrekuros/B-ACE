@@ -32,7 +32,7 @@ emission_energy_multiplier = 1.88
 
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_563rj"]
 transparency = 1
-albedo_color = Color(1, 1, 1, 0.0196078)
+albedo_color = Color(0.72549, 0.72549, 0.72549, 0.0196078)
 
 [node name="Fighter" type="CharacterBody3D"]
 disable_mode = 1

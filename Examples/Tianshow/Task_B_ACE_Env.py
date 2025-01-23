@@ -26,6 +26,7 @@ TASK_TYPES = {
     'fire_missile'      :  [0, 1, 0, 0, 0, 0],#, 0, 0, 0, 0, 0, 0, 0],
     'missile_support'   :  [1, 1, 0, 0, 0, 0],#, 0, 0, 0, 0, 0, 0],
     'fly_direction'     :  [0, 0, 1, 0, 0, 0],#, 0, 0, 0, 0, 0, 0, 0],
+    'straight_ahead'    :  [1, 1, 1, 0, 0, 0],#, 0, 0, 0, 0, 0, 0, 0],'     :  [0, 0, 1, 0, 0, 0],#, 0, 0, 0, 0, 0, 0, 0],
     'turn_left'         :  [1, 0, 1, 0, 0, 0],#, 0, 0, 0, 0, 0],
     'turn_right'        :  [0, 1, 1, 0, 0, 0],#, 0, 0, 0, 0, 0],
     'level_up'          :  [1, 0, 0, 1, 0, 0],#, 0, 0, 0, 0],
@@ -220,6 +221,21 @@ class Task:
             
             
         elif self.type == "null":
+                        
+            task_specific_info =[                            
+                            current_obs[self.obs_map["own_altitude"]],              #1                            
+                            current_obs[self.obs_map["own_dist_target"]],           #2
+                            current_obs[self.obs_map["own_aspect_angle_target"]],   #3
+                            current_obs[self.obs_map["own_current_hdg"]],           #4
+                            
+                            current_obs[self.obs_map["own_current_speed"]],         #5
+                            current_obs[self.obs_map["own_missiles"]],              #6
+                            current_obs[self.obs_map["own_in_flight_missile"]],     #7
+                            0.0                                                    #8                      
+
+                        ] #+ self.action_historic[pusuer_idx]#+ stats
+        
+        elif self.type == "straight":
                         
             task_specific_info =[                            
                             current_obs[self.obs_map["own_altitude"]],              #1                            
@@ -512,6 +528,7 @@ class B_ACE_TaskEnv(GodotRLPettingZooWrapper):
             new_task = Task('fly_direction', "101", self.obs_map[agent])            
             self.tasks_positioning[agent].append(new_task)
             self.tasks_map[new_task.id] = new_task  
+                        
             
             new_task = Task('turn_left', "102", self.obs_map[agent])
             self.tasks_positioning[agent].append(new_task)
@@ -528,6 +545,10 @@ class B_ACE_TaskEnv(GodotRLPettingZooWrapper):
             new_task = Task('level_down', "105", self.obs_map[agent])
             self.tasks_positioning[agent].append(new_task)
             self.tasks_map[new_task.id] = new_task        
+            
+            Task('straight', "106", self.obs_map[agent])            
+            self.tasks_positioning[agent].append(new_task)
+            self.tasks_map[new_task.id] = new_task  
             
             #Main null Task            
             new_task = Task('null', "100", self.obs_map[agent])            
@@ -691,6 +712,20 @@ class B_ACE_TaskEnv(GodotRLPettingZooWrapper):
                         
             action = [self.desired_hdg, level, turn_g, 0]                
             self.last_actions[agent] = action                    
+            return action
+        
+        elif task.type == 'straight':
+                        
+            hdg2target = agent_observation[task.obs_map["own_current_hdg"]]
+            self.desired_hdg = hdg2target            
+            level  = agent_observation[task.obs_map["own_altitude"]]
+            self.desired_level = level
+            
+            turn_g = 1.0 * (-1.0/8.0) #result is 2.5g input for max_g = 9
+            fire = 0                     
+            
+            action = [hdg2target, level, turn_g, fire]            
+            self.last_actions[agent] = action
             return action
         
         elif task.type == 'fire_missile':
