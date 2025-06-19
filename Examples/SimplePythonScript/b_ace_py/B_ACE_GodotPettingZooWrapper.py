@@ -1,8 +1,7 @@
+from .godot_env import GodotEnv
 from pettingzoo.utils import ParallelEnv
 
-from b_ace_py.godot_env import GodotEnv
-from b_ace_py.utils import  ActionSpaceProcessor, convert_macos_path
-
+from .utils import ActionSpaceProcessor, convert_macos_path
 import numpy as np
 import gymnasium as gym
 import torch
@@ -15,14 +14,12 @@ from typing import Optional
 import random
 
 
-class GodotRLPettingZooWrapper(GodotEnv, ParallelEnv):
+class B_ACE_GodotPettingZooWrapper(GodotEnv, ParallelEnv):
     metadata = {'render.modes': [], 'name': "godot_rl_multi_agent"}
 
     def __init__(self,
                 env_path: str = None,                
-                show_window: bool = True,
-                seed: int = 0,
-                framerate: Optional[int] = None,                
+                seed: int = 0,         
                 convert_action_space: bool = False,
                 device: str = "cpu",
                 **config_kwargs):                               
@@ -42,8 +39,13 @@ class GodotRLPettingZooWrapper(GodotEnv, ParallelEnv):
         
         self.agents_config = config_kwargs.get("AgentsConfig", "")
         self._num_agents = int(self.agents_config["blue_agents"].get("num_agents", 1))
+        
+        self.share_states  = int(self.agents_config["blue_agents"].get("share_states", 1))
+        self.share_tracks =  int(self.agents_config["blue_agents"].get("share_tracks", 1))       
+        
+        self.additional_config = self.env_config.get("additional_config", "") 
        
-        self.port = GodotRLPettingZooWrapper.DEFAULT_PORT + random.randint(0,3100)                 
+        self.port = B_ACE_GodotPettingZooWrapper.DEFAULT_PORT + random.randint(0,3100)                 
         self.proc = None
         
         if self.env_path is not None and self.env_path != "debug":
@@ -55,15 +57,19 @@ class GodotRLPettingZooWrapper(GodotEnv, ParallelEnv):
         else:
             print("No game binary has been provided, please press PLAY in the Godot editor")
         
+        self.host_binding = config_kwargs.get("host_binding", False)
         self.connection = self._start_server()
         self.num_envs = None
         
-        self._handshake()                
+        self._handshake()           
+        
+        self.action_spaces = []
+        self.observation_spaces = []     
         self.send_sim_config(self.env_config, self.agents_config)                
         
         env_info = self._get_env_info()  
         
-             
+        print("env_info")
         self.observation_labels = env_info["observation_labels"]
                 
         # sf2 requires a tuple action space
