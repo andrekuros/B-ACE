@@ -12,9 +12,10 @@ radius = 2.0
 albedo_color = Color(0, 0.537255, 0.117647, 1)
 
 [sub_resource type="PrismMesh" id="PrismMesh_7c5vi"]
+lightmap_size_hint = Vector2i(54, 46)
 material = SubResource("StandardMaterial3D_7poeg")
-left_to_right = -0.2
-size = Vector3(9, 2, 1)
+left_to_right = -0.1
+size = Vector3(9, 3.5, 1)
 
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_1p6ca"]
 
@@ -31,7 +32,7 @@ emission_energy_multiplier = 1.88
 
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_563rj"]
 transparency = 1
-albedo_color = Color(1, 1, 1, 0.0196078)
+albedo_color = Color(0.72549, 0.72549, 0.72549, 0.0196078)
 
 [node name="Fighter" type="CharacterBody3D"]
 disable_mode = 1
@@ -51,7 +52,7 @@ near = 0.001
 transform = Transform3D(-1, 0, 1.50996e-07, 0, 1, 0, -1.50996e-07, 0, -1, 0, 0, 0)
 
 [node name="Vertical" type="MeshInstance3D" parent="RenderModel"]
-transform = Transform3D(-4.35694e-08, 3.52081e-09, -1, 0.0805469, 0.996751, 0, 0.996751, -0.0805469, -4.37114e-08, -4.78053e-08, 0.712482, 1.09366)
+transform = Transform3D(-4.30473e-08, 7.5904e-09, -1, 0.173648, 0.984808, 0, 0.984808, -0.173648, -4.37114e-08, -4.78053e-08, 0.979133, 1.09366)
 mesh = SubResource("PrismMesh_7c5vi")
 surface_material_override/0 = SubResource("StandardMaterial3D_1p6ca")
 

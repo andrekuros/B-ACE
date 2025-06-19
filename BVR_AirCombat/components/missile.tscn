@@ -43,7 +43,7 @@ collision_layer = 2
 shape = SubResource("SphereShape3D_16o7b")
 
 [node name="RenderModel" type="Node3D" parent="."]
-transform = Transform3D(1.2, 0, 0, 0, 1.2, 0, 0, 0, 1.2, 0, 0, 0)
+transform = Transform3D(1.5, 0, 0, 0, 1.5, 0, 0, 0, 1.5, 0, 0, 0)
 
 [node name="MeshInstance3D" type="MeshInstance3D" parent="RenderModel"]
 transform = Transform3D(7.64274e-15, -1.74846e-07, -4, -4, -1.74846e-07, 0, -1.74846e-07, 4, -1.74846e-07, -2.79206e-07, -2.79206e-07, 6.3875)

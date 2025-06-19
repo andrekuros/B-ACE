@@ -18,8 +18,8 @@ config/icon="res://icon.png"
 
 [display]
 
-window/size/viewport_width=1200
-window/size/viewport_height=800
+window/size/viewport_width=1800
+window/size/viewport_height=1200
 window/stretch/mode="viewport"
 window/vsync/vsync_mode=0
 

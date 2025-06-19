@@ -18,6 +18,10 @@ var trail_update_rate = 5 #Update the trail every 20 steps
 var trail_color: Color = Color(1.0, 1.0, 1.0, 0.1) # Red color with 50% alpha
 var trail_color_start: Color = Color(1.0, 1.0, 1.0, 0.0) # Starting color
 var trail_color_end: Color = Color(1.0, 1.0, 1.0, 1.0) # Ending color (transparent)
+var trail_start_alpha: float =  1.0  # Start color: red, semi-transparent
+var trail_end_alpha: float = 0.0
+
+var trail_thickness: float = 8.0  # Set the thickness of the trail  
 
 
 #@onready var sync = get_tree().root.get_node("B_ACE/Sync")
@@ -271,17 +275,8 @@ func update_init_config(config, rewConfig = {}):
 	mission = init_config["mission"]		
 	
 	ownRewards = RewardsControl.new(rewConfig,self)	
-	
-	if team_id == 0:
-		trail_color 		= Color(0.0, 0.0, 0.7, 1.0) # Blue color with 50% alpha
-		trail_color_start	= Color(0.0, 0.0, 0.7, 0.0) # Starting color
-		trail_color_end 	= Color(0.0, 0.0, 0.7, 1.0) # Ending color (transparent)
-	else:
-		trail_color 		= Color(0.7, 0.0, 0.0, 0.5) # Red color with 50% alpha
-		trail_color_start	= Color(0.7, 0.0, 0.0, 0.0) # Starting color
-		trail_color_end 	= Color(0.7, 0.0, 0.0, 1.0) # Ending color (transparent)
+		
 
-	
 	update_trail_obj()
 	
 	var target_marker = Marker.instantiate()	
@@ -290,7 +285,8 @@ func update_init_config(config, rewConfig = {}):
 	new_material.albedo_color = trail_color						
 	target_marker.set_surface_override_material(0, new_material)
 		
-	trail_points = []			
+	trail_points = []
+	
 	
 	manager.get_parent().add_child(target_marker)										
 	target_marker.global_position = target_pos
@@ -387,6 +383,8 @@ func reset():
 	radar_track_list = []	
 	
 	trail_points = []
+	
+	_reset_visuals()
 	
 	
 	
@@ -1102,31 +1100,83 @@ func launch_missile_at_target(target_track):
 
 func own_kill():
 	if activated == true:
+		_set_destroyed_visuals()
+		_set_trail_destroyed_visuals()  # Update trail visuals		
+		
 		set_process(false)
 		set_physics_process(false)	
 		collision_layer = 0
 		collision_mask = 0
 		input_ray_pickable = false	
-		visible = false
 		activated = false
 		killed = true	
 		done = true	
 		ownRewards.add_hit_own_rew()		
-		manager.inform_state(team_id, "killed") 		
-					
+		manager.inform_state(team_id, "killed")
+	
+
+
 func reactivate():
-	# Enabling processing
 	set_process(true)
 	set_physics_process(true)	
 	collision_layer = init_layer
 	collision_mask = init_mask
 	input_ray_pickable = true	
-	visible = true
+	_reset_visuals()
+	_reset_trail_visuals()  # Reset trail visuals
 	activated = true
 	killed = false
 	done = false
 	ownRewards.reset()
-	missiles = 6	
+	missiles = 6
+
+
+func _set_trail_destroyed_visuals():
+	trail_start_alpha = 0.0  # Start color: red, semi-transparent
+	trail_end_alpha = 0.0    # End color: red, less transparent
+	update_trail_obj()  # Refresh the trail material
+	#update_trail()
+	
+	
+func _reset_trail_visuals():
+	trail_start_alpha = 0.1  # Start color: red, semi-transparent
+	trail_end_alpha = 0.95    # End color: red, less transparent
+	update_trail_obj()  # Refresh the trail material
+	#update_trail()
+
+
+# Function to make the aircraft semi-transparent or dashed
+func _set_destroyed_visuals():
+	# Get the material of the aircraft (assuming it's a MeshInstance3D)
+	var root_node = $RenderModel  # Adjust to the node representing your aircraft
+	
+	for child in root_node.get_children():
+		if child is MeshInstance3D:
+			var material =  child.get_surface_override_material(0)							
+			material.flags_transparent = true
+			material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+			var color = material.albedo_color
+			color.a = 0.15  # Set transparency (30% opacity)
+			material.albedo_color = color
+	$Radar.visible = false
+
+func _reset_visuals():
+	# Restore the original material properties
+	var root_node = $RenderModel  # Adjust to the node representing your aircraft
+	for child in root_node.get_children():
+		if child is MeshInstance3D:
+			var material = child.get_surface_override_material(0)
+			if material:
+				# Reset transparency and emissive effects
+				material.flags_transparent = false
+				var color = material.albedo_color
+				color.a = 1.0  # Fully opaque
+				material.albedo_color = color
+								
+	change_mesh_instance_colors(root_node, team_color)
+	$Radar.visible = true
+
+
 	
 func inform_missile_miss(_missile):
 	ownRewards.add_missile_miss_rew()					
@@ -1134,12 +1184,11 @@ func inform_missile_miss(_missile):
 	if in_flight_missile == _missile:
 		in_flight_missile = null
 							
-
-	
 	
 func update_scale(_factor):
 	var current_scale =get_node("RenderModel").get_scale()
 	get_node("RenderModel").set_scale(current_scale * _factor)
+	trail_thickness = trail_thickness * _factor
 
 # Recursively traverses the node tree to find MeshInstance nodes and changes their material color.
 func change_mesh_instance_colors(node: Node, new_color: Color) -> void:
@@ -1183,29 +1232,58 @@ func load_json_file(file_path):
 		return null
 
 func update_trail():
-	trail_points.append(global_transform.origin)
+	var current_position = global_transform.origin
+	if trail_points.size() == 0 or current_position.distance_to(trail_points[-1]) > 0.1:
+		# Add the current position to the trail
+		trail_points.append(current_position)
+
+	# Ensure the trail does not exceed the maximum length
 	if trail_points.size() > max_trail_points:
 		trail_points.pop_front()
 
 	draw_trail()
 
+
 func draw_trail():
-	if trail_points.size() < 3:
+	if trail_points.size() < 3:  # Need at least 2 points to draw a line
 		return
+	
+	var half_thickness = trail_thickness / 2.0
 
 	# Clear previous surfaces
 	trail_mesh.clear_surfaces()
-	trail_mesh.surface_begin(Mesh.PRIMITIVE_LINE_STRIP)
+	trail_mesh.surface_begin(Mesh.PRIMITIVE_TRIANGLE_STRIP)
 
-	for i in range(trail_points.size()):
-		var point = trail_points[i]
+	for i in range(trail_points.size() - 1):
+		var current_point = trail_points[i]		
+
+		# Calculate direction vector
+		
+
+		# Use the aircraft's local "right" and "up" vectors from the basis
+		var right_vector = transform.basis.x.normalized()  # Aircraft's local right direction		
+
+		# Adjust the right vector for the trail thickness
+		right_vector *= half_thickness
+
+		# Calculate the trail segment vertices in local space
+		var left_vertex = current_point + right_vector
+		var right_vertex = current_point - right_vector
+
+		# Interpolate color for gradient effect
 		var t = float(i) / float(trail_points.size() - 1)
 		var color = trail_color_start.lerp(trail_color_end, t)
+
+		# Add vertices and colors for the trail
 		trail_mesh.surface_set_color(color)
-		trail_mesh.surface_add_vertex(point)
+		trail_mesh.surface_add_vertex(left_vertex)
+		trail_mesh.surface_add_vertex(right_vertex)
 
 	trail_mesh.surface_end()
-	
+
+
+
+
 
 func process_allied_tracks():
 	for track in allied_track_list:
@@ -1217,18 +1295,29 @@ func process_allied_tracks():
 	
 func update_trail_obj():
 	
-	
+	if team_id == 0:
+		trail_color 		= Color(0.0, 0.0, 0.5, 0.5) # Blue color with 50% alpha
+		trail_color_start	= Color(0.0, 0.0, 0.5, trail_start_alpha) # Starting color
+		trail_color_end 	= Color(0.0, 0.0, 0.5, trail_end_alpha) # Ending color (transparent)
+	else:
+		trail_color 		= Color(0.5, 0.0, 0.0, 0.5) # Red color with 50% alpha
+		trail_color_start	= Color(0.5, 0.0, 0.0, trail_start_alpha) # Starting color
+		trail_color_end 	= Color(0.5, 0.0, 0.0, trail_end_alpha) # Ending color (transparent)
 	# Create the ImmediateMesh and the material once
 	trail_mesh = ImmediateMesh.new()
-		
-	trail_material = StandardMaterial3D.new()			
-	trail_mesh.surface_set_material(0, trail_material)
+
+	trail_material = StandardMaterial3D.new()
+	trail_material.flags_unshaded = true  # Make the material ignore lighting
+	trail_material.flags_transparent = true  # Enable transparency
+	trail_material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA  # Use alpha transparency
+	trail_material.vertex_color_use_as_albedo = true  # Use vertex colors for the trail
+
+	# Ensure the trail is always rendered and not culled
+	trail_material.depth_draw_mode = BaseMaterial3D.DEPTH_DRAW_ALWAYS  # Always draw the trail
+	trail_material.cull_mode = BaseMaterial3D.CULL_DISABLED  # Disable face culling
+	trail_material.flags_albedo_tex_force_srgb = false  # Prevent color distortions
+
 	trail_node.mesh = trail_mesh
-	
-	var override_material = trail_material.duplicate()
-	override_material.albedo_color = trail_color
-	override_material.flags_unshaded = true
-	override_material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
-	override_material.flags_transparent = true
-	override_material.vertex_color_use_as_albedo = true
-	trail_node.material_override = override_material
+	trail_node.material_override = trail_material
+	trail_node.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF  # Disable shadows for trails
+

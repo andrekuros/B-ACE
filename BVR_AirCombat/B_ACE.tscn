@@ -12,6 +12,6 @@ script = ExtResource("3_nnga6")
 follow_viewport_enabled = true
 
 [node name="Simulations" type="SubViewportContainer" parent="."]
-custom_minimum_size = Vector2(1200, 800)
-offset_right = 1204.0
-offset_bottom = 800.0
+custom_minimum_size = Vector2(1800, 1200)
+offset_right = 1800.0
+offset_bottom = 1200.0
