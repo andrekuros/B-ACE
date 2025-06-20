@@ -2,9 +2,9 @@ import json
 import random
 import atexit
 import time
-from godot_rl.core.godot_env import GodotEnv
+from godot_env import GodotEnv
 
-class GodotExperimentWrapper(GodotEnv):
+class B_ACE_ExperimentWrapper(GodotEnv):
     
     def __init__(self, config_kwargs):                               
                         
@@ -22,7 +22,7 @@ class GodotExperimentWrapper(GodotEnv):
         
         self.parallel_envs  = self.env_config.get("parallel_envs", 1)             
         
-        self.port = self.env_config.get("port", GodotExperimentWrapper.DEFAULT_PORT + random.randint(0,3100))         
+        self.port = self.env_config.get("port", B_ACE_ExperimentWrapper.DEFAULT_PORT + random.randint(0,3100))         
         self.proc = None
         
         if self.env_path is not None and self.env_path != "debug":
@@ -37,7 +37,6 @@ class GodotExperimentWrapper(GodotEnv):
         
         self.connection = self._start_server()
         self.num_envs = None
-        
         self._handshake()                
         #self.send_sim_config(self.experiment_config)
         self.num_runs = 0#self.experiment_config['runs_per_case']        

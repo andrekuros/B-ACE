@@ -1,7 +1,7 @@
 #%%%
 import random
 import numpy as np
-from GodotExperimentWrapper import GodotExperimentWrapper
+from b_ace_py.B_ACE_ExperimentWrapper import GodotExperimentWrapper
 import json
 import pandas as pd
 import concurrent.futures

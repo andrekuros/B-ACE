@@ -1,10 +1,23 @@
 #%%%
-from GodotExperimentWrapper import GodotExperimentWrapper
+# Get the absolute path of the directory where the current script resides and
+#add to the system root
+import os
+import sys
+from pathlib import Path
+
+script_dir = Path(__file__).parent.resolve()
+os.chdir(script_dir)
+project_root = script_dir.parent.parent.resolve()
+if str(project_root) not in sys.path:
+    sys.path.insert(0, str(project_root))
+
+from b_ace_py.B_ACE_ExperimentWrapper import  B_ACE_GodotExperimentWrapper
+
 import pandas as pd
 import json
 import math
 import numpy as np
-from scipy.stats import bootstrap
+#from scipy.stats import bootstrap
 
 
 def bootstrap_ci(data, metric, n_bootstrap=10000, confidence=0.95):
@@ -180,7 +193,7 @@ experimentConfig = { 'runs_per_case': 30, 'cases' : cases }
 config_dict['ExperimentConfig'] = experimentConfig
 
 # Create the GodotExperimentWrapper
-env = GodotExperimentWrapper(config_dict)
+env = B_ACE_GodotExperimentWrapper(config_dict)
 
 # Run the experiment
 env.send_sim_config(experimentConfig)
