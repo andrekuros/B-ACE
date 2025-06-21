@@ -83,35 +83,6 @@ The B-ACE environment follows the Gym/PettingZoo standard. You just need to inst
 * `observation_space(agent)`: Returns the observation space for a given agent.
 * `action_space(agent)`: Returns the action space for a given agent.
 
-### Interacting with the Environment
-
-Here is a conceptual example of how to interact with the environment.
-
-```python
-import b_ace_py as b_ace
-import numpy as np
-
-# 1. Initialize the environment
-# This will launch the Godot executable specified in the config
-env = b_ace.B_ACE_GodotPettingZooWrapper(config_file="path/to/your/config.json")
-
-# 2. Reset the environment for a new episode
-observations, infos = env.reset()
-
-# 3. Step through the simulation
-for _ in range(1000):
-    # Get a random action for each agent from its action space
-    actions = {agent: env.action_space(agent).sample() for agent in env.agents}
-    
-    # Pass actions to the step function
-    observations, rewards, terminations, truncations, info = env.step(actions)
-
-    # If all agents are done, reset the environment
-    if all(terminations.values()) or all(truncations.values()):
-        observations, infos = env.reset()
-
-env.close()
-```
 
 ## 🔧 Environment Configuration
 
@@ -197,35 +168,93 @@ The action space defines how agents interact with the simulation. The policy mus
 
 ## 🎮 Examples
 
-The `Examples/` directory contains scripts to demonstrate how to use B-ACE with popular MARL frameworks.
+### Interacting with the Environment
 
-### Simple Test
+Here is a simple example of how to interact with the environment.
 
-This example runs a basic loop with random actions. It's the best way to confirm your installation is working correctly.
+```python
+from b_ace_py.utils import load_b_ace_config
+from b_ace_py.B_ACE_GodotPettingZooWrapper import B_ACE_GodotPettingZooWrapper
 
-```bash
-python ./Examples/run_simple_example.py
+# Load the default the environment configuration
+B_ACE_config = load_b_ace_config('./b_ace_py/Default_B_ACE_config.json')
+
+# Define specific desired environment configuration
+env_config = { 
+                "EnvConfig":{
+                    "env_path": "./bin/B_ACE_v0.1.exe", # Path to the Godot executable
+                    "renderize": 1
+             }
+}
+# Defining specific desired agents configuration
+agents_config = {
+                    "AgentsConfig":{
+                        "blue_agents":{
+                            "num_agents":2,
+                            #External behavior is who receive actions as input
+                            "base_behavior": "external",       
+                        },
+                        "red_agents":{
+                            "num_agents":2,
+                            #Baseline1 behavior use the FSM reference behavior
+                            "base_behavior": "baseline1",
+                        }
+                    }
+}
+
+#Update de default configuration with the desired changes
+B_ACE_config.update(env_config)
+B_ACE_config.update(agents_config)
+
+# Create an instance of the GodotRLPettingZooWrapper
+# Pass the environment and agents configurations
+print("Initializing Godot environment...")
+env = B_ACE_GodotPettingZooWrapper(device = 'cpu', **B_ACE_config)
+
+# Reset the environment to get the initial observations and info
+observations = env.reset()
+print("Environment reset.")
+print("Initial observations:\n", observations)
+
+# Run a few steps in the environment
+num_steps = 3000
+print(f"Running {num_steps} steps...")
+
+for step in range(num_steps):
+    # In a real RL scenario, you would use your agent's policy to get actions
+    # For this simple example, we'll use fixed actions
+    actions = {}
+    turn_side = 1
+    for agent in env.possible_agents:
+        # Get the action space for the current agent
+        agent_action_space = env.action_space(agent)
+        
+        # For continuous action space (Box), sample a random value within the bounds
+        # Action [hdg, level, g_force, fire] 
+        # [hdg]     -> Desired heading is 180 * hdg to the right side (-0.1 to the left)
+        # [level]   -> 25000ft * level + 25000ft  	
+		    # [g_force] -> (g_force * (max_g  - 1.0) + (max_g + 1.0))/2.0	
+		    # [fire]    -> 0 if last_fire_input <= 0 else 1 (1 is fire missile)
+        actions[agent] = [0.1 * turn_side, 0.6, 2.0, 0.0] 
+        turn_side *= -1
+
+    # Take a step in the environment
+    observations, rewards, terminations, truncations, info = env.step(actions)
+
+    # Check if any agent has terminated or truncated
+    if all(terminations.values()) or all(truncations.values()):
+        print("Episode finished.")
+        # In a real RL scenario, you would reset the environment here
+        # observations, info = env.reset()
+        break # Exit the loop for this example
+
+# Close the environment
+env.close()
+print("Environment closed.")
 ```
 
-### Tianshou Example
+The `Examples/` directory contains aditional scripts and explanations to demonstrate how to use B-ACE with some MARL frameworks.
 
-[Tianshou](https://tianshou.readthedocs.io/) is a flexible and efficient RL framework. To run this example, you will need to install Tianshou first.
-
-```bash
-pip install tianshou
-# (Then run the example script)
-python ./Examples/tianshou_example.py # (Path to your example script)
-```
-
-### BenchMARL Example
-
-[BenchMARL](https://facebookresearch.github.io/BenchMARL/) is a framework for benchmarking MARL algorithms. To run this example, you will need to install its dependencies.
-
-```bash
-# (Install BenchMARL dependencies)
-# (Then run the example script)
-python ./Examples/benchmarl_example.py # (Path to your example script)
-```
 
 ## 📄 Citation
 
