@@ -266,11 +266,12 @@ If you use B-ACE in your research, please cite our paper:
   booktitle = {Interservice/Industry Training, Simulation, and Education Conference (I/ITSEC) 2024},
   year      = {2024},
   month     = {December},
-  paper     = {24464}
+  paper     = {24464},
+  doi = {10.13140/RG.2.2.11999.57762}
 }
 ```
 
-For first published results with the enviroment and better explanations about the models and RL definition:
+For first published results with the environment and better explanations about the models and RL definitions:
 ```bibtex
 @article{kuroswiski2025enhancing,
  author    = {Andre R. Kuroswiski and Annie S. Wu and Angelo Passaro},
@@ -280,6 +281,20 @@ For first published results with the enviroment and better explanations about th
   number    = {},
   pages     = {70446-70463},
   year      = {2025},
+  doi       = {10.1109/ACCESS.2025.3561250}
+}
+```
+For the concepts behing the FSM agents definition and experimentation:
+```bibtex
+@Article{kuroswiski2022beyond,
+  author    = {Andre R. Kuroswiski and Felipe L. L. Medeiros and Monica Maria De Marchi and Angelo Passaro},
+  journal   = {The Journal of Defense Modeling and Simulation},
+  title     = {Beyond visual range air combat simulations: validation methods and analysis using agent-based models},
+  year      = {2023},
+  issn      = {1557-380X},
+  month     = Nov,
+  doi       = {10.1177/15485129231211915},  
+}
 }
 ```
 
