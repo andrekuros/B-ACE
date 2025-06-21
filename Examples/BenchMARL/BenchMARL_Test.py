@@ -2,13 +2,11 @@
 #%%%
 # Parallel env
 from torchrl.envs.libs.pettingzoo import PettingZooWrapper
-from GodotRLPettingZooWrapper import GodotRLPettingZooWrapper
-
-from GodotRLPettingZooWrapper import GodotRLPettingZooWrapper
+from b_ace_py.B_ACE_GodotPettingZooWrapper import B_ACE_GodotPettingZooWrapper
 
 def wenv():
     return PettingZooWrapper(
-                env=GodotRLPettingZooWrapper(   env_path="BVR_AirCombat/bin/FlyBy.exe", 
+                env=B_ACE_GodotRLPettingZooWrapper(   env_path="BVR_AirCombat/bin/FlyBy.exe", 
                                                 num_agents = 2 , 
                                                 show_window=True, 
                                                 seed = 0,

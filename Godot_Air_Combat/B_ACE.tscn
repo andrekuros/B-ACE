@@ -1,0 +1,18 @@
+[gd_scene load_steps=3 format=3 uid="uid://ck5icni1e7bki"]
+
+[ext_resource type="Script" path="res://addons/godot_rl_agents/B_ACE_sync.gd" id="2_vtbda"]
+[ext_resource type="PackedScene" uid="uid://c88ncuvk838mf" path="res://gui/CanvasLayer.tscn" id="5_ql4ly"]
+
+[node name="B_ACE" type="Node3D"]
+
+[node name="CanvasLayer" parent="." instance=ExtResource("5_ql4ly")]
+follow_viewport_enabled = true
+
+[node name="Simulations" type="SubViewportContainer" parent="."]
+offset_right = 1200.0
+offset_bottom = 800.0
+size_flags_horizontal = 3
+size_flags_vertical = 3
+
+[node name="B_ACE_sync" type="Node" parent="."]
+script = ExtResource("2_vtbda")
