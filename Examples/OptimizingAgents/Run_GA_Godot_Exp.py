@@ -1,7 +1,7 @@
 #%%%
 import random
 import numpy as np
-from b_ace_py.B_ACE_ExperimentWrapper import GodotExperimentWrapper
+from b_ace_py.B_ACE_ExperimentWrapper import B_ACE_ExperimentWrapper
 import json
 import pandas as pd
 import concurrent.futures
@@ -28,7 +28,7 @@ param_ranges = {
 config_dict_template = { "EnvConfig" : 
                 {
                     "task": "b_ace_v1",
-                    'env_path': 'BVR_AirCombat/bin/B_ACE_v10.exe',		
+                    "env_path": "../../bin/B_ACE_v0.1.exe",		
                     "port": 12500,
                     "renderize": 0,
                     "debug_view": 0,

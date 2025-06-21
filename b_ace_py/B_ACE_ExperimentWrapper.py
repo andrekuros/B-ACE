@@ -2,7 +2,7 @@ import json
 import random
 import atexit
 import time
-from godot_env import GodotEnv
+from .godot_env import GodotEnv
 
 class B_ACE_ExperimentWrapper(GodotEnv):
     
@@ -38,9 +38,7 @@ class B_ACE_ExperimentWrapper(GodotEnv):
         self.connection = self._start_server()
         self.num_envs = None
         self._handshake()                
-        #self.send_sim_config(self.experiment_config)
-        self.num_runs = 0#self.experiment_config['runs_per_case']        
-        #self._get_env_info()                                    
+        self.num_runs = 0
         
         atexit.register(self._close)
                                         

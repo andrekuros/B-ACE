@@ -201,7 +201,8 @@ func _set_agents(_tree):
 		add_child(newFigther)
 		
 		newFigther.manager = self
-		newFigther.get_node("RenderModel").set_scale(visual_scaleVector)
+		if newFigther.has_node("RenderModel"):
+			newFigther.get_node("RenderModel").set_scale(visual_scaleVector)
 		
 		newFigther.phy_fps 		 = int(envConfig["phy_fps"])
 		newFigther.action_repeat = int(envConfig["action_repeat"])
@@ -330,6 +331,7 @@ func _reset_components():
 	var missiles = tree.get_nodes_in_group(simGroups.MISSILE)
 	for missile in missiles:
 		missile.queue_free()
+	
 			
 func _reset_all_uavs():
 	
@@ -409,5 +411,4 @@ func inform_state(team_id, condition):
 		finalState[team_id]["killed"] 	+= 1
 		
 	elif condition == "missile":
-		finalState[team_id]["missile"] 	+= 1		
-	
+		finalState[team_id]["missile"] 	+= 1

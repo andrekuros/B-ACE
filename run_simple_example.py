@@ -64,7 +64,7 @@ for step in range(num_steps):
 		# [g_force] -> (g_force * (max_g  - 1.0) + (max_g + 1.0))/2.0	
 		# [fire]    -> 0 if last_fire_input <= 0 else 1 (1 is fire missile)
    
-        actions[agent] = [0.1 * turn_side, 0.6, 2.0, 0.0] 
+        actions[agent] = [0.1 * turn_side, 0.5, 2.0, 0.0] 
         turn_side *= -1
 
 

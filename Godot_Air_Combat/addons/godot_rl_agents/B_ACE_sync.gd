@@ -378,46 +378,30 @@ func _physics_process(delta):
 					_send_dict_as_json_message(reply)
 					
 					_reset_all_sims()
-			
-			
-		#var handled = handle_message()
-			
-													
+														
 	#Not Connected
 	else:					
 		#Test Actions
 		if false:
-				var actions = [{"turn_input" : 0, "fire_input" :  0, "level_input" : 2}]#,
-				# {"turn_input": 4, "fire_input" :  0,  "level_input" : 4}] 
-				#for sim in simulation_list:		
+			var actions = [{"turn_input" : 0, "fire_input" :  0, "level_input" : 2}]#,	
 		
 		_check_all_sims_done()
-		#_get_obs_from_simulations()
 		_get_reward_from_simulations()
 		var obs = _get_obs_from_simulations()
-		
-		#var observation_labels = {}
-		#for agent in simulation_list[0].agents:
-	#		observation_labels[agent.id] = agent.get_obs(true)["labels"]	
-		
-		#print(observation_labels)
-		
-		#var done = _get_dones_from_simulations_agents()
-		#_reset_agents_if_done() # this ensures the new observation is from the next env instance : NEEDS REFACTOR			
-		#var obs = _get_obs_from_simulations()
-		#print(done)
-		
+			
 		_reset_agents_if_done()	
 		
-
 func handle_message() -> bool:
 	# get json message: reset, step, close
 	var message = _get_dict_json_message()
 	
 	if message["type"] == "close":
 		print("received close message, closing game")
+		for sim in simulation_list:
+			sim.queue_free()
+		simulation_list.clear()
 		get_tree().quit()
-		get_tree().set_pause(false) 
+		get_tree().set_pause(false)
 		return true
 		
 	if message["type"] == "reset":		
@@ -499,20 +483,12 @@ func handle_message() -> bool:
 	print("message was not handled")
 	return false
 
-#func _call_method_on_agents(method):
-#	var returns = []
-#	for agent in agents:
-#		returns.append(agent.call(method))
-#		
-#	return returns
-
 func _check_all_sims_done():
 		
 	for sim in simulation_list:
 		if not sim.ready_to_reset:
 			return false
 	return true
-
 
 func _reset_agents_if_done():
 				
@@ -535,7 +511,6 @@ func _reset_agents_if_done():
 	
 	return finalStatus		
 					
-
 func _input(event):	
 	
 	if Input.is_action_just_pressed("r_key"):
