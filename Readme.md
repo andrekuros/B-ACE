@@ -18,13 +18,11 @@ The best way to start is by running the simple example to verify your setup. We 
 **1. Prerequisites**
 
 * Python 3.8 or higher
-* Git
 
 **2. Clone the Repository**
 
 ```bash
 git clone [https://github.com/andrekuros/B-ACE.git](https://github.com/andrekuros/B-ACE.git)
-cd B-ACE
 ```
 
 **3. Set Up a Virtual Environment and Install Dependencies**
@@ -46,7 +44,7 @@ pip install -r minimum_requirements.txt
 This will launch the Godot simulation and you will see the agents interacting in the environment.
 
 ```bash
-python ./Examples/run_simple_example.py
+python ./run_simple_example.py
 ```
 
 ## ⚙️ How It Works: Simulation Flow
@@ -150,20 +148,21 @@ The reward function uses large event-based rewards and smaller shaping rewards t
 
 | **Reward/Penalty Name** | **Default Value** | **Description** |
 |---|---|---|
-| `mission_completed` | `100.0` | **Event:** Positive reward for achieving the mission objective. |
-| `hit_enemy` | `50.0` | **Event:** Positive reward for neutralizing an enemy aircraft. |
-| `was_hit` | `-100.0` | **Event:** Negative penalty for being neutralized by an enemy. |
+| `mission_completed` | `10.0` | **Event:** Positive reward for achieving the mission objective. |
+| `hit_enemy` | `3.0` | **Event:** Positive reward for neutralizing an enemy aircraft. |
+| `was_hit` | `-5.0` | **Event:** Negative penalty for being neutralized by an enemy. |
 | `mission_shaping` | `0.001` | **Shaping:** Small reward proportional to progress towards mission goal. |
-| `maintain_track` | `0.05` | **Shaping:** Small reward for each step an enemy is kept on radar. |
+| `maintain_track` | `0.001` | **Shaping:** Small reward for each step an enemy is kept on radar. |
 | `lost_track` | `-0.1` | **Shaping:** Small penalty for losing radar lock on a tracked enemy. |
-| `fire_missile` | `-5.0` | **Shaping:** Penalty for firing a missile to discourage wasteful shots. |
-| `miss_missile` | `-10.0` | **Shaping:** Penalty if a fired missile misses its target. |
+| `fire_missile` | `-0.1` | **Shaping:** Penalty for firing a missile to discourage wasteful shots. |
+| `miss_missile` | `-0.5` | **Shaping:** Penalty if a fired missile misses its target. |
 
 ### Action Space
 
 The action space defines how agents interact with the simulation. The policy must learn to select an appropriate action at each step.
 
 * **Continuous (`"Low_Level_Continuous"`):** The action is a NumPy array containing `[heading, flight_level, g_force, missile_firing]`. This allows for fine-grained control.
+
 * **Discrete (`"Low_Level_Discrete"`):** The action is a single integer. The environment's wrapper decodes this integer into one of several predefined maneuvers (e.g., turn left, climb, fire missile).
 
 ## 🎮 Examples
@@ -270,6 +269,21 @@ If you use B-ACE in your research, please cite our paper:
   paper     = {24464}
 }
 ```
+
+For first published results with the enviroment and better explanations about the models and RL definition:
+```bibtex
+@article{kuroswiski2025enhancing,
+ author    = {Andre R. Kuroswiski and Annie S. Wu and Angelo Passaro},
+  title     = {Enhancing MARL BVR Air Combat using Domain Expert Knowledge at the Action Level},
+  journal   = {IEEE Access},
+  volume    = {13},
+  number    = {},
+  pages     = {70446-70463},
+  year      = {2025},
+}
+```
+
+
 
 ## Acknowledgements
 
