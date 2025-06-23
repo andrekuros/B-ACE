@@ -1,4 +1,6 @@
 import os
+import sys
+from pathlib import Path
 import datetime
 from typing import Optional, Tuple
 import json
@@ -6,7 +8,14 @@ import numpy as np
 import torch
 from gymnasium.spaces import Box, Discrete
 
-import random
+script_dir = Path(__file__).parent.resolve()
+os.chdir(script_dir)
+project_root = script_dir.parent.parent.resolve()
+if str(project_root) not in sys.path:
+    sys.path.insert(0, str(project_root))
+
+from b_ace_py.B_ACE_GodotPettingZooWrapper import  B_ACE_GodotPettingZooWrapper
+from b_ace_py.utils import load_b_ace_config
 
 from torch.distributions import Normal, Distribution
 
@@ -35,7 +44,6 @@ from Task_B_ACE_Env import B_ACE_TaskEnv
 from CollectorMA import CollectorMA
 from MAParalellPolicy import MAParalellPolicy
 
-
 ####---------------------------#######
 #Tianshou Adjustment
 import wandb
@@ -57,15 +65,13 @@ name = model + "_" + policyModel + "_" + test_num
 train_env_num = 4
 test_env_num  = 15
 
-
 now = datetime.datetime.now().strftime("%y%m%d-%H%M%S")
 log_name = name + str(now)
-log_path = os.path.join('./', "Logs", "dqn_sisl", log_name)
+log_path = os.path.join('./', "Logs", "KTAB", log_name)
 
 load_policy_name = f'2x2_duck2_policy_Task_MHA_DQN__B_ACE_Eval241225-100957_609_BestRew.pth'
 save_policy_name = f'policy_{log_name}'
 policy_path = model + policyModel
-
 
 model_load_path = os.path.join(policy_path, load_policy_name)  
 model_save_path = os.path.join(policy_path, save_policy_name)        
@@ -81,10 +87,9 @@ B_ACE_Config = {
                     "EnvConfig" : 
                     {
                         "task": "b_ace_v1",
-                        "env_path": "..\..\BVR_AirCombat/bin/B_ACE_v13.exe",
+                        "env_path": "../../bin/B_ACE_v0.1.exe",
                         "port": 12500,
-                        "renderize": 0,
-                        "debug_view": 0,
+                        "renderize": 1,
                         "phy_fps": 20,
                         "speed_up": 50000,
                         "max_cycles": 36000,
@@ -94,8 +99,7 @@ B_ACE_Config = {
                         "action_repeat": 20,	
                         "action_type": "Low_Level_Continuous",                        
                         "stop_mission" : 1,
-                        
-                        
+                                         
                         "RewardsConfig" : {
                                     "mission_factor": 0.001,				
                                     "missile_fire_factor": -0.1,		
@@ -168,8 +172,6 @@ B_ACE_Config = {
                         }
                     }	
             }
-#max_cycles = B_ACE_Config["max_cycles"]
-#n_agents = 1#B_ACE_Config["n_pursuers"]
 
 dqn_params =    {
                 "discount_factor": 0.99, 
@@ -203,33 +205,30 @@ PPO_params= {
 
 trainer_params = {"max_epoch": 100,
                   "step_per_epoch": 18000 * 2,#5 * (150 * n_agents),
-                  "step_per_collect": 6000 * 2,# * (10 * n_agents),
-                  
-                  "batch_size" : 1024 ,
-                  
-                  "update_per_step": 1 / (200), #Off-Policy Only (run after close a Collect (run many times as necessary to meet the value))
-                  
-                  "repeat_per_collect": 32, #On-Policy Only
-                  
+                  "step_per_collect": 6000 * 2,# * (10 * n_agents),                  
+                  "batch_size" : 1024 ,                 
+                  "update_per_step": 1 / (200), #Off-Policy Only (run after close a Collect (run many times as necessary to meet the value))                  
+                  "repeat_per_collect": 32, #On-Policy Only                 
                   "episode_per_test": 30,                  
                   "tn_eps_max": 0.30,
                   "ts_eps_max": 0.001,
                   "warmup_size" : 1,
                   "train_envs" : train_env_num,
-                  "test_envs" : test_env_num
+                  "test_envs" : test_env_num,
+                  "priorized_buffer" : False,
+                  "wandb_log" : False
 }
+
 #agent_learn = PPOPolicy(**policy_params)
 
-
+#RunConfig Store data for Logs and comparisons (Recommended Wandb)
 runConfig = dqn_params
 runConfig["Training"] = policyModel 
 runConfig["Model"] = model 
-
 runConfig.update(Policy_Config)
 runConfig.update(B_ACE_Config)
 runConfig.update(trainer_params) 
 runConfig.update(dqn_params)
-
 
 def _get_agents(
     agent_learn: Optional[BasePolicy] = None,
@@ -240,11 +239,6 @@ def _get_agents(
     
     env = _get_env()       
     agent_observation_space = env.observation_space("agent_0")
-   
-    #print(env.action_space)
-    #action_shape = 50#env.action_space.shape
-    
-    print("ActionSPACE: ", env.action_space)
     action_space = env.action_space
     device="cuda" if torch.cuda.is_available() else "cpu"  
 
@@ -256,8 +250,6 @@ def _get_agents(
         policies_number = len(env.agents)
 
     for _ in range(policies_number):      
-        
-        #print(agent_observation_space)
         
         if policyModel == "DQN":
 
@@ -328,20 +320,10 @@ def _get_agents(
             
                                     
             actor_critic = ActorCritic(actor, critic)
-        
-            # orthogonal initialization
-            # for m in actor_critic.modules():
-            #     if isinstance(m, torch.nn.Linear):
-            #         torch.nn.init.orthogonal_(m.weight)
-            #         torch.nn.init.zeros_(m.bias)            
             
-            # dist = torch.distributions.Normal(torch.tensor([0.0]), torch.tensor([1.0])) 
-                # define policy
             def dist(mu, sigma) -> Distribution:
                 return Normal(mu, sigma)        
                 
-            #optim_actor  = torch.optim.Adam(netActor.parameters(),  lr=dqn_params["lr"], weight_decay=0.0, amsgrad= True )
-            #optim_critic = torch.optim.Adam(netCritic.parameters(), lr=dqn_params["lr"], weight_decay=0.0, amsgrad= True )
             optim = torch.optim.Adam(actor_critic.parameters(), lr=dqn_params["lr"])
                     
             agent_learn = PPOPolicy(
@@ -368,8 +350,7 @@ def _get_agents(
         if Policy_Config["load_model"] is True:
             # Load the saved checkpoint             
             agent_learn.load_state_dict(torch.load(model_load_path))
-            print(f'Loaded-> {model_load_path}')
-                   
+            print(f'Loaded-> {model_load_path}')                 
         
         agents.append(agent_learn)
 
@@ -391,15 +372,13 @@ def _get_env():
     
     env = B_ACE_TaskEnv( convert_action_space = True,
                                     device = "cpu",
-                                    **B_ACE_Config)
-    
+                                    **B_ACE_Config) 
     #env.action_space = env.action_space()
     #env = PettingZooEnv(env)  
-    
     return env  
    
-
 # print(json.dumps(runConfig, indent=4))
+
 if __name__ == "__main__":
                         
     torch.set_grad_enabled(True) 
@@ -411,19 +390,16 @@ if __name__ == "__main__":
     #train_envs = DummyVectorEnv([_get_env for _ in range(train_env_num)])#, share_memory = True )
     #test_envs = DummyVectorEnv([_get_env for _ in range(test_env_num)])#, share_memory = True) 
 
-    # seed
+    # Seeds Definition
     seed = B_ACE_Config['EnvConfig']['seed']
     np.random.seed(seed)
-    
     torch.manual_seed(seed)
-
     train_envs.seed(seed)
     test_envs.seed(seed)
 
     # ======== Step 2: Agent setup =========
     policy, optim, agents = _get_agents()    
 
-    
     if True:
         # ======== Step 3: Collector setup =========
         train_collector = Collector(
@@ -442,6 +418,7 @@ if __name__ == "__main__":
         test_collector = Collector(policy, test_envs, exploration_noise=True)
         
     else:
+        #TODO: Tianshou Priorized Replay Buffer is not working in MARL  
         agents_buffers_training = {agent : 
                         PrioritizedVectorReplayBuffer( 300_000, 
                                                         len(train_envs), 
@@ -470,9 +447,9 @@ if __name__ == "__main__":
     
         
     print("Buffer Warming Up ")    
-    for i in range(trainer_params["warmup_size"]):#int(trainer_params['batch_size'] / (300 * 10 ) )):
+    for i in range(trainer_params["warmup_size"]):
         
-         train_collector.collect(n_episode=train_env_num)#,random=True) #trainer_params['batch_size'] * train_env_num))
+         train_collector.collect(n_episode=train_env_num)
          #train_collector.collect(n_step=300 * 10)
          print(".", end="") 
     
@@ -480,25 +457,27 @@ if __name__ == "__main__":
     # print("\nBuffer Lenght: ", len_buffer ) 
     len_buffer = 0
     
-    info = { "Buffer"  : "PriorizedReplayBuffer", " Warmup_ep" : len_buffer}
+    info = { "Buffer"  : "PriorizedReplayBuffer" if trainer_params["priorized_buffer"] else "ReplayBuffer",
+            " Warmup_ep" : trainer_params['warmup_size'] * train_env_num}
     
     # ======== tensorboard logging setup =========                       
-    logger = WandbLogger(
-        train_interval = runConfig["EnvConfig"]["max_cycles"] / 400 ,
-        test_interval = 1,#runConfig["max_cycles"] * runConfig["n_pursuers"],
-        update_interval = runConfig["EnvConfig"]["max_cycles"] / 400,
-        save_interval = 1,
-        write_flush = True,
-        project = "B_ACE_EVAL",
-        name = log_name,
-        entity = None,
-        run_id = log_name,
-        config = runConfig,
-        monitor_gym = True )
+    if trainer_params["wandb_log"]:
+        logger = WandbLogger(
+            train_interval = runConfig["EnvConfig"]["max_cycles"] / 400 ,
+            test_interval = 1,#runConfig["max_cycles"] * runConfig["n_pursuers"],
+            update_interval = runConfig["EnvConfig"]["max_cycles"] / 400,
+            save_interval = 1,
+            write_flush = True,
+            project = "B_ACE_EVAL",
+            name = log_name,
+            entity = None,
+            run_id = log_name,
+            config = runConfig,
+            monitor_gym = True )
     
-    writer = SummaryWriter(log_path)    
-    writer.add_text("args", str(runConfig))    
-    logger.load(writer)
+        writer = SummaryWriter(log_path)    
+        writer.add_text("args", str(runConfig))    
+        logger.load(writer)
 
     global_step_holder = [0] 
         
@@ -573,9 +552,6 @@ if __name__ == "__main__":
         #print(rews)
         return rews#np.mean(rews)#np.sum(rews)
 
-
-
-
     # # # ======== Step 5: Run the trainer =========   
     # onPolicyTrainer = OnpolicyTrainer(
     #     policy=policy,
@@ -625,7 +601,9 @@ if __name__ == "__main__":
          )
     
     result = offPolicyTrainer.run()
-    writer.close()
+    
+    if trainer_params[ 'wandb_log']:
+        writer.close()
     # return result, policy.policies[agents[1]]
     print(f"\n==========Result==========\n{result}")
     print("\n(the trained policy can be accessed via policy.policies[agents[0]])")

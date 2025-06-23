@@ -201,8 +201,7 @@ func _set_agents(_tree):
 		add_child(newFigther)
 		
 		newFigther.manager = self
-		if newFigther.has_node("RenderModel"):
-			newFigther.get_node("RenderModel").set_scale(visual_scaleVector)
+		newFigther.get_node("RenderModel").set_scale(visual_scaleVector)
 		
 		newFigther.phy_fps 		 = int(envConfig["phy_fps"])
 		newFigther.action_repeat = int(envConfig["action_repeat"])

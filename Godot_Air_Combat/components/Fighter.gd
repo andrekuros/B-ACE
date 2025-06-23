@@ -1033,14 +1033,21 @@ func own_kill():
 	
 func reactivate():
 	set_process(true)
-	set_physics_process(true)	
+	set_physics_process(true)
 	collision_layer = init_layer
 	collision_mask = init_mask
-	input_ray_pickable = true	
+	input_ray_pickable = true
+
+	if !is_instance_valid(trail_node):
+		# Create the Trail node dynamically
+		trail_node = MeshInstance3D.new()
+		trail_node.transform = Transform3D.IDENTITY
+		# Add the trail node to the scene tree
+		get_parent().get_parent().add_child(trail_node)
+		update_trail_obj()
+
 	_reset_visuals()
 	_reset_trail_visuals()  # Reset trail visuals
-	if is_instance_valid(trail_node):
-		trail_node.queue_free()
 	activated = true
 	killed = false
 	done = false
@@ -1052,14 +1059,14 @@ func _set_trail_destroyed_visuals():
 	trail_end_alpha = 0.0    # End color: red, less transparent
 	
 	update_trail_obj()  # Refresh the trail material
-	#update_trail()
+	update_trail()
 	
 func _reset_trail_visuals():
 	trail_start_alpha = 0.1  # Start color: red, semi-transparent
 	trail_end_alpha = 0.95    # End color: red, less transparent
 	
 	update_trail_obj()  # Refresh the trail material
-	#update_trail()
+	update_trail()
 
 # Function to make the aircraft semi-transparent or dashed
 func _set_destroyed_visuals():
@@ -1171,9 +1178,6 @@ func draw_trail():
 
 	for i in range(trail_points.size() - 1):
 		var current_point = trail_points[i]		
-
-		# Calculate direction vector
-		
 
 		# Use the aircraft's local "right" and "up" vectors from the basis
 		var right_vector = transform.basis.x.normalized()  # Aircraft's local right direction		

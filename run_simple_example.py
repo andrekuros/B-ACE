@@ -1,6 +1,5 @@
 # This is a simple example script demonstrating how to use the B_ACE_GodotRLPettingZooWrapper
 # to interact with the B-ACE Godot environment from a Python script.
-
 from b_ace_py.utils import load_b_ace_config
 from b_ace_py.B_ACE_GodotPettingZooWrapper import B_ACE_GodotPettingZooWrapper
 

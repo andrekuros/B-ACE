@@ -4,6 +4,8 @@
 
 Built on the Godot game engine, B-ACE leverages Multi-Agent Reinforcement Learning (MARL) to explore advanced techniques in autonomous air combat agent development. The environment provides a flexible and accessible platform for the research community, enabling the rapid prototyping and evaluation of AI-based tactics and strategies in complex air combat settings.
 
+The [Godot](https://godotengine.org/) engine’s intuitive interface and flexible scripting language (GDScript) facilitate rapid prototyping and iteration. Its user-friendly design lowers the barrier to entry for new developers and researchers. Additionally, it supports multiple alternative languages, including C#, VisualScript, and C++, which can enhance flexibility and performance. Godot is completely free under the MIT license, allowing unrestricted access, modification, and distribution of its source code. This contrasts with commercial engines, which impose costs and restrictions, especially for military and government applications.
+
 ## Key Features
 
 * **Open-Source and Extensible:** Researchers can easily modify and extend the environment in both Python and the Godot Engine to suit their specific needs.
@@ -163,7 +165,14 @@ The action space defines how agents interact with the simulation. The policy mus
 
 * **Continuous (`"Low_Level_Continuous"`):** The action is a NumPy array containing `[heading, flight_level, g_force, missile_firing]`. This allows for fine-grained control.
 
-* **Discrete (`"Low_Level_Discrete"`):** The action is a single integer. The environment's wrapper decodes this integer into one of several predefined maneuvers (e.g., turn left, climb, fire missile).
+1.	Heading Input: The desired heading change from the current heading, represented as a continuous input value ranging from -180 to 180 degrees, normalized by 180.
+2.	Flight Level Input: The desired flight level change from the current level, with the input normalized by 25,000 feet.
+3.	Desired G-Force Input: The desired g-force, determined using a continuous input value, scaled to the range between 1g (for -1.0 input) and the maximum g-force capability of the aircraft (for +1.0 input).
+4.	Fire Input: An input value of +1.0 indicates the desire to fire a missile, while any other value means no action is taken.
+
+## Finite State Machine (FSM) Baseline Agent
+
+One of the primary goals of B-ACE is to establish a reasonable baseline behavior for evaluating multiple alternative solutions. To achieve this, we developed a Finite State Machine (FSM) based solution that enables agents to make general expected decisions during BVR air combat. The primary decisions of the B-ACE baseline agent include initial defense, last-minute defense, and missile firing moments. By varying these conditions, it is possible to create agents with different combat characteristics, balancing offensiveness and defensiveness (Kuroswiski et al., 2023). The agent takes into consideration WEZ predictions of missile effectiveness to base its decisions, allowing for more conservative or aggressive actions depending on their proximity to critical points. Additionally, we created a steady baseline agent, referred to as Duck. This agent maintains a steady flight until it reaches its target position or is neutralized. The Duck provides an alternative baseline that offers a simpler engagement scenario for initial algorithm evaluations. Despite the recent focus on AI-based agents, FSM-based solutions continue to play a crucial role in military simulations due to their explainability and simplicity. Using them as a baseline is an effective starting point for evaluating AI-based models.
 
 ## 🎮 Examples
 
@@ -230,10 +239,6 @@ for step in range(num_steps):
         
         # For continuous action space (Box), sample a random value within the bounds
         # Action [hdg, level, g_force, fire] 
-        # [hdg]     -> Desired heading is 180 * hdg to the right side (-0.1 to the left)
-        # [level]   -> 25000ft * level + 25000ft  	
-		    # [g_force] -> (g_force * (max_g  - 1.0) + (max_g + 1.0))/2.0	
-		    # [fire]    -> 0 if last_fire_input <= 0 else 1 (1 is fire missile)
         actions[agent] = [0.1 * turn_side, 0.6, 2.0, 0.0] 
         turn_side *= -1
 
@@ -252,7 +257,7 @@ env.close()
 print("Environment closed.")
 ```
 
-The `Examples/` directory contains aditional scripts and explanations to demonstrate how to use B-ACE with some MARL frameworks.
+The `Examples/` directory contains scripts and explanations to demonstrate how to use B-ACE with some MARL frameworks.
 
 
 ## 📄 Citation
@@ -267,7 +272,7 @@ If you use B-ACE in your research, please cite our paper:
   year      = {2024},
   month     = {December},
   paper     = {24464},
-  doi = {10.13140/RG.2.2.11999.57762}
+  doi = {https://doi.org/10.13140/RG.2.2.11999.57762}
 }
 ```
 
@@ -281,10 +286,10 @@ For first published results with the environment and better explanations about t
   number    = {},
   pages     = {70446-70463},
   year      = {2025},
-  doi       = {10.1109/ACCESS.2025.3561250}
+  doi       = {https://doi.org/10.1109/ACCESS.2025.3561250}
 }
 ```
-For the concepts behing the FSM agents definition and experimentation:
+For the concepts behind the FSM agents definition and experimentation:
 ```bibtex
 @Article{kuroswiski2022beyond,
   author    = {Andre R. Kuroswiski and Felipe L. L. Medeiros and Monica Maria De Marchi and Angelo Passaro},
@@ -293,7 +298,7 @@ For the concepts behing the FSM agents definition and experimentation:
   year      = {2023},
   issn      = {1557-380X},
   month     = Nov,
-  doi       = {10.1177/15485129231211915},  
+  doi       = {https://doi.org/10.1177/15485129231211915},  
 }
 }
 ```

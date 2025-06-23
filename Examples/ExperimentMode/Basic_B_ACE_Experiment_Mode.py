@@ -106,7 +106,7 @@ env_config = {
                     'task': 'basic_experiment_01',
                     "env_path": "../../bin/B_ACE_v0.1.exe", # Path to the Godot executable
                     'experiment_mode'  : 1,
-                    "renderize": 0
+                    "renderize": 1
                 }
 }
 # Define desired agents configuration
