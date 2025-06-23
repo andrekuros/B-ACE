@@ -4,7 +4,7 @@
 		"port": 12500,
 		"renderize": 1,
 		"phy_fps": 20,
-		"speed_up": 50000,
+		"speed_up": 10,
 		"max_cycles": 36000,
 		"experiment_mode"  : 0,
 		"parallel_envs": 1,	
@@ -13,8 +13,7 @@
 		"action_type": "Low_Level_Continuous",                        
 		"stop_mission" : 1,
 		"max_trail_size" : 180,
-		
-		
+			
 		"RewardsConfig" : {
 			"mission_factor": 0.001,				
 			"missile_fire_factor": -0.1,		
@@ -31,38 +30,38 @@
 	"AgentsConfig" : 
 	{
 		"blue_agents": { 
-			"num_agents" : 4,
+			"num_agents" : 1,
 			"share_states" : 1,
 			"share_tracks" : 1,	
 			"base_behavior": "baseline1",
 			"mission"    : "DCA",
 			"beh_config" : {
-				"dShot" : [1.04, 0.50, 1.09],
-				"lCrank": [1.06, 0.98, 0.98],
-				"lBreak": [1.05, 1.17, 0.45]
-			},                  
+				"dShot" : [1.04],
+				"lCrank": [1.06],
+				"lBreak": [1.05]
+			},                
 			
 			"init_position": {"x": 0.0, "y": 25000.0,"z": 30.0},
 			"offset_pos": {	"x": 0.0, "y": 0.0, "z": 0.0},
 			"init_hdg": 0.0,                        
 			"target_position": {"x": 0,"y": 25000.0,"z": 30.0},
 			"rnd_offset_range":{"x": 0.0,"y": 0.0,"z": 0.0},				
-			"rnd_shot_dist_var": 0.025,
+			"rnd_shot_dist_var": 0.0,
 			"rnd_crank_var": 0.025,
 			"rnd_break_var": 0.025,
 			"wez_models" : "res://assets/wez/Default_Wez_params.json"
 		},	
 		"red_agents":
 		{ 
-			"num_agents" : 4, 
+			"num_agents" : 1, 
 			"share_states" : 1,	
 			"share_tracks" : 1,		
 			"base_behavior": "baseline1",
 			"mission"    : "DCA",
 			"beh_config" : {
-				"dShot" : [1.04, 0.50, 1.09],
-				"lCrank": [1.06, 0.98, 0.98],
-				"lBreak": [1.05, 1.17, 0.45]
+				"dShot" : [1.04],
+				"lCrank": [1.06],
+				"lBreak": [1.05]
 			},
 			"init_position": {"x": 0.0,"y": 25000.0,"z": -30.0},
 			"offset_pos": {"x": 0.0,"y": 0.0,"z": 0.0},

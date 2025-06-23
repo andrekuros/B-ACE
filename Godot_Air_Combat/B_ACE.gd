@@ -29,6 +29,7 @@ func _ready():
 	cameraGlobal = get_node("CameraGlobal")
 	cameraGlobal.make_current()
 	self.position.y = zoom_level
+	RenderingServer.render_loop_enabled = false
 	#look_at(Vector3.ZERO, Vector3.UP)
 
 
@@ -91,3 +92,5 @@ func _process(delta):
 	#Adjust the camera movement vector based on the camera's orientation
 	move_vec = move_vec.rotated(Vector3.UP, cam.global_transform.basis.get_euler().y)	
 	cam.global_position += move_vec * delta
+	
+# Add this new function anywhere in B_ACE.gd

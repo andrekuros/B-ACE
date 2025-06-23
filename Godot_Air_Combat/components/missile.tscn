@@ -24,10 +24,9 @@ height = 3.923
 radial_segments = 4
 rings = 1
 
-[node name="Missile" type="RigidBody3D"]
+[node name="Missile" type="CharacterBody3D"]
 collision_layer = 0
 collision_mask = 0
-mass = 5.06
 script = ExtResource("1_i3wbj")
 
 [node name="Timer" type="Timer" parent="."]

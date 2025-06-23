@@ -176,10 +176,6 @@ class GodotRLPettingZooWrapper(GodotEnv, ParallelEnv):
             #self.truncations = self.truncations or truncs[i]
             #self.rewards += reward[i] #torch.tensor([reward[i]], dtype=torch.float32).to('cuda')
             
-            
-            
-            
-            
             # For 'info', it might not need to be a tensor depending on its use
             #self.info[agent] = info[i]  # Assuming 'info' does not need tensor conversion            
                     
