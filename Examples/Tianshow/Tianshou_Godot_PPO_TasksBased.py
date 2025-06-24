@@ -436,7 +436,7 @@ if __name__ == "__main__":
     print("Buffer Warming Up ")    
     for i in range(trainer_params["warmup_size"]):
         
-         train_collector.collect(n_episode=train_env_num)
+         train_collector.collect(n_episode=train_env_num, reset_before_collect=True)
          #train_collector.collect(n_step=300 * 10)
          print(".", end="") 
     
