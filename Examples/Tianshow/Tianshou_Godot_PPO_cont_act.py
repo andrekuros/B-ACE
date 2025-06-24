@@ -19,11 +19,8 @@ from b_ace_py.B_ACE_GodotPettingZooWrapper import  B_ACE_GodotPettingZooWrapper
 from b_ace_py.utils import load_b_ace_config
 
 from torch.distributions import Normal, Distribution
-
 from tianshou.data import Collector, VectorReplayBuffer, PrioritizedVectorReplayBuffer
 from tianshou.env import SubprocVectorEnv, DummyVectorEnv
-from tianshou.env import PettingZooEnv
-
 
 from tianshou.policy import PPOPolicy
 from tianshou.trainer import OnpolicyTrainer
@@ -49,20 +46,20 @@ from Task_B_ACE_Env import B_ACE_TaskEnv
 #from CollectorMA import CollectorMA
 #from MAParalellPolicy import MAParalellPolicy
 
-model  =  "Task_MHA"#Task_MHA_B_ACE"#"SISL_Task_MultiHead" #"CNN_ATT_SISL" #"MultiHead_SISL" Task_DNN_B_ACE
+model  =  "DNN_B_ACE"#Task_MHA_B_ACE"#"SISL_Task_MultiHead" #"CNN_ATT_SISL" #"MultiHead_SISL" Task_DNN_B_ACE
 test_num  =  "_B_ACE_Eval"
-policyModel  =  "DQN"
+policyModel  =  "PPO"
 name = model + "_" + policyModel + "_" + test_num
 
-train_env_num = 2
-test_env_num  = 2
+train_env_num = 1
+test_env_num  = 1
 
 now = datetime.datetime.now().strftime("%y%m%d-%H%M%S")
 log_name = name + str(now)
 log_path = os.path.join('./', "Logs", "KTAB", log_name)
 logger = None
 
-load_policy_name = f'2x2_duck2_policy_Task_MHA_DQN__B_ACE_Eval241225-100957_609_BestRew.pth'
+load_policy_name = f'none.pth'
 save_policy_name = f'policy_{log_name}'
 policy_path = model + policyModel
 
@@ -165,17 +162,6 @@ B_ACE_Config = {
                     }	
             }
 
-dqn_params =    {
-                "discount_factor": 0.99, 
-                "estimation_step": 180, 
-                "target_update_freq": 6000 * 3 * 2 ,#max_cycles * n_agents,
-                "reward_normalization" : False,
-                "clip_loss_grad" : True,
-                "optminizer": "Adam",
-                "lr": 0.000005, 
-                "max_tasks" : 30
-                }
-
 PPO_params= {    
                 'action_scaling': False,
                 'discount_factor': 0.98,
@@ -192,6 +178,7 @@ PPO_params= {
                 'recompute_advantage': False,
                 'action_bound_method': "clip",
                 'lr_scheduler': None,
+                'lr' : 0.0005
             }
 
 trainer_params = {"max_epoch": 100,
@@ -211,13 +198,13 @@ trainer_params = {"max_epoch": 100,
 }
 
 #RunConfig Store data for Logs and comparisons (Recommended Wandb)
-runConfig = dqn_params
+runConfig = PPO_params.copy()
 runConfig["Training"] = policyModel 
 runConfig["Model"] = model 
 runConfig.update(Policy_Config)
 runConfig.update(B_ACE_Config)
 runConfig.update(trainer_params) 
-runConfig.update(dqn_params)
+
 
 def _get_agents(
     agent_learn: Optional[BasePolicy] = None,
@@ -226,11 +213,12 @@ def _get_agents(
     policy_load_path = None,
 ) -> Tuple[BasePolicy, torch.optim.Optimizer, list]:
     
-    env = _get_env()       
-    agent_observation_space = env.observation_space("agent_0")
+    env = _get_env()
+    print(env.observation_space)       
+    agent_observation_space = env.observation_space['obs']
     action_space = env.action_space
     device="cuda" if torch.cuda.is_available() else "cpu"  
-
+    print(" ACCC: " , env.action_space)
     agents = []        
     
     if Policy_Config["same_policy"]:
@@ -277,7 +265,7 @@ def _get_agents(
         
         elif policyModel == "PPO":
             
-            if model == "Task_DNN":
+            if model == "DNN_B_ACE":
                 actor = DNN_B_ACE_ACTOR(
                     obs_shape=agent_observation_space.shape[0],                
                     action_shape=4,                
@@ -290,30 +278,13 @@ def _get_agents(
                     device="cuda" if torch.cuda.is_available() else "cpu"                
                 ).to(device)
             
-            
-            if model == "Task_MHA":
-                # PPO-specific setup with MHA architecture
-                actor = Task_MHA_B_ACE(
-                    num_tasks=dqn_params["max_tasks"],
-                    num_features_per_task=14,
-                    nhead=4,
-                    device=device,
-                ).to(device)
-
-                critic = Task_MHA_B_ACE(
-                    num_tasks=dqn_params["max_tasks"],
-                    num_features_per_task=14,
-                    nhead=4,
-                    device=device,
-                ).to(device)
-            
                                     
             actor_critic = ActorCritic(actor, critic)
             
             def dist(mu, sigma) -> Distribution:
                 return Normal(mu, sigma)        
                 
-            optim = torch.optim.Adam(actor_critic.parameters(), lr=dqn_params["lr"])
+            optim = torch.optim.Adam(actor_critic.parameters(), lr=PPO_params["lr"])
                     
             agent_learn = PPOPolicy(
                 actor=actor,
@@ -350,8 +321,7 @@ def _get_agents(
             agents.append(agents[0])
     
     policy = MultiAgentPolicyManager(policies = agents, env=env)  
-    #policy = MAParalellPolicy(policies = agents, env=env, device="cuda" if torch.cuda.is_available() else "cpu" )  
-        
+
     return policy, optim, env.agents
 
 def _get_env():
@@ -359,9 +329,12 @@ def _get_env():
     
     B_ACE_Config["EnvConfig"]["seed"] = random.randint(0, 1000000)
     
-    env = B_ACE_TaskEnv( convert_action_space = True,
+    #env = B_ACE_TaskEnv( convert_action_space = True,
+    #                                device = "cpu",
+    #                                **B_ACE_Config) 
+    env = B_ACE_GodotPettingZooWrapper(convert_action_space = True,
                                     device = "cpu",
-                                    **B_ACE_Config) 
+                                    **B_ACE_Config)
     #env.action_space = env.action_space()
     #env = PettingZooEnv(env)  
     return env  
@@ -373,18 +346,15 @@ if __name__ == "__main__":
     torch.set_grad_enabled(True) 
 
     # ======== Step 1: Environment setup =========
-    train_envs = SubprocVectorEnv([_get_env for _ in range(train_env_num)])#, share_memory = True )
-    test_envs = SubprocVectorEnv([_get_env for _ in range(test_env_num)])#, share_memory = True) 
+    train_envs = DummyVectorEnv([_get_env for _ in range(train_env_num)])#, share_memory = False )
+    test_envs = DummyVectorEnv([_get_env for _ in range(test_env_num)])#, share_memory = False) 
     
-    #train_envs = DummyVectorEnv([_get_env for _ in range(train_env_num)])#, share_memory = True )
-    #test_envs = DummyVectorEnv([_get_env for _ in range(test_env_num)])#, share_memory = True) 
-
     # Seeds Definition
     seed = B_ACE_Config['EnvConfig']['seed']
     np.random.seed(seed)
     torch.manual_seed(seed)
-    train_envs.seed(seed)
-    test_envs.seed(seed)    
+    #train_envs.seed(seed)
+    #test_envs.seed(seed)    
 
     # ======== Step 2: Agent setup =========
     policy, optim, agents = _get_agents()    

@@ -71,8 +71,10 @@ class Task_MHA_B_ACE(nn.Module):
             observation = torch.tensor(np.array(obs), dtype=torch.float32).to(self.device)            
             mask = info.mask
         else:            
+            # When obs is a Batch from MultiAgentPolicyManager, it's nested under 'agent_0'
             observation = torch.tensor(np.array(obs[info].obs), dtype=torch.float32).to(self.device)
             mask =  obs[info].mask
+
                     
         
         mask = ~mask #for pythorch
