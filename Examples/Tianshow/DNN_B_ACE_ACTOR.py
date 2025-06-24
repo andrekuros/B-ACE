@@ -96,7 +96,13 @@ class DNN_B_ACE_ACTOR(Net):
             """Mapping: obs -> logits -> (mu, sigma)."""
                                    
             # logits, hidden = self.preprocess(obs, state)
-            obs_tensor = torch.tensor(obs, dtype=torch.float32).to(self.device)
+            if isinstance(obs, np.ndarray):
+                obs_tensor = torch.tensor(np.array(obs), dtype=torch.float32).to(self.device)            
+            else:            
+            # When obs is a Batch from MultiAgentPolicyManager, it's nested under 'obs' key
+                obs_tensor = torch.tensor(np.array(obs["obs"]), dtype=torch.float32).to(self.device)
+            
+            
             #print("MU:", obs)
             mu = self.mu(obs_tensor)
             if not self._unbounded:
@@ -109,7 +115,3 @@ class DNN_B_ACE_ACTOR(Net):
                 sigma = (self.sigma_param.view(shape) + torch.zeros_like(mu)).exp()
             #print((mu, sigma))
             return (mu, sigma), state
-        
-     
-
-    

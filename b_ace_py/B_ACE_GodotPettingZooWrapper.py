@@ -64,9 +64,11 @@ class B_ACE_GodotPettingZooWrapper(GodotEnv, ParallelEnv):
         env_info = self._get_env_info()  
         
         self.observation_labels = env_info["observation_labels"]
+        self.global_action_space = self._action_space # Store the action space from GodotEnv
+        self.global_observation_space = self.observation_space # Store the observation space from GodotEnv
                 
         # sf2 requires a tuple action space
-        self._tuple_action_space = spaces.Tuple([v for _, v in self._action_space.items()])
+        self._tuple_action_space = spaces.Tuple(list(self.global_action_space.values()))
         self.action_space_processor = ActionSpaceProcessor(self._tuple_action_space, convert_action_space)
 
         atexit.register(self._close)
@@ -80,17 +82,19 @@ class B_ACE_GodotPettingZooWrapper(GodotEnv, ParallelEnv):
 
         self.agent_idx = [ {agent : i} for i, agent in enumerate(self.possible_agents)]                 
         # Initialize observation and action spaces for each agent
-        self.observation_spaces = {agent: self.observation_space['obs'] for agent in self.agents}
-        self.action_spaces = {agent: self.action_space for agent in self.agents}
-
+        self.observation_spaces = {agent: self.global_observation_space['obs'] for agent in self.agents}
+        self.action_spaces = {agent: self.action_space_processor.action_space for i, agent in enumerate(self.agents)}
         self.observation_space = self._observation_space
+        self.action_space = self._action_space["input"]
         
         self._cumulative_rewards = {agent : 0  for agent in self.possible_agents}                
         self.rewards =  {agent : 0  for agent in self.possible_agents}
         self.terminations =  {agent : False  for agent in self.possible_agents}
         self.truncations =  {agent : False  for agent in self.possible_agents} 
-        self.observations =  {agent : {}  for agent in self.possible_agents}  
-        self.info =  {agent : {}  for agent in self.possible_agents}  
+        self.observations =  {agent : []  for agent in self.possible_agents}  
+        self.info =  {agent : []  for agent in self.possible_agents}  
+        self.infos =  {agent : []  for agent in self.possible_agents}  
+        
                             
     def send_sim_config(self, _env_config, _agents_config):
         message = {"type": "config"}        
@@ -108,7 +112,7 @@ class B_ACE_GodotPettingZooWrapper(GodotEnv, ParallelEnv):
         
         for i, indiv_obs in enumerate(result[0]):
             
-            self.observations[self.possible_agents[i]] =  indiv_obs["obs"] 
+            self.observations[self.possible_agents[i]] =  {"obs": indiv_obs["obs"], "mask": [True for _ in range(4)]}
             self.info[self.possible_agents[i]] = {}                  
         # Assuming the reset method returns a dictionary of observations for each agent        
                 
@@ -117,8 +121,11 @@ class B_ACE_GodotPettingZooWrapper(GodotEnv, ParallelEnv):
     def _observation_space(self, agent):        
         return self.observation_spaces[agent]
     
-    def action_space(self, agent = None):        
+    def _action_space(self, agent):        
         return self.action_space_processor.action_space
+    
+    def action_space(self, agent):        
+        return self.action_space
     
     def seed(self, _seed):
         self.seed = _seed
@@ -137,7 +144,7 @@ class B_ACE_GodotPettingZooWrapper(GodotEnv, ParallelEnv):
         #print("GODOT:", godot_actions)
         obs, reward, dones, truncs, info = super().step(godot_actions, order_ij=order_ij)
                 
-        self.observations = {agent_name : _obs["obs"] for agent_name, _obs in obs.items()}
+        self.observations = {agent_name : {"obs": _obs["obs"], "mask": [True for _ in range(4)]} for agent_name, _obs in obs.items()}
         self.rewards = reward
         self.terminations = dones
         self.truncations = truncs
@@ -205,6 +212,3 @@ class B_ACE_GodotPettingZooWrapper(GodotEnv, ParallelEnv):
         level_input = (encoded_action // 5.0) % 5
         fire_input = (encoded_action // 25.0) % 2
         return np.array([fire_input, level_input, turn_input])
-
-
-    

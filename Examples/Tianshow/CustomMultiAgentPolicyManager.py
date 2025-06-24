@@ -205,7 +205,7 @@ class CustomMultiAgentPolicyManager(BasePolicy):
         """
         act_dict, state_dict = {}, {}
         for agent_id, policy in self.policies.items():
-            
+            print(batch)
             agent_batch = Batch( obs=batch.obs[agent_id], mask=batch.obs[agent_id].mask, info=batch.info[agent_id])            
             if not hasattr(agent_batch, "info"):
                 agent_batch.info = Batch()  # Create an empty info attribute if missing
@@ -215,12 +215,25 @@ class CustomMultiAgentPolicyManager(BasePolicy):
                 state=None if (state is None or state.shape == []) else state[agent_id],
                 **kwargs,
             )
-            act_dict[agent_id] = out.act
+            act_dict[agent_id] = out.act.detach()  # Detach the action tensor
             if hasattr(out, "state") and out.state is not None:
-                state_dict[agent_id] = out.state
+                if isinstance(out.state, torch.Tensor):
+                    state_dict[agent_id] = out.state.detach()
+                elif isinstance(out.state, Batch):
+                    # Recursively detach tensors within the state Batch
+                    detached_state_batch = Batch()
+                    for k, v in out.state.items():
+                        if isinstance(v, torch.Tensor):
+                            detached_state_batch[k] = v.detach()
+                        else:
+                            detached_state_batch[k] = v # Keep non-tensor items as is
+                    state_dict[agent_id] = detached_state_batch
+                else:
+                    state_dict[agent_id] = out.state
 
         if not state_dict: # If no agent returned a state, return None for the overall state
             return Batch(act=act_dict, state=None)
+        
         return Batch(act=act_dict, state=state_dict)
 
     def learn(  # type: ignore

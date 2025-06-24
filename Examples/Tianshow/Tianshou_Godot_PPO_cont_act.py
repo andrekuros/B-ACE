@@ -29,8 +29,9 @@ from tianshou.utils.net.common import ActorCritic, DataParallelNet, Net
 from tianshou.utils.net.continuous import Actor, Critic
 
 from tianshou.policy import BasePolicy, DDPGPolicy
-from custom_dqn_policy import  CustomDQNPolicy as DQNPolicy
+#from custom_dqn_policy import  CustomDQNPolicy as DQNPolicy
 from CustomMultiAgentPolicyManager import CustomMultiAgentPolicyManager as MultiAgentPolicyManager
+from tianshou.policy import MultiAgentPolicyManager
 from tianshou.trainer import OffpolicyTrainer
 
 import wandb
@@ -215,7 +216,7 @@ def _get_agents(
     
     env = _get_env()
     print(env.observation_space)       
-    agent_observation_space = env.observation_space['obs']
+    agent_observation_space = env.observation_space("agent_0")
     action_space = env.action_space
     device="cuda" if torch.cuda.is_available() else "cpu"  
     print(" ACCC: " , env.action_space)
@@ -266,6 +267,8 @@ def _get_agents(
         elif policyModel == "PPO":
             
             if model == "DNN_B_ACE":
+                print(agent_observation_space)
+                print(action_space)
                 actor = DNN_B_ACE_ACTOR(
                     obs_shape=agent_observation_space.shape[0],                
                     action_shape=4,                
@@ -281,7 +284,8 @@ def _get_agents(
                                     
             actor_critic = ActorCritic(actor, critic)
             
-            def dist(mu, sigma) -> Distribution:
+            def dist(input_tuple: Tuple[torch.Tensor, torch.Tensor]) -> Distribution:
+                mu, sigma = input_tuple
                 return Normal(mu, sigma)        
                 
             optim = torch.optim.Adam(actor_critic.parameters(), lr=PPO_params["lr"])
