@@ -1,6 +1,8 @@
+# This example run a simple experiment comparing the use of different 
+# Weapon Engagement Zone (WEZ) models to predict own and enemy missile performance,
+# what direct affect the FSM agents decision
+
 #%%%
-# Get the absolute path of the directory where the current script resides and
-#add to the system root
 import os
 import sys
 from pathlib import Path
@@ -106,7 +108,8 @@ env_config = {
                     'task': 'basic_experiment_01',
                     "env_path": "../../bin/B_ACE_v0.1.exe", # Path to the Godot executable
                     'experiment_mode'  : 1,
-                    "renderize": 0
+                    "renderize": 1,
+                    "speed_up" : 3000
                 }
 }
 # Define desired agents configuration
@@ -117,9 +120,9 @@ agents_config = {"AgentsConfig" :
                             
                             "base_behavior": "baseline1",
                             "beh_config" : {
-                                "dShot" : 0.85,
-                                "lCrank": 0.60,
-                                "lBreak": 0.95
+                                "dShot" : [0.85],
+                                "lCrank": [0.60],
+                                "lBreak": [0.95]
                             },                  
                             
                             "init_position": {"x": 0.0, "y": 25000.0,"z": 30.0},
@@ -135,9 +138,9 @@ agents_config = {"AgentsConfig" :
                                         
                             "base_behavior": "baseline1",
                             "beh_config" : {
-                                "dShot" : 0.85,
-                                "lCrank": 0.60,
-                                "lBreak": 0.95
+                                "dShot" : [0.85],
+                                "lCrank": [0.60],
+                                "lBreak": [0.95]
                             },
                             "init_position": {"x": 0.0,"y": 25000.0,"z": -30.0},
                             "offset_pos": {"x": 0.0,"y": 0.0,"z": 0.0},
@@ -158,14 +161,14 @@ B_ACE_config.update(agents_config)
 cases = []
 
 #Each case will run in a parallel viewport in godot with different seed
-for case in range(1):   
+for case in range(4):   
     dict_beh = generate_behavior_case(dShot = 0.85, 
                                 lCrank = 0.60, 
                                 lBreak = 0.95 )
     dict_beh["EnvConfig"] = { "seed" : case}
     cases.append(dict_beh) 
 
-experimentConfig = { 'runs_per_case': 30, 'cases' : cases }
+experimentConfig = { 'runs_per_case': 100, 'cases' : cases }
 
 # Create the GodotExperimentWrapper
 env = B_ACE_ExperimentWrapper(B_ACE_config)
@@ -185,34 +188,29 @@ flat_data = [item for sublist in results for item in sublist]
 df = pd.DataFrame(flat_data)
 
 #%%%
-_results = []
-
-team_stats = {}
+# Process and analyze the experiment results
 teams = ["Blue", "Red"]
-team_stats[teams[0]] = {"killed":[], "missile" : []}
-team_stats[teams[1]] ={"killed":[], "missile" : []}
+team_stats = {team: {"killed": [], "missile": []} for team in teams}
 
-for sim_result in flat_data:
-        for i, final_result in enumerate(sim_result["final_results"]): 
-                        
-            team_stats[teams[i]]["killed"].append(final_result["killed"])
-            team_stats[teams[i]]["missile"].append(final_result["missile"])
+for sim_run_result in flat_data:
+    for i, team_result in enumerate(sim_run_result["final_results"]):
+        team_name = teams[i]
+        team_stats[team_name]["killed"].append(team_result["killed"])
+        team_stats[team_name]["missile"].append(team_result["missile"])
 
-merged_result = []
-
+analysis_summary = []
 for team_name, stats in team_stats.items():
-    killed_mean, killed_ci_low, killed_ci_high = bootstrap_ci(stats, "killed" )
-    missile_mean, missile_ci_low, missile_ci_high = bootstrap_ci(stats, "missile" )
+    killed_mean, killed_ci_low, killed_ci_high = bootstrap_ci(stats, "killed")
+    missile_mean, missile_ci_low, missile_ci_high = bootstrap_ci(stats, "missile")
 
-    merged_result.append({
+    analysis_summary.append({
         "team": team_name,
-        "killed": f'{killed_mean:.2f}',
-        "ci_killed": f'({killed_ci_low:.2f},{killed_ci_high:.2f})',
-        "missiles": f'{missile_mean:.2f}',
-        "ci_missiles": f'({missile_ci_low:.2f},{missile_ci_high:.2f})',        
-    })    
+        "killed": f"{killed_mean:.2f}",
+        "ci_killed": f"({killed_ci_low:.2f}, {killed_ci_high:.2f})",
+        "missiles": f"{missile_mean:.2f}",
+        "ci_missiles": f"({missile_ci_low:.2f}, {missile_ci_high:.2f})",
+    })
 
-_results.append(merged_result)
-
-df_results = pd.DataFrame(_results[0])
+df_results = pd.DataFrame(analysis_summary)
+print("Experiment Results Summary:")
 print(df_results)

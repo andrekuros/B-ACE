@@ -1,6 +1,6 @@
 [gd_scene load_steps=3 format=3 uid="uid://bav1cl8uwc45c"]
 
-[ext_resource type="Script" path="res://addons/godot_rl_agents/sensors/sensors_2d/RGBCameraSensor2D.gd" id="1_txpo2"]
+[ext_resource type="Script" uid="uid://budld5pa8cghj" path="res://addons/godot_rl_agents/sensors/sensors_2d/RGBCameraSensor2D.gd" id="1_txpo2"]
 
 [sub_resource type="ViewportTexture" id="ViewportTexture_jks1s"]
 viewport_path = NodePath("SubViewport")

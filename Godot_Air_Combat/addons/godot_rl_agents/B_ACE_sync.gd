@@ -8,7 +8,6 @@ const DEFAULT_PORT := "11008"
 @onready var mainView = get_tree().root.get_node("B_ACE")
 @onready var mainViewPort = get_tree().root.get_node("B_ACE/Simulations")
 @onready var mainCanvas = get_tree().root.get_node("B_ACE/CanvasLayer")
-@onready var fps_show = mainView.get_node("CanvasLayer/Control/FPS_Show")
 @onready var phy_show = mainView.get_node("CanvasLayer/Control/PHY_Show")
 @onready var steps_show = mainView.get_node("CanvasLayer/Control/Steps_Show")
 
@@ -25,6 +24,12 @@ var phy_fps
 var speed_up 
 var seed
 
+# Variables for real-time visual render timer
+var visual_fps = 60 
+var render_interval_msec: float = 0.0
+var last_render_time_msec: int = 0
+var accumulated_sim_time: float = 0.0
+
 #Aditional Env Config
 var parallel_envs 
 
@@ -38,7 +43,7 @@ var experiment_in_progress = false
 var simulation_list 
 
 var n_action_steps : int = 0
-var physics_updates = 0
+var render_count = 0
 var last_check = 0.0
 
 var rng = RandomNumberGenerator.new()
@@ -65,7 +70,7 @@ func _ready():
 	await get_tree().create_timer(1.0).timeout
 	get_tree().set_pause(false) 
 	
-	physics_updates = 0
+	render_count = 0
 	last_check = Time.get_ticks_msec()
 	
 func _handshake():
@@ -193,9 +198,10 @@ func _create_simulations(_agents_config_dict, _experiment_cases=null):
 		
 		# Enable "Own World" on the viewport
 		viewport.world_3d = World3D.new()
-
-		# Set the render target of the viewport
-		viewport.render_target_update_mode = SubViewport.UPDATE_WHEN_VISIBLE
+		
+		# Tell the viewport to only render when we manually request it.
+		viewport.render_target_update_mode = SubViewport.UPDATE_ONCE
+		#viewport.render_target_update_mode = SubViewport.UPDATE_WHEN_VISIBLE
 		viewport.render_target_clear_mode = SubViewport.CLEAR_MODE_ALWAYS
 		
 		
@@ -246,10 +252,11 @@ func _initialize():
 	action_repeat 	= int(envConfig["action_repeat"])
 	parallel_envs 	= envConfig["parallel_envs"]  #Will receive default at this point	
 	experiment_mode	= envConfig["experiment_mode"]#Will receive default at this point		
-		
+			
 	Engine.physics_ticks_per_second = speed_up * phy_fps  
-	Engine.time_scale = speed_up * 1.0 		
-	RenderingServer.render_loop_enabled = (renderize == 1)		
+	Engine.time_scale = speed_up * 1.0	
+	Engine.max_fps = 0
+	RenderingServer.render_loop_enabled = false	
 			
 	connected = connect_to_server()
 	if connected:
@@ -263,29 +270,56 @@ func _initialize():
 		initialized = true
 		for sim in simulation_list:
 			sim._reset_simulation()
-
+			
+	render_interval_msec = 1000.0 / visual_fps # e.g., 1000 / 60 = 16.67ms
+	last_render_time_msec = Time.get_ticks_msec()
 		
 	_set_view_features()	
 
 func _physics_process(delta): 
 		
-	physics_updates += 1.0    
+	accumulated_sim_time += delta 
+	
+	var current_time_msec = Time.get_ticks_msec()
+	if current_time_msec - last_render_time_msec >= render_interval_msec:
+		# It's time to render a new frame.
+		last_render_time_msec = current_time_msec
+
+		if renderize == 1:
+		# Request updates from all sub-viewports
+			for container in mainViewPort.get_children():
+				var viewport = container.get_node("SubViewport")
+				viewport.render_target_update_mode = SubViewport.UPDATE_ONCE	            
+				# Force the engine to draw this single, complete frame
+				RenderingServer.force_draw()  
+		
 	if Time.get_ticks_msec() - last_check >= 100:
-		
-		#phy_show.text = str(1 / Performance.get_monitor(Performance.TIME_PHYSICS_PROCESS))		
-		sim_speed = physics_updates / phy_fps * 10.0
-		phy_show.text = str(sim_speed)
-		fps_show.text = str(Performance.get_monitor(Performance.TIME_FPS))
-		
-		if renderize:
-			if  sim_speed * 4 > 30:
-				Engine.max_fps = sim_speed * 4 #physics_updates / phy_fps * 10.0
+	
+	# 1. Get the real time that passed during this interval (in seconds)
+		var real_time_passed_sec = (Time.get_ticks_msec() - last_check) / 1000.0
+		var practical_speed_up = 0.0
+		if real_time_passed_sec > 0:
+			practical_speed_up = accumulated_sim_time / real_time_passed_sec
+		# --- 2. Dynamic Visual FPS Adjustment Logic ---
+		if speed_up >= 1: # Only run logic when sped up
+			# Get the performance ratio (e.g., 0.9 means we're running at 90% of target speed)
+			var performance_ratio = practical_speed_up / speed_up 
+			
+			if performance_ratio < 0.80:
+				# PERFORMANCE IS POOR: Reduce visual FPS to free up resources.
+				visual_fps -= 2.0 # Decrease by 2 FPS
 			else:
-				Engine.max_fps = 30
+				# PERFORMANCE IS GOOD: Gradually increase visual FPS back to the target.
+				visual_fps += 1.0 # Increase by 1 FPS
+
+			visual_fps = clamp(visual_fps, 5, 60)
+			render_interval_msec = 1000.0 / visual_fps
+			
+			phy_show.text = "%.0f" % practical_speed_up
+			accumulated_sim_time = 0.0
+			last_check = Time.get_ticks_msec()
 				
-		physics_updates = 0.0
-		last_check = Time.get_ticks_msec()
-		
+			
 	if n_action_steps % action_repeat != 0 and not stop_simulation:
 		n_action_steps += 1						
 		return
@@ -300,8 +334,7 @@ func _physics_process(delta):
 			get_tree().set_pause(true) 
 			
 			if just_reset:		
-				#for sim in simulation_list:																		
-				#	print(sim._collect_results()," - ", phy_show.text, "X" )				
+							
 				just_reset = false
 				var obs = _get_obs_from_simulations()				
 				
@@ -588,10 +621,13 @@ func _wait_for_configuration():
 		get_tree().set_pause(false) 
 		return true		
 		
-	
 	var env_config_msg 	= config_message['env_config']
 	update_dict(envConfig,env_config_msg)
-			
+	
+	phy_fps 		= int(envConfig["phy_fps"])
+	speed_up 		= int(envConfig["speed_up"])
+	renderize 		= int(envConfig["renderize"])
+	action_repeat 	= int(envConfig["action_repeat"])		
 	parallel_envs 	= int(envConfig.parallel_envs)	
 	experiment_mode	= int(envConfig.experiment_mode)
 	
@@ -599,7 +635,9 @@ func _wait_for_configuration():
 	var agents_config = simConfig["AgentsConfig"].duplicate(true)	
 	
 	update_dict(agents_config, agents_config_msg)
-		
+	
+	Engine.physics_ticks_per_second = speed_up * phy_fps  
+	Engine.time_scale = speed_up * 1.0
 		
 	if experiment_mode == 1:
 			

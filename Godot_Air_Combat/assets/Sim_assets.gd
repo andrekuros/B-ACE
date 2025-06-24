@@ -1,7 +1,6 @@
 extends Node
 
-const Calc = preload("res://assets/Calc.gd") # Ensure you have a Calc script for calculations
-									
+#const Calc = preload("res://assets/Calc.gd") # Ensure you have a Calc script for calculations
 class SimGroups:
 	
 	var BLUE
@@ -348,4 +347,3 @@ class RewardsControl:
 			print("Figther::Warning Trying to add unknow final reward (", condition , ")")			
 
 	
-

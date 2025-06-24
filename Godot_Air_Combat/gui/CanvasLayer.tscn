@@ -1,8 +1,8 @@
 [gd_scene load_steps=4 format=3 uid="uid://c88ncuvk838mf"]
 
-[ext_resource type="Script" path="res://gui/btn_speedUp.gd" id="1_agkej"]
-[ext_resource type="Script" path="res://gui/CanvasLayer.gd" id="1_t3j0s"]
-[ext_resource type="Script" path="res://gui/btn_VSync.gd" id="2_1pm7n"]
+[ext_resource type="Script" uid="uid://dodibrwn4mkb6" path="res://gui/btn_speedUp.gd" id="1_agkej"]
+[ext_resource type="Script" uid="uid://3i2wccs0wul" path="res://gui/CanvasLayer.gd" id="1_t3j0s"]
+[ext_resource type="Script" uid="uid://cie5kcemw7gqq" path="res://gui/Pause.gd" id="4_16kwp"]
 
 [node name="CanvasLayer" type="CanvasLayer"]
 script = ExtResource("1_t3j0s")
@@ -24,76 +24,42 @@ mouse_default_cursor_shape = 2
 text = "-1X"
 script = ExtResource("1_agkej")
 
-[node name="FPS_Show" type="Label" parent="Control"]
-layout_mode = 0
-offset_left = 3.0
-offset_top = 83.0
-offset_right = 43.0
-offset_bottom = 109.0
-text = "-1"
-horizontal_alignment = 1
-vertical_alignment = 1
-
 [node name="Steps_Show" type="Label" parent="Control"]
 layout_mode = 0
-offset_left = 3.0
-offset_top = 106.0
-offset_right = 43.0
-offset_bottom = 132.0
+offset_left = 5.0
+offset_top = 69.0
+offset_right = 45.0
+offset_bottom = 95.0
 text = "-1"
 horizontal_alignment = 1
 vertical_alignment = 1
 
 [node name="PHY_Show" type="Label" parent="Control"]
 layout_mode = 0
-offset_left = 3.0
-offset_top = 58.0
-offset_right = 43.0
-offset_bottom = 84.0
+offset_left = 6.0
+offset_top = 42.0
+offset_right = 46.0
+offset_bottom = 68.0
 text = "-1"
 horizontal_alignment = 1
 vertical_alignment = 1
 
-[node name="CheckButton" type="CheckButton" parent="Control"]
-layout_mode = 0
-offset_top = 34.0
-offset_right = 44.0
-offset_bottom = 58.0
-script = ExtResource("2_1pm7n")
-
-[node name="RichTextLabel" type="RichTextLabel" parent="Control"]
-layout_mode = 0
-offset_left = 45.0
-offset_top = 35.0
-offset_right = 98.0
-offset_bottom = 59.0
-text = "VSync"
-
-[node name="RichTextLabel2" type="RichTextLabel" parent="Control"]
-layout_mode = 0
-offset_left = 57.0
-offset_top = 84.0
-offset_right = 110.0
-offset_bottom = 108.0
-text = "FPS
-"
-
 [node name="RichTextLabel4" type="RichTextLabel" parent="Control"]
 layout_mode = 0
 offset_left = 57.0
-offset_top = 108.0
+offset_top = 71.0
 offset_right = 123.0
-offset_bottom = 132.0
+offset_bottom = 95.0
 text = "Time(s)
 "
 
 [node name="RichTextLabel3" type="RichTextLabel" parent="Control"]
 layout_mode = 0
-offset_left = 56.0
-offset_top = 60.0
-offset_right = 109.0
-offset_bottom = 84.0
-text = "Speed
+offset_left = 57.0
+offset_top = 43.0
+offset_right = 135.0
+offset_bottom = 67.0
+text = "Speed(x)
 "
 
 [node name="LastResults" type="RichTextLabel" parent="Control"]
@@ -141,5 +107,17 @@ text = "0
 "
 scroll_active = false
 
+[node name="Pause" type="Button" parent="Control"]
+process_mode = 3
+layout_mode = 0
+offset_left = 100.0
+offset_top = -1.0
+offset_right = 123.0
+offset_bottom = 30.0
+focus_mode = 1
+text = "II"
+clip_text = true
+script = ExtResource("4_16kwp")
+
 [connection signal="button_down" from="Control/btn_speedUp" to="Control/btn_speedUp" method="_on_button_down"]
-[connection signal="button_down" from="Control/CheckButton" to="Control/CheckButton" method="_on_button_down"]
+[connection signal="pressed" from="Control/Pause" to="Control/Pause" method="_on_pressed"]

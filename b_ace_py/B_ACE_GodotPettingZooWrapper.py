@@ -3,14 +3,9 @@ from pettingzoo.utils import ParallelEnv
 
 from .utils import ActionSpaceProcessor, convert_macos_path
 import numpy as np
-import gymnasium as gym
-import torch
 import atexit
 from sys import platform
 from gymnasium import spaces
-import json
-import subprocess
-from typing import Optional
 import random
 
 
@@ -33,9 +28,8 @@ class B_ACE_GodotPettingZooWrapper(GodotEnv, ParallelEnv):
         self._seed          = int(self.env_config.get("seed", 1))  
         self.action_repeat  = int(self.env_config.get("action_repeat", 20))  
         self.action_type    = self.env_config.get("action_type", "Low_Level_Continuous")  
-        self.speedup        = int(self.env_config.get("speedup", 1000))                          
-        self.parallel_envs  = int(self.env_config.get("parallel_envs", 1))  
-         
+        self.speedup        = int(self.env_config.get("speed_up", 1000))                          
+        self.parallel_envs  = int(self.env_config.get("parallel_envs", 1))          
         
         self.agents_config = config_kwargs.get("AgentsConfig", "")
         self._num_agents = int(self.agents_config["blue_agents"].get("num_agents", 1))
@@ -44,7 +38,7 @@ class B_ACE_GodotPettingZooWrapper(GodotEnv, ParallelEnv):
         self.share_tracks =  int(self.agents_config["blue_agents"].get("share_tracks", 1))       
         
         self.additional_config = self.env_config.get("additional_config", "") 
-       
+        
         self.port = B_ACE_GodotPettingZooWrapper.DEFAULT_PORT + random.randint(0,3100)                 
         self.proc = None
         
@@ -69,7 +63,6 @@ class B_ACE_GodotPettingZooWrapper(GodotEnv, ParallelEnv):
         
         env_info = self._get_env_info()  
         
-        print("env_info")
         self.observation_labels = env_info["observation_labels"]
                 
         # sf2 requires a tuple action space

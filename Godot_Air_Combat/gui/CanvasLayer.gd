@@ -1,6 +1,7 @@
 extends CanvasLayer
 
 @onready var btn_speed_up = get_node("Control/btn_speedUp")
+
 var blue_score = 0
 var red_score = 0
 

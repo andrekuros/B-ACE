@@ -68,7 +68,6 @@ func initialize(_id, _tree, _envConfig, _agentsConfig):
 	ready_to_reset = false
 	set_process_mode_recursively(self, true)
 	
-	
 func set_process_mode_recursively(node, _process_mode):
 	node.set_process(_process_mode)
 	node.set_physics_process(_process_mode)
@@ -201,8 +200,7 @@ func _set_agents(_tree):
 		add_child(newFigther)
 		
 		newFigther.manager = self
-		if newFigther.has_node("RenderModel"):
-			newFigther.get_node("RenderModel").set_scale(visual_scaleVector)
+		newFigther.get_node("RenderModel").set_scale(visual_scaleVector)
 		
 		newFigther.phy_fps 		 = int(envConfig["phy_fps"])
 		newFigther.action_repeat = int(envConfig["action_repeat"])

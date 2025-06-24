@@ -19,12 +19,14 @@ const SConv   = preload("res://assets/Sim_assets.gd").SConv
 
 var rng = RandomNumberGenerator.new()
 
-
 @export var box_size: Vector3 = Vector3(10000, 1, 10000)  # Size of the CSGBox
 @export var grid_spacing: int =  500  # Distance between grid lines
 
+var help_popup_scene = preload("res://gui/HelpPopup.tscn")
+var help_popup = null
+
 func _ready():
-	cameraGlobal = $CameraGlobal	
+	cameraGlobal = $CameraGlobal
 	cameraGlobal.make_current()
 	#cameraGlobal.position.y = zoom_level
 	
@@ -43,19 +45,28 @@ func _ready():
 
 func _input(event):	
 	if event is InputEventKey:
-		if event.pressed and event.keycode == KEY_E:
-			# Reset camera view
-			cameraGlobal.rotate_x(deg_to_rad(-10.0))	
+		var cam = get_viewport().get_camera_3d()
 		
-		if event.pressed and event.keycode == KEY_D:
-			# Reset camera view
-			cameraGlobal.rotate_x(deg_to_rad(10.0))			
-			
+		if event.pressed and event.keycode == KEY_E:
+			cam.rotate_x(deg_to_rad(-10.0))			
+		if event.pressed and event.keycode == KEY_D:			
+			cam.rotate_x(deg_to_rad(10.0))		
+		if event.pressed and event.keycode == KEY_PAGEDOWN:
+			cam.position +=  Vector3(0,-50,0)			
+		if event.pressed and event.keycode == KEY_PAGEUP:			
+			cam.position +=  Vector3(0,50,0)
+		if event.pressed and event.keycode == KEY_UP:
+			cam.position +=  Vector3(0,0,-50)			
+		if event.pressed and event.keycode == KEY_DOWN:			
+			cam.position +=  Vector3(0,0,50)				
+		if event.pressed and event.keycode == KEY_LEFT:			
+			cam.position +=  Vector3(-50,0,0)				
+		if event.pressed and event.keycode == KEY_RIGHT:			
+			cam.position +=  Vector3(50,0,0)				
 		
 		if event.pressed and event.keycode == KEY_F:
-			# Reset camera view
-			cameraGlobal.rotation_degrees = Vector3(-35, 0, 0)
-			cameraGlobal.position = Vector3(0, 1000, 1400)
+			cam.rotation_degrees = Vector3(-35, 0, 0)
+			cam.position = Vector3(0, 1000, 1400)
 			camera_angle_v = 0
 			camera_angle_h = 0
 		
@@ -67,93 +78,37 @@ func _input(event):
 			camera_angle_v = 0
 			camera_angle_h = 0
 			
-		if event.pressed and event.keycode == KEY_W:			
-			#cameraGlobal.position.y += zoom_level
+		if event.pressed and event.keycode == KEY_W:						
 			for sim in get_node("SimManager").get_children():												
 				sim.update_scale(1.1)
 		
 		if event.pressed and event.keycode == KEY_S:
 			#cameraGlobal.position.y += zoom_level
 			for sim in get_node("SimManager").get_children():				
-				sim.update_scale(0.9)
+				sim.update_scale(0.9)	
+				
+		if Input.is_action_just_pressed("CameraNext"):
+			if uavCamId + 1 < len(uavs): 
+				uavCamId = uavCamId + 1			
+				cameraUav =  uavs[uavCamId].get_node("Camera3D")
+				#debug_text.add_text("\n" + uavs[uavCamId]._heuristic + " - " + uavs[uavCamId].AP_mode)
+				cameraUav.make_current()			
+			else:
+				cameraUav = uavs[0].get_node("Camera3D")
+				cameraUav.make_current()
+				uavCamId = 0
 		
-		if Input.is_action_pressed("Pause"):			
-			get_tree().paused = not get_tree().paused	
-			
-	if event is InputEventMouseMotion:
-		var cam = get_viewport().get_camera_3d()
-		if Input.is_mouse_button_pressed(MOUSE_BUTTON_LEFT):
-			cam.rotate_y(deg_to_rad(-event.relative.x * mouse_sens))
-			var change_v = -event.relative.y * mouse_sens
-			camera_angle_v += change_v
-			cam.rotate_x(deg_to_rad(change_v))
-		elif Input.is_mouse_button_pressed(MOUSE_BUTTON_RIGHT):
-			# Rotate camera around its forward vector (for inclination)
-			var change_h = event.relative.x * mouse_sens
-			camera_angle_h += change_h
-			cam.rotate(cam.transform.basis.z, deg_to_rad(change_h))
 
-	elif event is InputEventMouseButton:
-		if event.button_index == MOUSE_BUTTON_WHEEL_UP and event.pressed:
-			zoom_level = -25
-		elif event.button_index == MOUSE_BUTTON_WHEEL_DOWN and event.pressed:
-			zoom_level = 25
-		#zoom_level = clamp(zoom_level, 5, 50)
-		cameraGlobal.position.y += zoom_level		 
-								
-	if event is InputEventMouseMotion:
-		var cam = get_camera_3d()
-		
-		if Input.is_mouse_button_pressed(MOUSE_BUTTON_LEFT):
-			cam.rotate_y(deg_to_rad(-event.relative.x * mouse_sens))
-			var change_v = -event.relative.y * mouse_sens
-			camera_angle_v += change_v
-			cam.rotate_x(deg_to_rad(change_v))
-		elif Input.is_mouse_button_pressed(MOUSE_BUTTON_RIGHT):
-			# Rotate camera around its forward vector (for inclination)
-			var change_h = event.relative.x * mouse_sens
-			camera_angle_h += change_h
-			cam.rotate(cam.transform.basis.z, deg_to_rad(change_h))
-		elif event is InputEventMouseButton:
-			if event.button_index == MOUSE_BUTTON_WHEEL_UP and event.pressed:
-				zoom_level = -25
-			elif event.button_index == MOUSE_BUTTON_WHEEL_DOWN and event.pressed:
-				zoom_level = 25			
-			cameraGlobal.position.y += zoom_level
-
-	if Input.is_action_just_pressed("CameraNext"):
-		if uavCamId + 1 < len(uavs):
-			uavCamId = uavCamId + 1
-			cameraUav = uavs[uavCamId].get_node("Camera3D")
-			cameraUav.make_current()
-		else:
-			cameraUav = uavs[0].get_node("Camera3D")
-			cameraUav.make_current()
-			uavCamId = 0
-
-func _process(delta):
-	# Movement logic based on arrow key input	
-	var move_vec = Vector3.ZERO	
-	var cam = get_camera_3d()
+		if event.pressed and event.keycode == KEY_H:
+			if help_popup != null:
+				help_popup.queue_free()
+				help_popup = null
+			else:
+				help_popup = help_popup_scene.instantiate()
+				add_child(help_popup)
+				#help_popup.position = get_tree().root.get_visible_rect().get_center()
+						
 	
-	if Input.is_action_pressed("ui_left"):
-		move_vec.x -= move_speed / Performance.get_monitor(Performance.TIME_FPS)		
-	elif Input.is_action_pressed("ui_right"):
-		move_vec.x += move_speed / Performance.get_monitor(Performance.TIME_FPS)
-	elif Input.is_action_pressed("ui_up"):
-		move_vec.z -= move_speed / Performance.get_monitor(Performance.TIME_FPS)
-	elif Input.is_action_pressed("ui_down"):
-		move_vec.z += move_speed / Performance.get_monitor(Performance.TIME_FPS)
-	elif Input.is_action_pressed("ui_page_up"):
-		move_vec.y += move_speed / Performance.get_monitor(Performance.TIME_FPS)
-	elif Input.is_action_pressed("ui_page_down"):
-		move_vec.y -= move_speed / Performance.get_monitor(Performance.TIME_FPS)
-
-	if move_vec.length() == 5000:
-		return
-	# Adjust the camera movement vector based on the camera's orientation
-	move_vec = move_vec.rotated(Vector3.UP, cam.global_transform.basis.get_euler().y)
-	cam.global_position += move_vec * delta
 	
 func draw_grid(mesh: ImmediateMesh):
 	var half_size = box_size / 2
@@ -207,4 +162,3 @@ func create_grid_material() -> StandardMaterial3D:
 	material.flags_transparent = true  # Disable transparency for the grid
 	material.albedo_color = Color(0.4, 0.4, 0.4, 0.4)  # Set your desired grid color (pure white as an example)
 	return material
-

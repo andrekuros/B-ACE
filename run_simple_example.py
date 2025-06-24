@@ -1,6 +1,5 @@
 # This is a simple example script demonstrating how to use the B_ACE_GodotRLPettingZooWrapper
 # to interact with the B-ACE Godot environment from a Python script.
-
 from b_ace_py.utils import load_b_ace_config
 from b_ace_py.B_ACE_GodotPettingZooWrapper import B_ACE_GodotPettingZooWrapper
 
@@ -11,9 +10,10 @@ B_ACE_config = load_b_ace_config('./b_ace_py/Default_B_ACE_config.json')
 env_config = { 
                 "EnvConfig":{
                     "env_path": "./bin/B_ACE_v0.1.exe", # Path to the Godot executable
-                    "renderize": 1
-             }
-}
+                    "renderize": 1,
+                    "speed_up": 50,
+                }
+            }
 # Define desired agents configuration
 agents_config = {
                     "AgentsConfig":{
@@ -41,12 +41,10 @@ env = B_ACE_GodotPettingZooWrapper(device = 'cpu', **B_ACE_config)
 
 # Reset the environment to get the initial observations and info
 observations = env.reset()
-print("Environment reset.")
-print("Initial observations:\n", observations)
 
 # Run a few steps in the environment
 num_steps = 3000
-print(f"Running {num_steps} steps...")
+print(f"\nRunning 0 / {num_steps} steps", end = "")
 
 for step in range(num_steps):
     # In a real RL scenario, you would use your agent's policy to get actions
@@ -73,12 +71,16 @@ for step in range(num_steps):
 
     # Check if any agent has terminated or truncated
     if all(terminations.values()) or all(truncations.values()):
-        print("Episode finished.")
+        print("\nEpisode finished.")
         # In a real RL scenario, you would reset the environment here
         # observations, info = env.reset()
         break # Exit the loop for this example
 
+    if step % 100 == 0:
+        print(f'\rRunning {step} / {num_steps} steps', end = "", flush=True)
+        
+
+print()
 # Close the environment
 env.close()
-print("Environment closed.")
-print("Simple example script finished.")
+print("\nSimple example script finished.")

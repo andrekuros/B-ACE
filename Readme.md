@@ -4,6 +4,8 @@
 
 Built on the Godot game engine, B-ACE leverages Multi-Agent Reinforcement Learning (MARL) to explore advanced techniques in autonomous air combat agent development. The environment provides a flexible and accessible platform for the research community, enabling the rapid prototyping and evaluation of AI-based tactics and strategies in complex air combat settings.
 
+The [Godot](https://godotengine.org/) engine’s intuitive interface and flexible scripting language (GDScript) facilitate rapid prototyping and iteration. Its user-friendly design lowers the barrier to entry for new developers and researchers. Additionally, it supports multiple alternative languages, including C#, VisualScript, and C++, which can enhance flexibility and performance. Godot is completely free under the MIT license, allowing unrestricted access, modification, and distribution of its source code. This contrasts with commercial engines, which impose costs and restrictions, especially for military and government applications.
+
 ## Key Features
 
 * **Open-Source and Extensible:** Researchers can easily modify and extend the environment in both Python and the Godot Engine to suit their specific needs.
@@ -22,7 +24,7 @@ The best way to start is by running the simple example to verify your setup. We 
 **2. Clone the Repository**
 
 ```bash
-git clone [https://github.com/andrekuros/B-ACE.git](https://github.com/andrekuros/B-ACE.git)
+git clone https://github.com/andrekuros/B-ACE.git
 ```
 
 **3. Set Up a Virtual Environment and Install Dependencies**
@@ -51,7 +53,7 @@ python ./run_simple_example.py
 
 The interaction between your Python agent code and the Godot simulation is managed by the `B_ACE_GodotPettingZooWrapper`. This wrapper is built using the excellent [GodotRL Agents](https://github.com/Dmitrii-I/GodotRL) library, which handles the low-level communication.
 
-The wrapper implements the standard [PettingZoo ParallelEnv](https://pettingzoo.farama.org/api/parallel/) interface, allowing you to use familiar functions like `reset()` and `step()`.
+The wrapper implements the standard [PettingZoo ParallelEnv](https://pettingZoo.farama.org/api/parallel/) interface, allowing you to use familiar functions like `reset()` and `step()`.
 
 The typical interaction flow is as follows:
 
@@ -105,6 +107,24 @@ The simulation's behavior is controlled by a `.json` configuration file (e.g., `
 ## 🖥️ Visualization & Debugging
 
 One of the key advantages of using the Godot Engine is the ability to visualize the simulation in real-time. This is invaluable for debugging agent behavior and validating trained policies.
+
+Using the visualization interface you have the following commands:
+
+--- CAMERA MANIPULATION ---
+Arrows     : Camera Position 
+PageUp/Down: Camera Up/Down
+E / D      : Pitch Camera Up/Down
+W / S      : Scale Simulation Components
+C: Reset camera view 1 (top-down)
+F: Reset camera view 2 (observer)
+N: Camera on Next Figther
+
+-- SIMULATION COMMANDS ---
+R: Reset Simulation
+Speed Btn: Change Time Scale Target
+H: Show/Hide Help
+
+For training process you can use config "renderize = 0" to a headless run, avoiding unnecessary resources consumption. 
 
 ### Activating the Interface
 
@@ -163,7 +183,27 @@ The action space defines how agents interact with the simulation. The policy mus
 
 * **Continuous (`"Low_Level_Continuous"`):** The action is a NumPy array containing `[heading, flight_level, g_force, missile_firing]`. This allows for fine-grained control.
 
-* **Discrete (`"Low_Level_Discrete"`):** The action is a single integer. The environment's wrapper decodes this integer into one of several predefined maneuvers (e.g., turn left, climb, fire missile).
+1.	Heading Input: The desired heading change from the current heading, represented as a continuous input value ranging from -180 to 180 degrees, normalized by 180.
+2.	Flight Level Input: The desired flight level change from the current level, with the input normalized by 25,000 feet.
+3.	Desired G-Force Input: The desired g-force, determined using a continuous input value, scaled to the range between 1g (for -1.0 input) and the maximum g-force capability of the aircraft (for +1.0 input).
+4.  Fire Input: A value of +1.0 indicates the agent desires to fire a missile. Any other value (including 0.0) means no missile firing is requested.
+
+## Finite State Machine (FSM) Baseline Agent
+
+One of the primary goals of B-ACE is to establish a reasonable baseline behavior for evaluating multiple alternative solutions. To achieve this, we developed a Finite State Machine (FSM) based solution that enables agents to make general expected decisions during BVR air combat. The primary decisions of the B-ACE baseline agent include initial defense, last-minute defense, and missile firing moments. By varying these conditions, it is possible to create agents with different combat characteristics, balancing offensiveness and defensiveness [Kuroswiski et al., 2023](https://doi.org/10.1177/15485129231211915). The agent takes into consideration Weapon Engagement Zone{kuroswiski2025WEZ} predictions of missile effectiveness to base its decisions, allowing for more conservative or aggressive actions depending on their proximity to critical points. Additionally, we created a steady baseline agent, referred to as "Duck". This agent maintains a steady flight until it reaches its target position or is neutralized. The Duck provides an alternative baseline that offers a simpler engagement scenario for initial algorithm evaluations. 
+
+Example of the FSM  agent behavior configuration:  
+
+```json
+"beh_config" : {
+                "base_behavior": "baseline1",     
+                "dShot" : [1.04, 1.04, 1.04], 
+                "lCrank": [1.06, 0.98, 0.98], 
+                "lBreak": [1.05, 1.05, 1.05], 
+                },
+```
+The `base_behavior` can be `baseline1` for the FSM agent, `duck` for a simple agent, or `external` for the blue agent being trained or evaluated. Each index in the lists `dShot`, `lCrank`, and `lBreak` corresponds to a different agent, allowing for individual parameter settings. These agents are randomly selected during the simulation reset. Using a single item list will result in the same FSM enemy every time.
+
 
 ## 🎮 Examples
 
@@ -230,10 +270,6 @@ for step in range(num_steps):
         
         # For continuous action space (Box), sample a random value within the bounds
         # Action [hdg, level, g_force, fire] 
-        # [hdg]     -> Desired heading is 180 * hdg to the right side (-0.1 to the left)
-        # [level]   -> 25000ft * level + 25000ft  	
-		    # [g_force] -> (g_force * (max_g  - 1.0) + (max_g + 1.0))/2.0	
-		    # [fire]    -> 0 if last_fire_input <= 0 else 1 (1 is fire missile)
         actions[agent] = [0.1 * turn_side, 0.6, 2.0, 0.0] 
         turn_side *= -1
 
@@ -252,7 +288,7 @@ env.close()
 print("Environment closed.")
 ```
 
-The `Examples/` directory contains aditional scripts and explanations to demonstrate how to use B-ACE with some MARL frameworks.
+The `Examples/` directory contains scripts and explanations to demonstrate how to use B-ACE with some MARL frameworks.
 
 
 ## 📄 Citation
@@ -267,7 +303,20 @@ If you use B-ACE in your research, please cite our paper:
   year      = {2024},
   month     = {December},
   paper     = {24464},
-  doi = {10.13140/RG.2.2.11999.57762}
+  doi = {https://doi.org/10.13140/RG.2.2.11999.57762}
+}
+```
+
+For a example of the Weapon Engagement Zone model definition we used:
+```bibtex
+@article{kuroswiski2025WEZ,
+  author={Andre R. Kuroswiski and Annie S. Wu and Angelo Passaro},
+  title={Optimized Prediction of Weapon Effectiveness in {BVR} Air Combat Scenarios Using Enhanced Regression Models}, 
+  journal={IEEE Access}, 
+  year={2025},
+  volume={13},  
+  pages={21759-21772},  
+  doi={https://doi.org/10.1109/ACCESS.2025.3535555}
 }
 ```
 
@@ -277,24 +326,22 @@ For first published results with the environment and better explanations about t
  author    = {Andre R. Kuroswiski and Annie S. Wu and Angelo Passaro},
   title     = {Enhancing MARL BVR Air Combat using Domain Expert Knowledge at the Action Level},
   journal   = {IEEE Access},
-  volume    = {13},
-  number    = {},
+  volume    = {13},  
   pages     = {70446-70463},
   year      = {2025},
-  doi       = {10.1109/ACCESS.2025.3561250}
+  doi       = {https://doi.org/10.1109/ACCESS.2025.3561250}
 }
 ```
-For the concepts behing the FSM agents definition and experimentation:
+For the concepts behind the FSM agents definition and experimentation:
 ```bibtex
-@Article{kuroswiski2022beyond,
+@Article{kuroswiski2023beyond,
   author    = {Andre R. Kuroswiski and Felipe L. L. Medeiros and Monica Maria De Marchi and Angelo Passaro},
   journal   = {The Journal of Defense Modeling and Simulation},
   title     = {Beyond visual range air combat simulations: validation methods and analysis using agent-based models},
   year      = {2023},
   issn      = {1557-380X},
   month     = Nov,
-  doi       = {10.1177/15485129231211915},  
-}
+  doi       = {https://doi.org/10.1177/15485129231211915},  
 }
 ```
 

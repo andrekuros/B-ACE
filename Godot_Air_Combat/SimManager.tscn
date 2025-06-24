@@ -1,7 +1,7 @@
 [gd_scene load_steps=5 format=3 uid="uid://cqx70qwmty8lr"]
 
-[ext_resource type="Script" path="res://SimManager.gd" id="1_ee7cu"]
-[ext_resource type="Script" path="res://ViewPort.gd" id="2_47jrj"]
+[ext_resource type="Script" uid="uid://m8moe8w0hef6" path="res://SimManager.gd" id="1_ee7cu"]
+[ext_resource type="Script" uid="uid://dpmhgj5sjwtt6" path="res://ViewPort.gd" id="2_47jrj"]
 
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_cxgxf"]
 albedo_color = Color(0.215686, 0.215686, 0.215686, 1)

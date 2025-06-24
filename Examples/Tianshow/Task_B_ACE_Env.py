@@ -6,10 +6,8 @@ import random
 from collections import deque
 
 from gymnasium import spaces
-from GodotRLPettingZooWrapper import GodotRLPettingZooWrapper
-from godot_rl.core.godot_env import GodotEnv
-
-
+from b_ace_py.B_ACE_GodotPettingZooWrapper import B_ACE_GodotPettingZooWrapper
+from b_ace_py.godot_env import GodotEnv
 
 __all__ = ["ManualPolicy", "env", "parallel_env", "raw_env"]
 
@@ -270,7 +268,7 @@ class Task:
         return TASK_TYPES[self.type]
     
 
-class B_ACE_TaskEnv(GodotRLPettingZooWrapper):
+class B_ACE_TaskEnv(B_ACE_GodotPettingZooWrapper):
     
     def __init__(self, *args, **kwargs):
                         
