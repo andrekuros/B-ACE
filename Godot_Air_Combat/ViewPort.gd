@@ -60,9 +60,9 @@ func _input(event):
 		if event.pressed and event.keycode == KEY_DOWN:			
 			cam.position +=  Vector3(0,0,50)				
 		if event.pressed and event.keycode == KEY_LEFT:			
-			cam.position +=  Vector3(50,0,0)				
-		if event.pressed and event.keycode == KEY_RIGHT:			
 			cam.position +=  Vector3(-50,0,0)				
+		if event.pressed and event.keycode == KEY_RIGHT:			
+			cam.position +=  Vector3(50,0,0)				
 		
 		if event.pressed and event.keycode == KEY_F:
 			cam.rotation_degrees = Vector3(-35, 0, 0)
@@ -108,30 +108,7 @@ func _input(event):
 				add_child(help_popup)
 				#help_popup.position = get_tree().root.get_visible_rect().get_center()
 						
-		
-func _process(delta):
-	# Movement logic based on arrow key input	
-	var move_vec = Vector3.ZERO	
-	var cam = get_camera_3d()
 	
-	if Input.is_action_pressed("ui_left"):
-		move_vec.x -= move_speed / Performance.get_monitor(Performance.TIME_FPS)		
-	elif Input.is_action_pressed("ui_right"):
-		move_vec.x += move_speed / Performance.get_monitor(Performance.TIME_FPS)
-	elif Input.is_action_pressed("ui_up"):
-		move_vec.z -= move_speed / Performance.get_monitor(Performance.TIME_FPS)
-	elif Input.is_action_pressed("ui_down"):
-		move_vec.z += move_speed / Performance.get_monitor(Performance.TIME_FPS)
-	elif Input.is_action_pressed("ui_page_up"):
-		move_vec.y += move_speed / Performance.get_monitor(Performance.TIME_FPS)
-	elif Input.is_action_pressed("ui_page_down"):
-		move_vec.y -= move_speed / Performance.get_monitor(Performance.TIME_FPS)
-
-	if move_vec.length() == 5000:
-		return
-	# Adjust the camera movement vector based on the camera's orientation
-	move_vec = move_vec.rotated(Vector3.UP, cam.global_transform.basis.get_euler().y)
-	cam.global_position += move_vec * delta
 	
 func draw_grid(mesh: ImmediateMesh):
 	var half_size = box_size / 2

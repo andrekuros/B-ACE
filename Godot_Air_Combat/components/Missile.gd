@@ -1,7 +1,7 @@
 extends CharacterBody3D
 
 const SConv = preload("res://assets/Sim_assets.gd").SConv
-const Calc = preload("res://assets/Calc.gd")
+#const Calc = preload("res://assets/Calc.gd")
 
 var target: Node3D
 var max_speed: float = 10.0 #3600 km/h

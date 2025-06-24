@@ -3,7 +3,7 @@ extends Area3D
 @onready var fighter = get_parent()
 
 const Track = preload("res://assets/Sim_assets.gd").Track
-const Calc = preload("res://assets/Calc.gd") # Ensure you have a Calc script for calculations
+#const Calc = preload("res://assets/Calc.gd") # Ensure you have a Calc script for calculations
 
 func _on_radar_area_entered(area):
 	var track_obj = area.get_parent()

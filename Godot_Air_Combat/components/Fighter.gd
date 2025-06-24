@@ -4,7 +4,7 @@ const missile = preload("res://components/missile.tscn")
 const Track   = preload("res://assets/Sim_assets.gd").Track
 const SConv   = preload("res://assets/Sim_assets.gd").SConv
 const RewardsControl = preload("res://assets/Sim_assets.gd").RewardsControl
-const Calc 	  = preload("res://assets/Calc.gd")
+#const Calc 	  = preload("res://assets/Calc.gd")
 const Marker  = preload("res://assets/marker.tscn")
 
 @onready var mainView = get_tree().root.get_node("B_ACE")
