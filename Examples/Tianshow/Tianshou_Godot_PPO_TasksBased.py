@@ -3,6 +3,7 @@ import sys
 from pathlib import Path
 import datetime
 from typing import Optional, Tuple
+import random
 import json
 import numpy as np
 import torch
@@ -21,9 +22,8 @@ from torch.distributions import Normal, Distribution
 
 from tianshou.data import Collector, VectorReplayBuffer, PrioritizedVectorReplayBuffer
 from tianshou.env import SubprocVectorEnv, DummyVectorEnv
-#from tianshou.env.pettingzoo_env_parallel import PettingZooParallelEnv
-#from tianshou.env.pettingzoo_env import PettingZooEnv
-#from PettingZooParallelEnv import PettingZooParallelEnv
+from tianshou.env import PettingZooEnv
+
 
 from tianshou.policy import PPOPolicy
 from tianshou.trainer import OnpolicyTrainer
@@ -33,6 +33,10 @@ from tianshou.utils.net.continuous import Actor, Critic
 
 from tianshou.policy import BasePolicy, DQNPolicy, MultiAgentPolicyManager, DDPGPolicy
 from tianshou.trainer import OffpolicyTrainer
+
+import wandb
+from tianshou.utils import WandbLogger
+
 from torch.utils.tensorboard import SummaryWriter
 from DNN_B_ACE_ACTOR import DNN_B_ACE_ACTOR
 from DNN_B_ACE_CRITIC import DNN_B_ACE_CRITIC
@@ -40,29 +44,16 @@ from Task_MHA_B_ACE import Task_MHA_B_ACE
 from Task_DNN_B_ACE import Task_DNN_B_ACE
 from Task_B_ACE_Env import B_ACE_TaskEnv
 
-from CollectorMA import CollectorMA
-from MAParalellPolicy import MAParalellPolicy
-
-####---------------------------#######
-#Tianshou Adjustment
-import wandb
-# os.environ["WANDB_NOTEBOOK_NAME"] = "Tianshow_Training_GoDot.ipybn"
-from tianshou.utils import WandbLogger
-# from tianshou.utils.logger.base import LOG_DATA_TYPE
-# def new_write(self, step_type: str, step: int, data: LOG_DATA_TYPE) -> None:
-#      data[step_type] = step
-#      wandb.log(data)   
-# WandbLogger.write = new_write 
-####---------------------------#######
-
+#from CollectorMA import CollectorMA
+#from MAParalellPolicy import MAParalellPolicy
 
 model  =  "Task_MHA"#Task_MHA_B_ACE"#"SISL_Task_MultiHead" #"CNN_ATT_SISL" #"MultiHead_SISL" Task_DNN_B_ACE
 test_num  =  "_B_ACE_Eval"
 policyModel  =  "DQN"
 name = model + "_" + policyModel + "_" + test_num
 
-train_env_num = 4
-test_env_num  = 15
+train_env_num = 1
+test_env_num  = 1
 
 now = datetime.datetime.now().strftime("%y%m%d-%H%M%S")
 log_name = name + str(now)
@@ -88,7 +79,7 @@ B_ACE_Config = {
                         "task": "b_ace_v1",
                         "env_path": "../../bin/B_ACE_v0.1.exe",
                         "port": 12500,
-                        "renderize": 1,
+                        "renderize": 0,
                         "phy_fps": 20,
                         "speed_up": 50000,
                         "max_cycles": 36000,
@@ -97,8 +88,7 @@ B_ACE_Config = {
                         "seed": 0,	
                         "action_repeat": 20,	
                         "action_type": "Low_Level_Continuous",                        
-                        "stop_mission" : 1,
-                                         
+                        "stop_mission" : 1,                                     
                         "RewardsConfig" : {
                                     "mission_factor": 0.001,				
                                     "missile_fire_factor": -0.1,		
@@ -201,7 +191,6 @@ PPO_params= {
                 'lr_scheduler': None,
             }
 
-
 trainer_params = {"max_epoch": 100,
                   "step_per_epoch": 18000 * 2,#5 * (150 * n_agents),
                   "step_per_collect": 6000 * 2,# * (10 * n_agents),                  
@@ -217,8 +206,6 @@ trainer_params = {"max_epoch": 100,
                   "priorized_buffer" : False,
                   "wandb_log" : False
 }
-
-#agent_learn = PPOPolicy(**policy_params)
 
 #RunConfig Store data for Logs and comparisons (Recommended Wandb)
 runConfig = dqn_params
@@ -375,13 +362,13 @@ def _get_env():
     #env.action_space = env.action_space()
     #env = PettingZooEnv(env)  
     return env  
-   
-# print(json.dumps(runConfig, indent=4))
+
+#print(json.dumps(runConfig, indent=4))
 
 if __name__ == "__main__":
                         
     torch.set_grad_enabled(True) 
-   
+
     # ======== Step 1: Environment setup =========
     train_envs = SubprocVectorEnv([_get_env for _ in range(train_env_num)])#, share_memory = True )
     test_envs = SubprocVectorEnv([_get_env for _ in range(test_env_num)])#, share_memory = True) 
@@ -394,7 +381,7 @@ if __name__ == "__main__":
     np.random.seed(seed)
     torch.manual_seed(seed)
     train_envs.seed(seed)
-    test_envs.seed(seed)
+    test_envs.seed(seed)    
 
     # ======== Step 2: Agent setup =========
     policy, optim, agents = _get_agents()    
@@ -412,8 +399,9 @@ if __name__ == "__main__":
             #         len(train_envs),  # Assuming train_envs is your vectorized environment
             #         memory_size=10,                
             #     ),
-            exploration_noise=True             
+            exploration_noise=True  
         )
+        
         test_collector = Collector(policy, test_envs, exploration_noise=True)
         
     else:

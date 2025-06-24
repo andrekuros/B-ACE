@@ -24,7 +24,7 @@ The best way to start is by running the simple example to verify your setup. We 
 **2. Clone the Repository**
 
 ```bash
-git clone [https://github.com/andrekuros/B-ACE.git](https://github.com/andrekuros/B-ACE.git)
+git clone https://github.com/andrekuros/B-ACE.git
 ```
 
 **3. Set Up a Virtual Environment and Install Dependencies**
@@ -53,7 +53,7 @@ python ./run_simple_example.py
 
 The interaction between your Python agent code and the Godot simulation is managed by the `B_ACE_GodotPettingZooWrapper`. This wrapper is built using the excellent [GodotRL Agents](https://github.com/Dmitrii-I/GodotRL) library, which handles the low-level communication.
 
-The wrapper implements the standard [PettingZoo ParallelEnv](https://pettingzoo.farama.org/api/parallel/) interface, allowing you to use familiar functions like `reset()` and `step()`.
+The wrapper implements the standard [PettingZoo ParallelEnv](https://pettingZoo.farama.org/api/parallel/) interface, allowing you to use familiar functions like `reset()` and `step()`.
 
 The typical interaction flow is as follows:
 
@@ -107,6 +107,24 @@ The simulation's behavior is controlled by a `.json` configuration file (e.g., `
 ## 🖥️ Visualization & Debugging
 
 One of the key advantages of using the Godot Engine is the ability to visualize the simulation in real-time. This is invaluable for debugging agent behavior and validating trained policies.
+
+Using the visualization interface you have the following commands:
+
+--- CAMERA MANIPULATION ---
+Arrows     : Camera Position 
+PageUp/Down: Camera Up/Down
+E / D      : Pitch Camera Up/Down
+W / S      : Scale Simulation Components
+C: Reset camera view 1 (top-down)
+F: Reset camera view 2 (observer)
+N: Camera on Next Figther
+
+-- SIMULATION COMMANDS ---
+R: Reset Simulation
+Speed Btn: Change Time Scale Target
+H: Show/Hide Help
+
+For training process you can use config "renderize = 0" to a headless run, avoiding unnecessary resources consumption. 
 
 ### Activating the Interface
 
@@ -168,11 +186,24 @@ The action space defines how agents interact with the simulation. The policy mus
 1.	Heading Input: The desired heading change from the current heading, represented as a continuous input value ranging from -180 to 180 degrees, normalized by 180.
 2.	Flight Level Input: The desired flight level change from the current level, with the input normalized by 25,000 feet.
 3.	Desired G-Force Input: The desired g-force, determined using a continuous input value, scaled to the range between 1g (for -1.0 input) and the maximum g-force capability of the aircraft (for +1.0 input).
-4.	Fire Input: An input value of +1.0 indicates the desire to fire a missile, while any other value means no action is taken.
+4.  Fire Input: A value of +1.0 indicates the agent desires to fire a missile. Any other value (including 0.0) means no missile firing is requested.
 
 ## Finite State Machine (FSM) Baseline Agent
 
-One of the primary goals of B-ACE is to establish a reasonable baseline behavior for evaluating multiple alternative solutions. To achieve this, we developed a Finite State Machine (FSM) based solution that enables agents to make general expected decisions during BVR air combat. The primary decisions of the B-ACE baseline agent include initial defense, last-minute defense, and missile firing moments. By varying these conditions, it is possible to create agents with different combat characteristics, balancing offensiveness and defensiveness (Kuroswiski et al., 2023). The agent takes into consideration WEZ predictions of missile effectiveness to base its decisions, allowing for more conservative or aggressive actions depending on their proximity to critical points. Additionally, we created a steady baseline agent, referred to as Duck. This agent maintains a steady flight until it reaches its target position or is neutralized. The Duck provides an alternative baseline that offers a simpler engagement scenario for initial algorithm evaluations. Despite the recent focus on AI-based agents, FSM-based solutions continue to play a crucial role in military simulations due to their explainability and simplicity. Using them as a baseline is an effective starting point for evaluating AI-based models.
+One of the primary goals of B-ACE is to establish a reasonable baseline behavior for evaluating multiple alternative solutions. To achieve this, we developed a Finite State Machine (FSM) based solution that enables agents to make general expected decisions during BVR air combat. The primary decisions of the B-ACE baseline agent include initial defense, last-minute defense, and missile firing moments. By varying these conditions, it is possible to create agents with different combat characteristics, balancing offensiveness and defensiveness [Kuroswiski et al., 2023](https://doi.org/10.1177/15485129231211915). The agent takes into consideration Weapon Engagement Zone{kuroswiski2025WEZ} predictions of missile effectiveness to base its decisions, allowing for more conservative or aggressive actions depending on their proximity to critical points. Additionally, we created a steady baseline agent, referred to as "Duck". This agent maintains a steady flight until it reaches its target position or is neutralized. The Duck provides an alternative baseline that offers a simpler engagement scenario for initial algorithm evaluations. 
+
+Example of the FSM  agent behavior configuration:  
+
+```json
+"beh_config" : {
+                "base_behavior": "baseline1",     
+                "dShot" : [1.04, 1.04, 1.04], 
+                "lCrank": [1.06, 0.98, 0.98], 
+                "lBreak": [1.05, 1.05, 1.05], 
+                },
+```
+The `base_behavior` can be `baseline1` for the FSM agent, `duck` for a simple agent, or `external` for the blue agent being trained or evaluated. Each index in the lists `dShot`, `lCrank`, and `lBreak` corresponds to a different agent, allowing for individual parameter settings. These agents are randomly selected during the simulation reset. Using a single item list will result in the same FSM enemy every time.
+
 
 ## 🎮 Examples
 
@@ -276,14 +307,26 @@ If you use B-ACE in your research, please cite our paper:
 }
 ```
 
+For a example of the Weapon Engagement Zone model definition we used:
+```bibtex
+@article{kuroswiski2025WEZ,
+  author={Andre R. Kuroswiski and Annie S. Wu and Angelo Passaro},
+  title={Optimized Prediction of Weapon Effectiveness in {BVR} Air Combat Scenarios Using Enhanced Regression Models}, 
+  journal={IEEE Access}, 
+  year={2025},
+  volume={13},  
+  pages={21759-21772},  
+  doi={https://doi.org/10.1109/ACCESS.2025.3535555}
+}
+```
+
 For first published results with the environment and better explanations about the models and RL definitions:
 ```bibtex
 @article{kuroswiski2025enhancing,
  author    = {Andre R. Kuroswiski and Annie S. Wu and Angelo Passaro},
   title     = {Enhancing MARL BVR Air Combat using Domain Expert Knowledge at the Action Level},
   journal   = {IEEE Access},
-  volume    = {13},
-  number    = {},
+  volume    = {13},  
   pages     = {70446-70463},
   year      = {2025},
   doi       = {https://doi.org/10.1109/ACCESS.2025.3561250}
@@ -291,7 +334,7 @@ For first published results with the environment and better explanations about t
 ```
 For the concepts behind the FSM agents definition and experimentation:
 ```bibtex
-@Article{kuroswiski2022beyond,
+@Article{kuroswiski2023beyond,
   author    = {Andre R. Kuroswiski and Felipe L. L. Medeiros and Monica Maria De Marchi and Angelo Passaro},
   journal   = {The Journal of Defense Modeling and Simulation},
   title     = {Beyond visual range air combat simulations: validation methods and analysis using agent-based models},
@@ -299,7 +342,6 @@ For the concepts behind the FSM agents definition and experimentation:
   issn      = {1557-380X},
   month     = Nov,
   doi       = {https://doi.org/10.1177/15485129231211915},  
-}
 }
 ```
 

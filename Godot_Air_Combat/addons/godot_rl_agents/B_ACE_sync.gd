@@ -252,9 +252,9 @@ func _initialize():
 	action_repeat 	= int(envConfig["action_repeat"])
 	parallel_envs 	= envConfig["parallel_envs"]  #Will receive default at this point	
 	experiment_mode	= envConfig["experiment_mode"]#Will receive default at this point		
-		
+			
 	Engine.physics_ticks_per_second = speed_up * phy_fps  
-	Engine.time_scale = speed_up * 1.0
+	Engine.time_scale = speed_up * 1.0	
 	Engine.max_fps = 0
 	RenderingServer.render_loop_enabled = false	
 			
@@ -334,8 +334,7 @@ func _physics_process(delta):
 			get_tree().set_pause(true) 
 			
 			if just_reset:		
-				#for sim in simulation_list:																		
-				#	print(sim._collect_results()," - ", phy_show.text, "X" )				
+							
 				just_reset = false
 				var obs = _get_obs_from_simulations()				
 				
@@ -622,10 +621,13 @@ func _wait_for_configuration():
 		get_tree().set_pause(false) 
 		return true		
 		
-	
 	var env_config_msg 	= config_message['env_config']
 	update_dict(envConfig,env_config_msg)
-			
+	
+	phy_fps 		= int(envConfig["phy_fps"])
+	speed_up 		= int(envConfig["speed_up"])
+	renderize 		= int(envConfig["renderize"])
+	action_repeat 	= int(envConfig["action_repeat"])		
 	parallel_envs 	= int(envConfig.parallel_envs)	
 	experiment_mode	= int(envConfig.experiment_mode)
 	
@@ -633,7 +635,9 @@ func _wait_for_configuration():
 	var agents_config = simConfig["AgentsConfig"].duplicate(true)	
 	
 	update_dict(agents_config, agents_config_msg)
-		
+	
+	Engine.physics_ticks_per_second = speed_up * phy_fps  
+	Engine.time_scale = speed_up * 1.0
 		
 	if experiment_mode == 1:
 			

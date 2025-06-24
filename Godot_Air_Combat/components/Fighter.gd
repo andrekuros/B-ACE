@@ -8,6 +8,9 @@ const Calc 	  = preload("res://assets/Calc.gd")
 const Marker  = preload("res://assets/marker.tscn")
 
 @onready var mainView = get_tree().root.get_node("B_ACE")
+@onready var b_ace_sync = get_tree().root.get_node("B_ACE").get_node("B_ACE_sync")
+
+var renderize
 
 var trail_node: MeshInstance3D
 var trail_mesh: ImmediateMesh
@@ -20,10 +23,8 @@ var trail_color_start: Color = Color(1.0, 1.0, 1.0, 0.0) # Starting color
 var trail_color_end: Color = Color(1.0, 1.0, 1.0, 1.0) # Ending color (transparent)
 var trail_start_alpha: float =  1.0  # Start color: red, semi-transparent
 var trail_end_alpha: float = 0.0
-
 var trail_thickness: float = 8.0  # Set the thickness of the trail  
 
-#@onready var sync = get_tree().root.get_node("B_ACE/Sync")
 var manager = null
 var tree = null
 var ownRewards = null
@@ -188,7 +189,6 @@ var allied_info_null = [
 	["allied_in_flight_missile", 0.0]
 ]
 
-
 func is_type(type): return type == "Fighter" 
 func get_type(): return "Fighter"	
 
@@ -203,6 +203,7 @@ func _ready():
 	trail_node.transform = Transform3D.IDENTITY
 	# Add the trail node to the scene tree
 	get_parent().get_parent().add_child(trail_node)
+	renderize = b_ace_sync.renderize
 			
 	
 func update_init_config(config, rewConfig = {}):
@@ -269,7 +270,6 @@ func update_init_config(config, rewConfig = {}):
 	mission = init_config["mission"]		
 	
 	ownRewards = RewardsControl.new(rewConfig,self)	
-		
 
 	update_trail_obj()
 	
@@ -280,8 +280,7 @@ func update_init_config(config, rewConfig = {}):
 	target_marker.set_surface_override_material(0, new_material)
 		
 	trail_points = []
-	
-	
+
 	manager.get_parent().add_child(target_marker)										
 	target_marker.global_position = target_pos
 
@@ -296,10 +295,7 @@ func set_behavior(_behavior):
 		behavior = "baseline1"	
 
 func reset():
-	
-	#if init_config != null:						
-	#	update_init_config(init_config)
-			
+		
 	needs_reset = false
 	test_executed = false
 	
@@ -945,7 +941,7 @@ func _physics_process(delta: float) -> void:
 	n_steps += 1
 	
 	# Update the trail
-	if n_steps % trail_update_rate == 0 and RenderingServer.render_loop_enabled:
+	if n_steps % trail_update_rate == 0 and renderize:
 		update_trail()
 			
 func process_manouvers_action():
@@ -1071,7 +1067,7 @@ func _reset_trail_visuals():
 # Function to make the aircraft semi-transparent or dashed
 func _set_destroyed_visuals():
 	# Get the material of the aircraft (assuming it's a MeshInstance3D)
-	if RenderingServer.render_loop_enabled:
+	if renderize:
 		var root_node = $RenderModel  # Adjust to the node representing your aircraft
 		
 		for child in root_node.get_children():
@@ -1086,20 +1082,19 @@ func _set_destroyed_visuals():
 
 func _reset_visuals():
 	# Restore the original material properties
-	if RenderingServer.render_loop_enabled:
-		var root_node = $RenderModel  # Adjust to the node representing your aircraft
-		for child in root_node.get_children():
-			if child is MeshInstance3D:
-				var material = child.get_surface_override_material(0)
-				if material:
-					# Reset transparency and emissive effects
-					material.flags_transparent = false
-					var color = material.albedo_color
-					color.a = 1.0  # Fully opaque
-					material.albedo_color = color
-									
-		change_mesh_instance_colors(root_node, team_color)
-		$Radar.visible = true
+	var root_node = $RenderModel  # Adjust to the node representing your aircraft
+	for child in root_node.get_children():
+		if child is MeshInstance3D:
+			var material = child.get_surface_override_material(0)
+			if material:
+				# Reset transparency and emissive effects
+				material.flags_transparent = false
+				var color = material.albedo_color
+				color.a = 1.0  # Fully opaque
+				material.albedo_color = color
+								
+	change_mesh_instance_colors(root_node, team_color)
+	$Radar.visible = true
 	
 func inform_missile_miss(_missile):
 	ownRewards.add_missile_miss_rew()					
@@ -1154,7 +1149,8 @@ func load_json_file(file_path):
 		return null
 
 func update_trail():
-	if RenderingServer.render_loop_enabled:
+	
+	if renderize:
 		var current_position = global_transform.origin
 		if trail_points.size() == 0 or current_position.distance_to(trail_points[-1]) > 0.1:
 			# Add the current position to the trail
@@ -1210,7 +1206,7 @@ func process_allied_tracks():
 	
 func update_trail_obj():
 	
-	if RenderingServer.render_loop_enabled:
+	if renderize:
 		if team_id == 0:
 			trail_color 		= Color(0.0, 0.0, 0.5, 0.5) # Blue color with 50% alpha
 			trail_color_start	= Color(0.0, 0.0, 0.5, trail_start_alpha) # Starting color

@@ -68,7 +68,6 @@ func initialize(_id, _tree, _envConfig, _agentsConfig):
 	ready_to_reset = false
 	set_process_mode_recursively(self, true)
 	
-	
 func set_process_mode_recursively(node, _process_mode):
 	node.set_process(_process_mode)
 	node.set_physics_process(_process_mode)

@@ -1,7 +1,7 @@
 [gd_scene load_steps=12 format=3 uid="uid://3xxv82w5v8bo"]
 
-[ext_resource type="Script" path="res://components/Fighter.gd" id="2"]
-[ext_resource type="Script" path="res://components/Detection.gd" id="2_7x3gy"]
+[ext_resource type="Script" uid="uid://duod4igmr4wa1" path="res://components/Fighter.gd" id="2"]
+[ext_resource type="Script" uid="uid://bp8bswc0lbw6y" path="res://components/Detection.gd" id="2_7x3gy"]
 [ext_resource type="ArrayMesh" uid="uid://degvmpojwh6bo" path="res://assets/RadarBeam.obj" id="3_oycbp"]
 
 [sub_resource type="SphereShape3D" id="SphereShape3D_6pjqh"]

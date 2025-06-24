@@ -1,10 +1,8 @@
-[gd_scene load_steps=5 format=3 uid="uid://c88ncuvk838mf"]
+[gd_scene load_steps=4 format=3 uid="uid://c88ncuvk838mf"]
 
-[ext_resource type="Script" path="res://gui/btn_speedUp.gd" id="1_agkej"]
-[ext_resource type="Script" path="res://gui/CanvasLayer.gd" id="1_t3j0s"]
-[ext_resource type="Script" path="res://gui/Pause.gd" id="4_16kwp"]
-
-[sub_resource type="ViewportTexture" id="ViewportTexture_cvcra"]
+[ext_resource type="Script" uid="uid://dodibrwn4mkb6" path="res://gui/btn_speedUp.gd" id="1_agkej"]
+[ext_resource type="Script" uid="uid://3i2wccs0wul" path="res://gui/CanvasLayer.gd" id="1_t3j0s"]
+[ext_resource type="Script" uid="uid://cie5kcemw7gqq" path="res://gui/Pause.gd" id="4_16kwp"]
 
 [node name="CanvasLayer" type="CanvasLayer"]
 script = ExtResource("1_t3j0s")
@@ -116,9 +114,9 @@ offset_left = 100.0
 offset_top = -1.0
 offset_right = 123.0
 offset_bottom = 30.0
-toggle_mode = true
-text = ">"
-icon = SubResource("ViewportTexture_cvcra")
+focus_mode = 1
+text = "II"
+clip_text = true
 script = ExtResource("4_16kwp")
 
 [connection signal="button_down" from="Control/btn_speedUp" to="Control/btn_speedUp" method="_on_button_down"]

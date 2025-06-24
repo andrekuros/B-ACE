@@ -1,6 +1,6 @@
 [gd_scene load_steps=3 format=3 uid="uid://ck5icni1e7bki"]
 
-[ext_resource type="Script" path="res://addons/godot_rl_agents/B_ACE_sync.gd" id="2_vtbda"]
+[ext_resource type="Script" uid="uid://dhyw8pkbcxop" path="res://addons/godot_rl_agents/B_ACE_sync.gd" id="2_vtbda"]
 [ext_resource type="PackedScene" uid="uid://c88ncuvk838mf" path="res://gui/CanvasLayer.tscn" id="5_ql4ly"]
 
 [node name="B_ACE" type="Node3D"]

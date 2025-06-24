@@ -18,7 +18,7 @@ class B_ACE_ExperimentWrapper(GodotEnv):
         self._seed          = self.env_config.get("seed", 1)  
         self.action_repeat  = self.env_config.get("action_repeat", 20)  
         self.action_type    = self.env_config.get("action_type", "Low_Level_Continuous")  
-        self.speedup        = self.env_config.get("speedup", 1000)                          
+        self.speedup        = self.env_config.get("speed_up", 1000)                          
         
         self.parallel_envs  = self.env_config.get("parallel_envs", 1)             
         
