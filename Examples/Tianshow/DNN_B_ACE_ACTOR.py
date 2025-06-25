@@ -1,110 +1,60 @@
 import torch
 import torch.nn as nn
-from typing import Any, Dict, Optional, Sequence, Tuple, Type, Union
+from typing import Optional, Any, List, Dict, Union
 from tianshou.utils.net.common import Net
 import numpy as np
-import warnings
-
-"""Simple actor network (output with a Gauss distribution).
-
-:param preprocess_net: a self-defined preprocess_net which output a
-    flattened hidden state.
-:param action_shape: a sequence of int for the shape of action.
-:param hidden_sizes: a sequence of int for constructing the MLP after
-    preprocess_net. Default to empty sequence (where the MLP now contains
-    only a single linear layer).
-:param float max_action: the scale for the final action logits. Default to
-    1.
-:param bool unbounded: whether to apply tanh activation on final logits.
-    Default to False.
-:param bool conditioned_sigma: True when sigma is calculated from the
-    input, False when sigma is an independent parameter. Default to False.
-:param int preprocess_net_output_dim: the output dimension of
-    preprocess_net.
-
-For advanced usage (how to customize the network), please refer to
-:ref:`build_the_network`.
-
-.. seealso::
-
-    Please refer to :class:`~tianshou.utils.net.common.Net` as an instance
-    of how preprocess_net is suggested to be defined.
-    """
-
-
-SIGMA_MIN = -20
-SIGMA_MAX = 2
 
 class DNN_B_ACE_ACTOR(Net):
-        def __init__(
-        self,        
-        action_shape: Sequence[int],
-        obs_shape: int,  
-        device: str,        
-        max_action: float = 1.0,        
-        unbounded: bool = False,
-        conditioned_sigma: bool = False,
-        preprocess_net_output_dim: Optional[int] = None,
-    ) -> None:
+    def __init__(
+        self,
+        obs_shape: int,        
+        action_shape: int,        
+        device: str, 
+        max_action : float              
+    ):
+        super().__init__(  
+            state_shape=0,                      
+            action_shape=action_shape,            
+            device=device,
+        )               
+                           
+        self.max_action = max_action                                  
+        self.scene_encoder = nn.Sequential(
+            nn.Linear(obs_shape, 64),
+            nn.LayerNorm(64), # Add LayerNorm
+            nn.ReLU(),
+            nn.Linear(64, 128),
+            nn.LayerNorm(128), # Add LayerNorm
+            nn.ReLU(),
+            nn.Linear(128, 128),
+            nn.LayerNorm(128), # Add LayerNorm
+            nn.ReLU(),
+            nn.Linear(128, 64),
+            nn.LayerNorm(64) # Add LayerNorm to the final output of the encoder before heads
+        ).to(device)
         
-            super().__init__(  
-                    state_shape=0,                      
-                    action_shape=action_shape,            
-                    device=device,
-            )   
-    
-            if unbounded and not np.isclose(max_action, 1.0):
-                warnings.warn(
-                    "Note that max_action input will be discarded when unbounded is True."
-                )
-                max_action = 1.0            
-            self.device = device
-            self.output_dim = int(np.prod(action_shape))
-            input_dim = obs_shape
-            self.mu = nn.Sequential(
-                        nn.Linear(input_dim, 64),
-                        nn.ReLU(),
-                        nn.Linear(64, 256),
-                        nn.ReLU(), 
-                        nn.Linear(256, 256),
-                        nn.ReLU(),                   
-                        nn.Linear(256, self.output_dim)
-                    ).to(device)
-            
-            self._c_sigma = conditioned_sigma
-            if conditioned_sigma:
-                self.sigma = nn.Sequential(
-                        nn.Linear(input_dim, 64),
-                        nn.ReLU(),
-                        nn.Linear(64, 256),
-                        nn.ReLU(), 
-                        nn.Linear(256, 256),
-                        nn.ReLU(),                   
-                        nn.Linear(256, self.output_dim)
-                    ).to(device)
-            else:
-                self.sigma_param = nn.Parameter(torch.zeros(self.output_dim, 1))
-            self.max_action = max_action
-            self._unbounded = unbounded
+        self.policy_fn = nn.Linear(64, action_shape)
+        
+        self.sigma_param = nn.Parameter(torch.full((action_shape,), -0.5, requires_grad=True))
+        self.value_fn = nn.Linear(64, 1) # For critic output
 
-        def forward(
-            self,
-            obs: Union[np.ndarray, torch.Tensor],
-            state: Any = None,
-            info: Dict[str, Any] = {},
-        ) -> Tuple[torch.Tensor, Any]:
-            """Mapping: obs -> logits -> action."""
-                                   
-            # logits, hidden = self.preprocess(obs, state)
-            if isinstance(obs, np.ndarray):
-                obs_tensor = torch.tensor(np.array(obs), dtype=torch.float32).to(self.device)            
-            else:            
-            # When obs is a Batch from MultiAgentPolicyManager, it's nested under 'obs' key
-                obs_tensor = torch.tensor(np.array(obs["obs"]), dtype=torch.float32).to(self.device)
+    def forward(self, obs: Union[Dict[str, torch.Tensor], torch.Tensor], state: Optional[Any] = None, info: Optional[Any] = None, is_actor: bool = True):
+        
+        if 'obs' in obs:
+            observation = torch.tensor(np.array(obs.obs), dtype=torch.float32).to(self.device)          
+        else:          
+            # When obs is a Batch from MultiAgentPolicyManager, it's nested under 'agent_0'
+            #TODO add agent info to allow MARL
+            observation = torch.tensor(np.array(obs["agent_0"].obs), dtype=torch.float32).to(self.device)
             
-            mu = self.mu(obs_tensor)
-            if not self._unbounded:
-                mu = self.max_action * torch.tanh(mu)
-
-            # For DDPG, the actor returns a deterministic action.
-            return mu, state
+        
+        output = self.scene_encoder(observation)
+        
+        
+        mu = self.max_action * self.policy_fn(output)
+        sigma = torch.exp(self.sigma_param).unsqueeze(0).expand_as(mu)
+        
+        #if observation.dim() > 1 and observation.size(1) != input_dim: # If not already flattened for linear
+        #     observation = observation.view(observation.size(0), -1)
+        
+        return mu, sigma

@@ -44,3 +44,7 @@ Examples/Tianshow/Best_Behaviors/*
 b_ace_env11/*
 b_ace_env_old/*
 Examples/Tianshow/__pycache__/*
+Examples/Tianshow/__pycache__/*
+Examples/Tianshow/DNN_B_ACEDDPG/policy_DNN_B_ACE_DDPG__B_ACE_Eval250625-145031_0_Step.pth
+Examples/Tianshow/DNN_B_ACEDDPG/*
+Examples/Tianshow/DNN_B_ACEPPO/*

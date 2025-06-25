@@ -110,33 +110,18 @@ class B_ACE_GodotPettingZooWrapper(GodotEnv, ParallelEnv):
     def reset(self, seed=0, options = None):
         
         result  = super().reset()
-        
-    #     observations = []
-    #     self.observations = {}          
-        
-    #     for i, indiv_obs in enumerate(result[0]):
-            
-    #         self.observations[self.possible_agents[i]] =  indiv_obs["obs"] 
-    #         self.info[self.possible_agents[i]] = {}                  
-    #     # Assuming the reset method returns a dictionary of observations for each agent        
-                
-    #     return self.observations, self.info  
     
-    # result  = super().reset()
-        
-        observations = []
         self.observations = {}          
         
         for i, indiv_obs in enumerate(result[0]):
                         
-            self.observations[self.possible_agents[i]] = {"obs": indiv_obs["obs"], "mask": []}
+            self.observations[self.possible_agents[i]] = {"obs": indiv_obs["obs"], "mask": [True for _ in range(4)]}
             #self.observations[self.possible_agents[i]] =  indiv_obs["obs"] 
-            self.info[self.possible_agents[i]] = {}                  
+            self.info[self.possible_agents[i]] = {self.possible_agents[i]}                  
         # Assuming the reset method returns a dictionary of observations for each agent        
                 
         return self.observations, self.info  
     
-
     
     def _observation_space(self, agent):        
         return self.observation_spaces[agent]
@@ -158,15 +143,22 @@ class B_ACE_GodotPettingZooWrapper(GodotEnv, ParallelEnv):
         else:
             print("GododtPZWrapper::Error:: Unknow Actions Type -> ", self.actions_type)         
         self.rewards = 0                       
-        #print("GODOT:", godot_actions)
+
         obs, reward, dones, truncs, info = super().step(godot_actions, order_ij=order_ij)
                 
         self.observations = {agent_name : {"obs": _obs["obs"], "mask": [True for _ in range(4)]} for agent_name, _obs in obs.items()}
         
-        self.rewards = sum([reward[agent_name] for agent_name in self.possible_agents])
-        self.terminations = np.array([dones[agent_name] for agent_name in self.possible_agents]).squeeze(-1)
-        self.truncations = np.array([truncs[agent_name] for agent_name in self.possible_agents]).squeeze(-1)
-
+        self.terminations = False
+        self.truncations = False        
+        self.rewards = 0.0
+        
+        for i, agent in enumerate(self.possible_agents):
+            
+            self.terminations = self.terminations or dones[agent]
+            self.truncations = self.truncations and truncs[agent]           
+                        
+            self.rewards += reward[agent]   
+            
         return self.observations, self.rewards, self.terminations, self.truncations, self.info 
     
     def _process_obs(self, response_obs):

@@ -338,8 +338,8 @@ class B_ACE_TaskEnv(B_ACE_GodotPettingZooWrapper):
                 self.write_log_file()
             
         # Call the base environment's reset
-        self.observations, self.info  = super().reset(self, options=options)        
-        
+        obs, self.info  = super().reset(self, options=options)    
+                
         # tasks
         self.tasks_evaders = []
         self.tasks_allies = []
@@ -353,7 +353,8 @@ class B_ACE_TaskEnv(B_ACE_GodotPettingZooWrapper):
         self.task_historic = [0 for _ in self.agents]
         self.action_historic = [[0] * 5 for _ in self.agents]
         
-        self.observations = {agent : {"obs" : [], "mask" : []} for agent in self.agents}   
+        self.observations = {agent : obs[agent] for agent in self.agents}
+        self.raw_observations = {agent : obs[agent] for agent in self.agents}      
         
         self.rewards = {agent : [] for agent in self.agents}             
         self.infos = {agent : [] for agent in self.agents}
@@ -361,7 +362,7 @@ class B_ACE_TaskEnv(B_ACE_GodotPettingZooWrapper):
         self.tasks_enemies    = {agent : [] for agent in self.agents}
         self.tasks_allies     = {agent : [] for agent in self.agents}
         self.tasks_positioning = {agent : [] for agent in self.agents}
-        
+
         self.tasks = self.generate_tasks()
         self.prepare_next_tasks()
         
@@ -375,13 +376,13 @@ class B_ACE_TaskEnv(B_ACE_GodotPettingZooWrapper):
 
         godot_actions = {}
         actions = {}
-                
+        
         for agent, action_selected in task_actions.items():
                                                                         
             task = self.last_tasks[agent][action_selected]            
-            actions[agent] = self.convert_task2action( agent, task, self.observations[agent]["obs"]) 
+            actions[agent] = self.convert_task2action( agent, task, self.raw_observations[agent]["obs"]) 
                                     
-            
+        
         # Assuming the environment's step function can handle a dictionary of actions for each agent                                      
         if self.action_type == "Low_Level_Continuous":            
             godot_actions = np.array([np.array([action]) for agent, action in actions.items()])        
@@ -391,9 +392,7 @@ class B_ACE_TaskEnv(B_ACE_GodotPettingZooWrapper):
         else:
             print("GododtPZWrapper::Error:: Unknow Actions Type -> ", self.actions_type)     
                     
-        obs, reward, dones, truncs, info = GodotEnv.step(self, godot_actions, order_ij=True)
-        
-        #print(["obs_task_bace: ", obs, reward, len(obs)])
+        self.raw_observations, reward, dones, truncs, info = GodotEnv.step(self, godot_actions, order_ij=True)
         
         self.prepare_next_tasks()
                 
@@ -402,8 +401,7 @@ class B_ACE_TaskEnv(B_ACE_GodotPettingZooWrapper):
         self.rewards = 0.0
         
         for i, agent in enumerate(self.possible_agents):
-
-                                    
+            
             self.terminations = self.terminations or dones[agent]
             self.truncations = self.truncations and truncs[agent]           
                         
@@ -418,15 +416,12 @@ class B_ACE_TaskEnv(B_ACE_GodotPettingZooWrapper):
                         
         for agent in self.possible_agents:
             
-            agent_observation = self.observations[agent]["obs"]
+            agent_observation = self.raw_observations[agent]["obs"]
             
             last_tasks = []
             last_tasks.extend( [task for task in self.tasks_enemies[agent] if task.check_track_valid(agent_observation, "enemy")])
             last_tasks.extend( [task for task in self.tasks_allies[agent]  if task.check_track_valid(agent_observation, "ally")])
             last_tasks.extend( [task for task in self.tasks_positioning[agent]])
-            
-            #print(len(last_tasks))
-            
             self.last_len_tasks[agent] = len(last_tasks)
             
             mask = [True for _ in last_tasks]

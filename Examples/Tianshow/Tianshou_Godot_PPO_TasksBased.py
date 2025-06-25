@@ -54,8 +54,8 @@ test_num  =  "_B_ACE_Eval"
 policyModel  =  "DQN"
 name = model + "_" + policyModel + "_" + test_num
 
-train_env_num = 2
-test_env_num  = 2
+train_env_num = 10
+test_env_num  = 4
 
 now = datetime.datetime.now().strftime("%y%m%d-%H%M%S")
 log_name = name + str(now)

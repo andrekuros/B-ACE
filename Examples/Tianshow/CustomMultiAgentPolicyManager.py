@@ -164,26 +164,25 @@ class CustomMultiAgentPolicyManager(BasePolicy):
                 agent_batch.info = Batch()  # Create an empty info attribute if missing
             
             buffer.agent_ref = agent_id
-            
-            
+                     
             results[agent_id] = policy.process_fn(agent_batch, buffer, indice)
 
         return Batch(results)
 
-    def exploration_noise(
-        self,
-        act: np.ndarray | BatchProtocol,
-        batch: RolloutBatchProtocol,
-    ) -> np.ndarray | BatchProtocol:
-        """Add exploration noise from sub-policy onto act."""
-        assert isinstance(
-            batch.obs,
-            BatchProtocol,
-        ), f"here only observations of type Batch are Batch, but got {type(batch.obs)}"
+    # def exploration_noise(
+    #     self,
+    #     act: np.ndarray | BatchProtocol,
+    #     batch: RolloutBatchProtocol,
+    # ) -> np.ndarray | BatchProtocol:
+    #     """Add exploration noise from sub-policy onto act."""
+    #     assert isinstance(
+    #         batch.obs,
+    #         BatchProtocol,
+    #     ), f"here only observations of type Batch are Batch, but got {type(batch.obs)}"
         
-        for agent_id, policy in self.policies.items():
-            act[agent_id] = policy.exploration_noise(act[agent_id], batch.obs[agent_id])
-        return act
+    #     for agent_id, policy in self.policies.items():
+    #         act[agent_id] = policy.exploration_noise(act[agent_id], batch.obs[agent_id])
+    #     return act
 
     def forward(  # type: ignore
         self,
@@ -214,7 +213,7 @@ class CustomMultiAgentPolicyManager(BasePolicy):
                 state=None if (state is None or state.shape == []) else state[agent_id],
                 **kwargs,
             )
-            act_dict[agent_id] = out.act#.detach()  # Detach the action tensor
+            act_dict[agent_id] = out.act.detach()  # Detach the action tensor
             if hasattr(out, "state") and out.state is not None:
                 if isinstance(out.state, torch.Tensor):
                     state_dict[agent_id] = out.state.detach()

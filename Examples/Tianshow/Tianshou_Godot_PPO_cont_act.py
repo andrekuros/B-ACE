@@ -39,9 +39,7 @@ from tianshou.utils import WandbLogger
 from torch.utils.tensorboard import SummaryWriter
 from DNN_B_ACE_ACTOR import DNN_B_ACE_ACTOR
 from DNN_B_ACE_CRITIC import DNN_B_ACE_CRITIC
-from Task_MHA_B_ACE import Task_MHA_B_ACE
-from Task_DNN_B_ACE import Task_DNN_B_ACE
-from Task_B_ACE_Env import B_ACE_TaskEnv
+#from DNN_B_ACE import DNN_B_ACE
 
 #from CollectorMA import CollectorMA
 #from MAParalellPolicy import MAParalellPolicy
@@ -52,7 +50,7 @@ policyModel  =  "PPO"
 name = model + "_" + policyModel + "_" + test_num
 
 train_env_num = 2
-test_env_num  = 1
+test_env_num  = 2
 
 now = datetime.datetime.now().strftime("%y%m%d-%H%M%S")
 log_name = name + str(now)
@@ -231,24 +229,30 @@ def _get_agents(
             
             if model == "DNN_B_ACE":
                 
+                # Define the actor and critic networks
                 actor = DNN_B_ACE_ACTOR(
-                    obs_shape=agent_observation_space.shape[0],                
-                    action_shape=4,                
-                    device="cuda" if torch.cuda.is_available() else "cpu"                
+                    obs_shape=agent_observation_space.shape[0],
+                    action_shape=4,
+                    device=device,
+                    max_action = 1.0
                 ).to(device)
-
+               
                 critic = DNN_B_ACE_CRITIC(
-                    obs_shape=agent_observation_space.shape[0],                
-                    action_shape=4,                
-                    device="cuda" if torch.cuda.is_available() else "cpu"                
+                    obs_shape=agent_observation_space.shape[0], # + 4,  # Modified to accept both obs and act
+                    action_shape=4,
+                    device=device,
+                    max_action = 1.0
                 ).to(device)
-            
+            #else:
+                
+                        
                                     
             actor_critic = ActorCritic(actor, critic)
             
             def dist(input_tuple: Tuple[torch.Tensor, torch.Tensor]) -> Distribution:
                 mu, sigma = input_tuple
-                return Normal(mu, sigma)        
+                return Normal(mu, sigma)   
+            #dist = torch.distributions.Normal       
                 
             optim = torch.optim.Adam(actor_critic.parameters(), lr=PPO_params["lr"])
                     

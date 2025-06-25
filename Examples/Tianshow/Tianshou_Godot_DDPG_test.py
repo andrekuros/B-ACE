@@ -40,6 +40,7 @@ from tianshou.utils import WandbLogger
 from torch.utils.tensorboard import SummaryWriter
 from DNN_B_ACE_ACTOR import DNN_B_ACE_ACTOR
 from DNN_B_ACE_CRITIC import DNN_B_ACE_CRITIC
+from DNN_B_ACE import DNN_B_ACE
 from Task_MHA_B_ACE import Task_MHA_B_ACE
 from Task_DNN_B_ACE import Task_DNN_B_ACE
 from Task_B_ACE_Env import B_ACE_TaskEnv
@@ -52,8 +53,8 @@ test_num  =  "_B_ACE_Eval"
 policyModel  =  "DDPG"
 name = model + "_" + policyModel + "_" + test_num
 
-train_env_num = 2
-test_env_num  = 1
+train_env_num = 10
+test_env_num  = 4
 
 now = datetime.datetime.now().strftime("%y%m%d-%H%M%S")
 log_name = name + str(now)
@@ -163,34 +164,14 @@ B_ACE_Config = {
                     }	
             }
 
-PPO_params= {    
-                'action_scaling': False,
-                'discount_factor': 0.98,
-                'max_grad_norm': 0.5,
-                'eps_clip': 0.2,
-                'vf_coef': 0.5,
-                'ent_coef': 0.01,
-                'gae_lambda': 0.95,
-                'reward_normalization': False, 
-                'dual_clip': None,
-                'value_clip': False,   
-                'deterministic_eval': True,
-                'advantage_normalization': False,
-                'recompute_advantage': False,
-                'action_bound_method': "clip",
-                'lr_scheduler': None,
-                'lr' : 0.0005
-            }
 
-trainer_params = {"max_epoch": 100,
-                  "step_per_epoch": 1800 * 2,#5 * (150 * n_agents),
-                  "step_per_collect": 600 * 2,# * (10 * n_agents),                  
-                  "batch_size" : 1024 ,                 
-                  "update_per_step": 1 / (200), #Off-Policy Only (run after close a Collect (run many times as necessary to meet the value))                  
-                  "repeat_per_collect": 10, #On-Policy Only                 
-                  "episode_per_test": 2,                  
-                  "tn_eps_max": 0.30,
-                  "ts_eps_max": 0.001,
+trainer_params = {"max_epoch": 200,
+                  "step_per_epoch": 180000 * 2,#5 * (150 * n_agents),
+                  "step_per_collect": 36000 * 2,# * (10 * n_agents),                  
+                  "batch_size" : 1024,                 
+                  "update_per_step": 1 / (20), #Off-Policy Only (run after close a Collect (run many times as necessary to meet the value))                  
+                  "repeat_per_collect": 64, #On-Policy Only                 
+                  "episode_per_test": 20,                  
                   "warmup_size" : 1,
                   "train_envs" : train_env_num,
                   "test_envs" : test_env_num,
@@ -199,7 +180,7 @@ trainer_params = {"max_epoch": 100,
 }
 
 #RunConfig Store data for Logs and comparisons (Recommended Wandb)
-runConfig = PPO_params.copy()
+runConfig = {}
 runConfig["Training"] = policyModel 
 runConfig["Model"] = model 
 runConfig.update(Policy_Config)
@@ -229,31 +210,18 @@ def _get_agents(
     actor = DNN_B_ACE_ACTOR(
         obs_shape=agent_observation_space.shape[0],
         action_shape=4,
-        device=device
+        device=device,
+        max_action = 1.0
     ).to(device)
     actor_optim = torch.optim.Adam(actor.parameters(), lr=0.0001)
 
     critic = DNN_B_ACE_CRITIC(
-        obs_shape=agent_observation_space.shape[0] + 4,  # Modified to accept both obs and act
-        action_shape=1,
-        device=device
+        obs_shape=agent_observation_space.shape[0], # + 4,  # Modified to accept both obs and act
+        action_shape=4,
+        device=device,
+        max_action = 1.0
     ).to(device)
     critic_optim = torch.optim.Adam(critic.parameters(), lr=0.001)
-
-    # Target networks
-    actor_target = DNN_B_ACE_ACTOR(
-        obs_shape=agent_observation_space.shape[0],
-        action_shape=4,
-        device=device
-    ).to(device)
-    actor_target.load_state_dict(actor.state_dict())
-
-    critic_target = DNN_B_ACE_CRITIC(
-        obs_shape=agent_observation_space.shape[0] + 4,  # Modified to accept both obs and act
-        action_shape=1,
-        device=device
-    ).to(device)
-    critic_target.load_state_dict(critic.state_dict())
 
     for _ in range(policies_number):
         agent_learn = DDPGPolicy(
@@ -263,11 +231,12 @@ def _get_agents(
             critic_optim=critic_optim,
             tau=0.005,
             gamma=0.99,
-            exploration_noise=GaussianNoise(sigma=0.1),
+            exploration_noise=GaussianNoise(sigma=0.5),
             action_space=action_space,            
-            estimation_step=3
+            estimation_step=100,
+            action_scaling=True
         )
-
+         
         if Policy_Config["load_model"] is True:
             # Load the saved checkpoint
             agent_learn.load_state_dict(torch.load(model_load_path))
@@ -283,7 +252,7 @@ def _get_agents(
 
     policy = MultiAgentPolicyManager(policies=agents, env=env)
 
-    return policy, actor_optim, agents
+    return policy, actor_optim, env.agents
 
 def _get_env():
     """This function is needed to provide callables for DummyVectorEnv."""   
@@ -303,15 +272,15 @@ if __name__ == "__main__":
     torch.set_grad_enabled(True) 
 
     # ======== Step 1: Environment setup =========
-    train_envs = DummyVectorEnv([_get_env for _ in range(train_env_num)])#, share_memory = False )
-    test_envs = DummyVectorEnv([_get_env for _ in range(test_env_num)])#, share_memory = False) 
+    train_envs = SubprocVectorEnv([_get_env for _ in range(train_env_num)], share_memory = False )
+    test_envs = SubprocVectorEnv([_get_env for _ in range(test_env_num)], share_memory = False) 
     
     # Seeds Definition
     seed = B_ACE_Config['EnvConfig']['seed']
     np.random.seed(seed)
     torch.manual_seed(seed)
-#    train_envs.seed(seed)
-#    test_envs.seed(seed)    
+    train_envs.seed(seed)
+    test_envs.seed(seed)    
 
     # ======== Step 2: Agent setup =========
     policy, optim, agents = _get_agents()    
@@ -324,16 +293,6 @@ if __name__ == "__main__":
         exploration_noise=True  
     )     
     test_collector = Collector(policy, test_envs, exploration_noise=True)
-
-    print("Buffer Warming Up ")    
-    for i in range(trainer_params["warmup_size"]):
-        
-         train_collector.collect(n_episode=train_env_num, reset_before_collect=True)         
-         print(".", end="") 
-    
-    # len_buffer = len(train_collector.buffer) / (B_ACE_Config["max_cycles"] * SISL_Config["n_pursuers"])
-    # print("\nBuffer Lenght: ", len_buffer ) 
-    len_buffer = 0
     
     info = { "Buffer"  : "PriorizedReplayBuffer" if trainer_params["priorized_buffer"] else "ReplayBuffer",
             " Warmup_ep" : trainer_params['warmup_size'] * train_env_num}
@@ -364,38 +323,37 @@ if __name__ == "__main__":
             
             print("Best Saved Length" , str(global_step_holder[0]))
         
-    def stop_fn(mean_rewards):
-        return mean_rewards >= 99999939.0
 
     def train_fn(epoch, env_step):
-        epsilon = trainer_params['tn_eps_max'] - (trainer_params['tn_eps_max'] - trainer_params['tn_eps_max']/100)*(epoch/trainer_params['max_epoch'])          
+        
+        current_sigma = 0.1 - (0.09 * (epoch / 200))
         if Policy_Config["same_policy"]:
-            policy.policies[agents[0]].set_eps(epsilon)
+                policy.policies[agents[0]].exploration_noise = GaussianNoise(sigma = max(0.01, current_sigma) )# Ensure it doesn't go below a min     
         else:
             for agent in agents:
-                policy.policies[agent].set_eps(epsilon)       
+                        policy.policies[agent].exploration_noise = GaussianNoise(sigma = max(0.01, current_sigma) ) # Ensure it doesn't go below a min      
+                
+    # def test_fn(epoch, env_step):
 
-    def test_fn(epoch, env_step):
-
-        epsilon = trainer_params['ts_eps_max']#0.01#max(0.001, 0.1 - epoch * 0.001)
-        if Policy_Config["same_policy"]:
-            policy.policies[agents[0]].set_eps(epsilon)
-        else:            
-            for agent in agents:                             
-                policy.policies[agent].set_eps(epsilon)
+    #     epsilon = trainer_params['ts_eps_max']#0.01#max(0.001, 0.1 - epoch * 0.001)
+    #     # if Policy_Config["same_policy"]:
+    #     #     policy.policies[agents[0]].set_eps(epsilon)
+    #     # else:            
+    #     #     for agent in agents:                             
+    #     #         policy.policies[agent].set_eps(epsilon)
                 
         
-        if global_step_holder[0] % 10 == 0:
+    #     if global_step_holder[0] % 10 == 0:
             
-            if Policy_Config["same_policy"]:
-                torch.save(policy.policies[agents[0]].state_dict(), model_save_path + "_" + str(global_step_holder[0]) + "_Step.pth")
-                print("Steps Policy Saved " , str(global_step_holder[0]))
+    #         if Policy_Config["same_policy"]:
+    #             torch.save(policy.policies[agents[0]].state_dict(), model_save_path + "_" + str(global_step_holder[0]) + "_Step.pth")
+    #             print("Steps Policy Saved " , str(global_step_holder[0]))
             
-            else:
-                for n,agent in enumerate(agents):
-                    torch.save(policy.policies[agent].state_dict(), model_save_path + "_" + str(global_step_holder[0]) + "_" + agent + "Step" + str(global_step_holder[0]) + ".pth")
+    #         else:
+    #             for n,agent in enumerate(agents):
+    #                 torch.save(policy.policies[agent].state_dict(), model_save_path + "_" + str(global_step_holder[0]) + "_" + agent + "Step" + str(global_step_holder[0]) + ".pth")
                 
-                print("Steps Policy Saved " , str(global_step_holder[0]))
+    #             print("Steps Policy Saved " , str(global_step_holder[0]))
 
         
     def reward_metric(rews):       
@@ -415,8 +373,8 @@ if __name__ == "__main__":
         episode_per_test= trainer_params['episode_per_test'],
         batch_size=trainer_params['batch_size'],
         train_fn=train_fn,
-        test_fn=test_fn,
-        stop_fn=stop_fn,
+#       test_fn=test_fn,
+ #      stop_fn=stop_fn,
         save_best_fn=save_best_fn,
         # save_test_best_fn=save_test_best_fn,
         update_per_step=trainer_params['update_per_step'],
