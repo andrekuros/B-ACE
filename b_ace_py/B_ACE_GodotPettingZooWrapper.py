@@ -61,13 +61,22 @@ class B_ACE_GodotPettingZooWrapper(GodotEnv, ParallelEnv):
         self.observation_spaces = []     
         self.send_sim_config(self.env_config, self.agents_config)                
         
-        env_info = self._get_env_info()  
-        
+        self.action_spaces = []
+        self.observation_spaces = []
+
+        env_info = self._get_env_info()          
+                
         self.observation_labels = env_info["observation_labels"]
                 
-        # sf2 requires a tuple action space
-        self._tuple_action_space = spaces.Tuple([v for _, v in self._action_space.items()])
-        self.action_space_processor = ActionSpaceProcessor(self._tuple_action_space, convert_action_space)
+        self.tuple_action_spaces = [
+            spaces.Tuple([v for _, v in action_space.items()]) for action_space in self.action_spaces
+        ]
+        # Single agent action space processor using the action space(s) of the first agent
+        self.action_space_processor = ActionSpaceProcessor(self.tuple_action_spaces[0], convert_action_space)
+                
+        # For multi-policy envs: The name of each agent's policy set in the env itself (any training_mode
+        # AIController instance is treated as an agent)
+        self.agent_policy_names
 
         atexit.register(self._close)
                                 
@@ -79,18 +88,17 @@ class B_ACE_GodotPettingZooWrapper(GodotEnv, ParallelEnv):
         self.obs_map= {agent : {label: index for index, label in enumerate(self.observation_labels[str(101 + i)])}  for i,agent in enumerate(self.possible_agents)}               
 
         self.agent_idx = [ {agent : i} for i, agent in enumerate(self.possible_agents)]                 
-        # Initialize observation and action spaces for each agent
-        self.observation_spaces = {agent: self.observation_space['obs'] for agent in self.agents}
-        self.action_spaces = {agent: self.action_space for agent in self.agents}
-
-        self.observation_space = self._observation_space
+        
+        self.observation_space = self.observation_spaces[0]["obs"]
+        self.action_space = self.action_spaces[0]["input"]
         
         self._cumulative_rewards = {agent : 0  for agent in self.possible_agents}                
         self.rewards =  {agent : 0  for agent in self.possible_agents}
         self.terminations =  {agent : False  for agent in self.possible_agents}
         self.truncations =  {agent : False  for agent in self.possible_agents} 
-        self.observations =  {agent : {}  for agent in self.possible_agents}  
-        self.info =  {agent : {}  for agent in self.possible_agents}  
+        self.observations =  {agent : []  for agent in self.possible_agents}  
+        self.info =  {agent : []  for agent in self.possible_agents}  
+        self.infos =  {agent : []  for agent in self.possible_agents}  
                             
     def send_sim_config(self, _env_config, _agents_config):
         message = {"type": "config"}        
@@ -102,17 +110,18 @@ class B_ACE_GodotPettingZooWrapper(GodotEnv, ParallelEnv):
     def reset(self, seed=0, options = None):
         
         result  = super().reset()
-        
-        observations = []
+    
         self.observations = {}          
         
         for i, indiv_obs in enumerate(result[0]):
-            
-            self.observations[self.possible_agents[i]] =  indiv_obs["obs"] 
-            self.info[self.possible_agents[i]] = {}                  
+                        
+            self.observations[self.possible_agents[i]] = {"obs": indiv_obs["obs"], "mask": [True for _ in range(4)]}
+            #self.observations[self.possible_agents[i]] =  indiv_obs["obs"] 
+            self.info[self.possible_agents[i]] = {self.possible_agents[i]}                  
         # Assuming the reset method returns a dictionary of observations for each agent        
                 
         return self.observations, self.info  
+    
     
     def _observation_space(self, agent):        
         return self.observation_spaces[agent]
@@ -132,57 +141,24 @@ class B_ACE_GodotPettingZooWrapper(GodotEnv, ParallelEnv):
         elif self.action_type == "Low_Level_Discrete": 
             godot_actions = [ self.decode_action(action) for agent, action in actions.items()]
         else:
-            print("GododtPZWrapper::Error:: Unknow Actions Type -> ", self.actions_type)
-                                
-        #print("GODOT:", godot_actions)
+            print("GododtPZWrapper::Error:: Unknow Actions Type -> ", self.actions_type)         
+        self.rewards = 0                       
+
         obs, reward, dones, truncs, info = super().step(godot_actions, order_ij=order_ij)
                 
-        self.observations = {agent_name : _obs["obs"] for agent_name, _obs in obs.items()}
-        self.rewards = reward
-        self.terminations = dones
-        self.truncations = truncs
+        self.observations = {agent_name : {"obs": _obs["obs"], "mask": [True for _ in range(4)]} for agent_name, _obs in obs.items()}
         
-        # for agent, done in self.terminations.items():
-        #     if done:
-        #         print(self.terminations)
+        self.terminations = False
+        self.truncations = False        
+        self.rewards = 0.0
         
-        #self.info = {agent_name : {}} for agent_name, _obs in obs.items()}
-        #self.terminations = {}
-        #self.truncations = {}
-        #self.terminations = False
-        #self.truncations = False
-        
-        #self.rewards = {}#[]#0.0
-        # Assuming 'obs' is a list of dictionaries with 'obs' keys among others
-        #for i, agent in enumerate(self.possible_agents):
-        #     # Convert observations, rewards, etc., to tensors
-        #     # if dones[i] == True:
-        #     #     continue
-        #     # .to('cuda') moves the tensor to GPU if you're using CUDA; remove it if not using GPU
-        #     self.observations[agent] =  obs[agent]['obs']            
-        #     self.rewards[agent] = reward[i]#torch.tensor([reward[i]], dtype=torch.float32).to('cuda')
-        #     #self.terminations.append(dones[i])#torch.tensor([False], dtype=torch.bool).to('cuda')  # Assuming False for all
-        #     #self.truncations.append(truncs[i])#torch.tensor([False], dtype=torch.bool).to('cuda')  # Assuming False for all
+        for i, agent in enumerate(self.possible_agents):
             
-        #     self.terminations[agent] = dones[i]#torch.tensor([False], dtype=torch.bool).to('cuda')  # Assuming False for all
-        #     self.truncations[agent] = truncs[i]#torch.tensor([False], dtype=torch.bool).to('cuda')  # Assuming False for all
+            self.terminations = self.terminations or dones[agent]
+            self.truncations = self.truncations and truncs[agent]           
+                        
+            self.rewards += reward[agent]   
             
-            #self.terminations = self.terminations and dones[i]
-            #self.truncations = self.truncations or truncs[i]
-            #self.rewards += reward[i] #torch.tensor([reward[i]], dtype=torch.float32).to('cuda')
-            
-            
-            
-            
-            
-            # For 'info', it might not need to be a tensor depending on its use
-            #self.info[agent] = info[i]  # Assuming 'info' does not need tensor conversion            
-                    
-        #  # Update the list of active agents based on the 'dones' information
-        #  for agent, done in dones.items():
-        #      if done:
-        # 
-
         return self.observations, self.rewards, self.terminations, self.truncations, self.info 
     
     def _process_obs(self, response_obs):

@@ -3,6 +3,7 @@ import re
 
 import gymnasium as gym
 import numpy as np
+
 import json
 
 
@@ -106,11 +107,8 @@ class ActionSpaceProcessor:
 
         for space in self._original_action_space.spaces:
             if isinstance(space, gym.spaces.Box):
-                assert len(space.shape) == 1               
-                #KUR MOD for MultiAgent
-                for act in action:
-                    original_action.append(act[counter : counter + space.shape[0]])
-                #original_action.append(action[:, counter : counter + space.shape[0]])
+                assert len(space.shape) == 1
+                original_action.append(action[:, counter : counter + space.shape[0]])
                 counter += space.shape[0]
 
             elif isinstance(space, gym.spaces.Discrete):
@@ -147,7 +145,7 @@ def cant_import(module_name):
         return False
     except ImportError:
         return True
-
+    
 def load_b_ace_config(config_json_file):
 
     try:
