@@ -295,8 +295,7 @@ class B_ACE_TaskEnv(B_ACE_GodotPettingZooWrapper):
         self.last_len_tasks = {agent : [] for agent in self.agents}
         self.last_actions   = {agent : [] for agent in self.agents}
         
-        self.observations = {agent : [] for agent in self.agents}
-        self.raw_observations = {agent : [] for agent in self.agents}
+        self.observations = {agent : [] for agent in self.agents}        
         self.rewards = {agent : [] for agent in self.agents}        
         self.infos = {agent : [] for agent in self.agents}
         
@@ -339,8 +338,8 @@ class B_ACE_TaskEnv(B_ACE_GodotPettingZooWrapper):
                 self.write_log_file()
             
         # Call the base environment's reset
-        self.raw_observations, self.info  = super().reset(self, options=options)
-
+        self.observations, self.info  = super().reset(self, options=options)        
+        
         # tasks
         self.tasks_evaders = []
         self.tasks_allies = []
@@ -354,7 +353,8 @@ class B_ACE_TaskEnv(B_ACE_GodotPettingZooWrapper):
         self.task_historic = [0 for _ in self.agents]
         self.action_historic = [[0] * 5 for _ in self.agents]
         
-        self.observations = {agent : [] for agent in self.agents}   
+        self.observations = {agent : {"obs" : [], "mask" : []} for agent in self.agents}   
+        
         self.rewards = {agent : [] for agent in self.agents}             
         self.infos = {agent : [] for agent in self.agents}
         
@@ -379,65 +379,36 @@ class B_ACE_TaskEnv(B_ACE_GodotPettingZooWrapper):
         for agent, action_selected in task_actions.items():
                                                                         
             task = self.last_tasks[agent][action_selected]            
-            #if agent == "agent_0":
-            #    task = self.tasks_allies[agent][3]
-            
-            #last_task_data = self.last_actions[agent]                             
-            actions[agent] = self.convert_task2action( agent, task, self.raw_observations[agent]) 
+            actions[agent] = self.convert_task2action( agent, task, self.observations[agent]["obs"]) 
                                     
             
         # Assuming the environment's step function can handle a dictionary of actions for each agent                                      
         if self.action_type == "Low_Level_Continuous":            
-            godot_actions = [np.array([action]) for agent, action in actions.items()]        
+            godot_actions = np.array([np.array([action]) for agent, action in actions.items()])        
             #godot_actions = [np.array(action) for agent, action in actions.items()]        
         elif self.action_type == "Low_Level_Discrete": 
             godot_actions = [ self.decode_action(action) for agent, action in actions.items()]
         else:
             print("GododtPZWrapper::Error:: Unknow Actions Type -> ", self.actions_type)     
-            
-        
+                    
         obs, reward, dones, truncs, info = GodotEnv.step(self, godot_actions, order_ij=True)
         
         #print(["obs_task_bace: ", obs, reward, len(obs)])
         
         self.prepare_next_tasks()
                 
-        
-        
         self.terminations = False
         self.truncations = False        
         self.rewards = 0.0
         
         for i, agent in enumerate(self.possible_agents):
 
-            # Convert observations, rewards, etc., to tensors
-            #if dones[agent] == True:
-            #    continue
-            # .to('cuda') moves the tensor to GPU if you're using CUDA; remove it if not using GPU
-            
-            self.raw_observations[agent] =  obs[agent]['obs']            
-            #self.rewards[agent] = reward[i]#torch.tensor([reward[i]], dtype=torch.float32).to('cuda')
-            #self.terminations.append(dones[i])#torch.tensor([False], dtype=torch.bool).to('cuda')  # Assuming False for all
-            #self.truncations.append(truncs[i])#torch.tensor([False], dtype=torch.bool).to('cuda')  # Assuming False for all
-            
-            #self.terminations[agent] = dones[agent]#torch.tensor([False], dtype=torch.bool).to('cuda')  # Assuming False for all
-            #self.truncations[agent] = truncs[agent]#torch.tensor([False], dtype=torch.bool).to('cuda')  # Assuming False for all
-            
-            #Stop 1 died
-            #self.terminations = self.terminations or dones[agent]
-            #self.truncations = self.truncations and truncs[agent]  
-            
+                                    
             self.terminations = self.terminations or dones[agent]
             self.truncations = self.truncations and truncs[agent]           
-            
-            
-            self.rewards += reward[agent] #torch.tensor([reward[i]], dtype=torch.float32).to('cuda')
-            #self.rewards[agent] = reward[agent]
-            
-            # For 'info', it might not need to be a tensor depending on its use
-            #self.info[agent] = info[i]  # Assuming 'info' does not need tensor conversion            
                         
-        self.rewards = self.rewards 
+            self.rewards += reward[agent]        
+                                
         
         return self.observations, self.rewards, self.terminations, self.truncations, self.infos 
 
@@ -447,7 +418,7 @@ class B_ACE_TaskEnv(B_ACE_GodotPettingZooWrapper):
                         
         for agent in self.possible_agents:
             
-            agent_observation = self.raw_observations[agent]
+            agent_observation = self.observations[agent]["obs"]
             
             last_tasks = []
             last_tasks.extend( [task for task in self.tasks_enemies[agent] if task.check_track_valid(agent_observation, "enemy")])
@@ -471,10 +442,7 @@ class B_ACE_TaskEnv(B_ACE_GodotPettingZooWrapper):
             self.last_tasks[agent] = last_tasks
             
             # Convert tasks to tensor            
-            task_features = [task.get_feature_vector(agent_observation) for task in last_tasks] 
-            
-            
-            # task_tensor = torch.tensor(task_features, dtype=torch.float32).to("cuda")
+            task_features = [task.get_feature_vector(agent_observation) for task in last_tasks]                                     
                         
             self.observations[agent] = {"obs" : task_features, "mask" : mask}#, "agent_id" : agent }
             self.infos[agent] = {"agent_id" : agent, "mask": mask}

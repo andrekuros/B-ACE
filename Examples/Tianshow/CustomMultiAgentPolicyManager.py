@@ -204,8 +204,7 @@ class CustomMultiAgentPolicyManager(BasePolicy):
             }
         """
         act_dict, state_dict = {}, {}
-        for agent_id, policy in self.policies.items():
-            print(batch)
+        for agent_id, policy in self.policies.items():                  
             agent_batch = Batch( obs=batch.obs[agent_id], mask=batch.obs[agent_id].mask, info=batch.info[agent_id])            
             if not hasattr(agent_batch, "info"):
                 agent_batch.info = Batch()  # Create an empty info attribute if missing
@@ -215,7 +214,7 @@ class CustomMultiAgentPolicyManager(BasePolicy):
                 state=None if (state is None or state.shape == []) else state[agent_id],
                 **kwargs,
             )
-            act_dict[agent_id] = out.act.detach()  # Detach the action tensor
+            act_dict[agent_id] = out.act#.detach()  # Detach the action tensor
             if hasattr(out, "state") and out.state is not None:
                 if isinstance(out.state, torch.Tensor):
                     state_dict[agent_id] = out.state.detach()

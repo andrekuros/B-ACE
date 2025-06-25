@@ -32,25 +32,18 @@ class DNN_B_ACE_CRITIC(Net):
         
 
     def forward(self, obs: Union[Dict[str, torch.Tensor], torch.Tensor], state: Optional[Any] = None, info: Optional[Any] = None):
-        
-        # print("CRITIC:", len(obs))
-        # if isinstance(obs, dict):
-        #     # Concatenate the tensors in the dictionary along a new dimension
-        #     obs_tensor = torch.cat(list(obs.values()), dim=0)
-        # else:
-        #     obs_tensor = obs
+        if isinstance(obs, np.ndarray):
+            observation = torch.tensor(np.array(obs), dtype=torch.float32).to(self.device)                       
+        else:                                   
+            observation = torch.tensor(np.array(obs["obs"]), dtype=torch.float32).to(self.device)
 
-        obs_tensor = torch.tensor(obs, dtype=torch.float32).to(self.device)
+        #obs_tensor = torch.tensor(obs, dtype=torch.float32).to(self.device)
         
-        output = self.scene_encoder(obs_tensor)
-        output = self.policy_fn(output)
+        output = self.scene_encoder(observation)
+        output = self.policy_fn(output).squeeze(-1)
 
         return output
 
 
     def value_function(self):
         return self._value_out.flatten()
-        
-     
-
-    

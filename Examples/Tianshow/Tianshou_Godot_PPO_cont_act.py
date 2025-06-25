@@ -31,8 +31,7 @@ from tianshou.utils.net.continuous import Actor, Critic
 from tianshou.policy import BasePolicy, DDPGPolicy
 #from custom_dqn_policy import  CustomDQNPolicy as DQNPolicy
 from CustomMultiAgentPolicyManager import CustomMultiAgentPolicyManager as MultiAgentPolicyManager
-from tianshou.policy import MultiAgentPolicyManager
-from tianshou.trainer import OffpolicyTrainer
+#from tianshou.policy import MultiAgentPolicyManager
 
 import wandb
 from tianshou.utils import WandbLogger
@@ -52,7 +51,7 @@ test_num  =  "_B_ACE_Eval"
 policyModel  =  "PPO"
 name = model + "_" + policyModel + "_" + test_num
 
-train_env_num = 1
+train_env_num = 2
 test_env_num  = 1
 
 now = datetime.datetime.now().strftime("%y%m%d-%H%M%S")
@@ -80,7 +79,7 @@ B_ACE_Config = {
                         "task": "b_ace_v1",
                         "env_path": "../../bin/B_ACE_v0.1.exe",
                         "port": 12500,
-                        "renderize": 0,
+                        "renderize": 1,
                         "phy_fps": 20,
                         "speed_up": 50000,
                         "max_cycles": 36000,
@@ -183,12 +182,12 @@ PPO_params= {
             }
 
 trainer_params = {"max_epoch": 100,
-                  "step_per_epoch": 18000 * 2,#5 * (150 * n_agents),
-                  "step_per_collect": 6000 * 2,# * (10 * n_agents),                  
+                  "step_per_epoch": 1800 * 2,#5 * (150 * n_agents),
+                  "step_per_collect": 600 * 2,# * (10 * n_agents),                  
                   "batch_size" : 1024 ,                 
                   "update_per_step": 1 / (200), #Off-Policy Only (run after close a Collect (run many times as necessary to meet the value))                  
-                  "repeat_per_collect": 32, #On-Policy Only                 
-                  "episode_per_test": 30,                  
+                  "repeat_per_collect": 10, #On-Policy Only                 
+                  "episode_per_test": 2,                  
                   "tn_eps_max": 0.30,
                   "ts_eps_max": 0.001,
                   "warmup_size" : 1,
@@ -215,11 +214,10 @@ def _get_agents(
 ) -> Tuple[BasePolicy, torch.optim.Optimizer, list]:
     
     env = _get_env()
-    print(env.observation_space)       
-    agent_observation_space = env.observation_space("agent_0")
+    agent_observation_space = env.observation_space
     action_space = env.action_space
     device="cuda" if torch.cuda.is_available() else "cpu"  
-    print(" ACCC: " , env.action_space)
+    
     agents = []        
     
     if Policy_Config["same_policy"]:
@@ -229,46 +227,10 @@ def _get_agents(
 
     for _ in range(policies_number):      
         
-        if policyModel == "DQN":
-
-            if model == "Task_MHA":
-                net = Task_MHA_B_ACE(
-                    #obs_shape=agent_observation_space.shape,                                                  
-                    num_tasks = dqn_params["max_tasks"],
-                    num_features_per_task= 14,                    
-                    nhead = 4,
-                    device="cuda" if torch.cuda.is_available() else "cpu"
-                    
-                ).to(device) 
-            
-            if model == "Task_DNN":
-                net = Task_DNN_B_ACE(
-                    #obs_shape=agent_observation_space.shape,                                                  
-                    num_tasks = dqn_params["max_tasks"],
-                    num_features_per_task= 14,                    
-                    nhead = 4,
-                    device="cuda" if torch.cuda.is_available() else "cpu"
-                    
-                ).to(device) 
-                
-            optim = torch.optim.Adam(net.parameters(), lr=dqn_params["lr"], weight_decay=0.0, amsgrad= True)       
-            
-            agent_learn = DQNPolicy(
-                model=net,
-                optim=optim,
-                action_space = Discrete(dqn_params["max_tasks"]),
-                discount_factor= dqn_params["discount_factor"],
-                estimation_step=dqn_params["estimation_step"],
-                target_update_freq=dqn_params["target_update_freq"],
-                reward_normalization = dqn_params["reward_normalization"],
-                clip_loss_grad = dqn_params["clip_loss_grad"]
-            )                   
-        
-        elif policyModel == "PPO":
+        if policyModel == "PPO":
             
             if model == "DNN_B_ACE":
-                print(agent_observation_space)
-                print(action_space)
+                
                 actor = DNN_B_ACE_ACTOR(
                     obs_shape=agent_observation_space.shape[0],                
                     action_shape=4,                
@@ -303,7 +265,7 @@ def _get_agents(
                 ent_coef        =       PPO_params['ent_coef'],
                 gae_lambda      =       PPO_params['gae_lambda'],
                 reward_normalization=   PPO_params['reward_normalization'],
-                action_space    =  action_space,
+                action_space    =       action_space,
                 deterministic_eval=     PPO_params['deterministic_eval'],
                 advantage_normalization=PPO_params['advantage_normalization'],
                 recompute_advantage=    PPO_params['recompute_advantage'],
@@ -332,14 +294,10 @@ def _get_env():
     """This function is needed to provide callables for DummyVectorEnv."""   
     
     B_ACE_Config["EnvConfig"]["seed"] = random.randint(0, 1000000)
-    
-    #env = B_ACE_TaskEnv( convert_action_space = True,
-    #                                device = "cpu",
-    #                                **B_ACE_Config) 
-    env = B_ACE_GodotPettingZooWrapper(convert_action_space = True,
+        
+    env = B_ACE_GodotPettingZooWrapper(convert_action_space = False,
                                     device = "cpu",
-                                    **B_ACE_Config)
-    #env.action_space = env.action_space()
+                                    **B_ACE_Config)    
     #env = PettingZooEnv(env)  
     return env  
 
@@ -357,64 +315,25 @@ if __name__ == "__main__":
     seed = B_ACE_Config['EnvConfig']['seed']
     np.random.seed(seed)
     torch.manual_seed(seed)
-    #train_envs.seed(seed)
-    #test_envs.seed(seed)    
+#    train_envs.seed(seed)
+#    test_envs.seed(seed)    
 
     # ======== Step 2: Agent setup =========
     policy, optim, agents = _get_agents()    
 
-    if True:
-        # ======== Step 3: Collector setup =========
-        train_collector = Collector(
-            policy,
-            train_envs,
-            VectorReplayBuffer(300_000, len(train_envs)),
-            #PrioritizedVectorReplayBuffer( 300_000, len(train_envs), alpha=0.6, beta=0.4) , 
-            #ListReplayBuffer(100000)       
-            # buffer = StateMemoryVectorReplayBuffer(
-            #         300_000,
-            #         len(train_envs),  # Assuming train_envs is your vectorized environment
-            #         memory_size=10,                
-            #     ),
-            exploration_noise=True  
-        )
-        
-        test_collector = Collector(policy, test_envs, exploration_noise=True)
-        
-    else:
-        #TODO: Tianshou Priorized Replay Buffer is not working in MARL  
-        agents_buffers_training = {agent : 
-                        PrioritizedVectorReplayBuffer( 300_000, 
-                                                        len(train_envs), 
-                                                        alpha=0.6, 
-                                                        beta=0.4) 
-                                                        for agent in agents
-                        }
-        agents_buffers_test = {agent : 
-                        PrioritizedVectorReplayBuffer( 300_000, 
-                                                        len(train_envs), 
-                                                        alpha=0.6, 
-                                                        beta=0.4) 
-                                                        for agent in agents
-                        }
-    
-        # ======== Step 3: Collector setup =========
-        train_collector = CollectorMA(
-            policy,
-            train_envs,
-            agents_buffers_training, 
-            agents=agents,  # Pass the list of agent IDs                       
-            exploration_noise=True             
-        )
-        test_collector = CollectorMA(policy, test_envs, agents_buffers_test,agents=agents, exploration_noise=True)
+    # ======== Step 3: Collector setup =========
+    train_collector = Collector(
+        policy,
+        train_envs,
+        VectorReplayBuffer(300_000, len(train_envs)),            
+        exploration_noise=True  
+    )     
+    test_collector = Collector(policy, test_envs, exploration_noise=True)
 
-    
-        
     print("Buffer Warming Up ")    
     for i in range(trainer_params["warmup_size"]):
         
-         train_collector.collect(n_episode=train_env_num, reset_before_collect=True)
-         #train_collector.collect(n_step=300 * 10)
+         train_collector.collect(n_episode=train_env_num, reset_before_collect=True)         
          print(".", end="") 
     
     # len_buffer = len(train_collector.buffer) / (B_ACE_Config["max_cycles"] * SISL_Config["n_pursuers"])
@@ -423,28 +342,8 @@ if __name__ == "__main__":
     
     info = { "Buffer"  : "PriorizedReplayBuffer" if trainer_params["priorized_buffer"] else "ReplayBuffer",
             " Warmup_ep" : trainer_params['warmup_size'] * train_env_num}
-    
-    # ======== tensorboard logging setup =========                       
-    if trainer_params["wandb_log"]:
-        logger = WandbLogger(
-            train_interval = runConfig["EnvConfig"]["max_cycles"] / 400 ,
-            test_interval = 1,#runConfig["max_cycles"] * runConfig["n_pursuers"],
-            update_interval = runConfig["EnvConfig"]["max_cycles"] / 400,
-            save_interval = 1,
-            write_flush = True,
-            project = "B_ACE_EVAL",
-            name = log_name,
-            entity = None,
-            run_id = log_name,
-            config = runConfig,
-            monitor_gym = True )
-    
-        writer = SummaryWriter(log_path)    
-        writer.add_text("args", str(runConfig))    
-        logger.load(writer)
 
     global_step_holder = [0] 
-        
     # ======== Step 4: Callback functions setup =========
     def save_best_fn(policy):                
         
@@ -470,7 +369,6 @@ if __name__ == "__main__":
             
             print("Best Saved Length" , str(global_step_holder[0]))
         
-
     def stop_fn(mean_rewards):
         return mean_rewards >= 99999939.0
 
@@ -480,12 +378,7 @@ if __name__ == "__main__":
             policy.policies[agents[0]].set_eps(epsilon)
         else:
             for agent in agents:
-                policy.policies[agent].set_eps(epsilon)
-                
-        
-        # if env_step % 500 == 0:
-            # logger.write("train/env_step", env_step, {"train/eps": eps})
-
+                policy.policies[agent].set_eps(epsilon)       
 
     def test_fn(epoch, env_step):
 
@@ -516,58 +409,29 @@ if __name__ == "__main__":
         #print(rews)
         return rews#np.mean(rews)#np.sum(rews)
 
-    # # # ======== Step 5: Run the trainer =========   
-    # onPolicyTrainer = OnpolicyTrainer(
-    #     policy=policy,
-    #     train_collector=train_collector,
-    #     test_collector=test_collector,
-    #     max_epoch=trainer_params['max_epoch'],
-        
-    #     step_per_epoch=trainer_params['step_per_epoch'],
-                        
-    #     batch_size=trainer_params['batch_size'],
-    #     step_per_collect=trainer_params['step_per_collect'],
-    #     repeat_per_collect=trainer_params['repeat_per_collect'],
-        
-    #     episode_per_test=trainer_params['episode_per_test'],
-    #     stop_fn=stop_fn,
-    #     save_best_fn=save_best_fn,
-    #     reward_metric=reward_metric,
-    #     test_in_train=True,
-    #     show_progress = True,
-    #     logger=logger,
-    # )
-    
-
-    # writer.close()
-    
-    # ======== Step 5: Run the trainer =========
-    offPolicyTrainer = OffpolicyTrainer(
+    # # ======== Step 5: Run the trainer =========   
+    onPolicyTrainer = OnpolicyTrainer(
         policy=policy,
         train_collector=train_collector,
-        test_collector=test_collector,        
+        test_collector=test_collector,
         max_epoch=trainer_params['max_epoch'],
+        
         step_per_epoch=trainer_params['step_per_epoch'],
-        step_per_collect=trainer_params['step_per_collect'],        
-        episode_per_test= trainer_params['episode_per_test'],
+                        
         batch_size=trainer_params['batch_size'],
-        train_fn=train_fn,
-        test_fn=test_fn,
+        step_per_collect=trainer_params['step_per_collect'],
+        repeat_per_collect=trainer_params['repeat_per_collect'],
+        
+        episode_per_test=trainer_params['episode_per_test'],
         stop_fn=stop_fn,
         save_best_fn=save_best_fn,
-        # save_test_best_fn=save_test_best_fn,
-        update_per_step=trainer_params['update_per_step'],
-        #logger=logger,
-        test_in_train=False,
         reward_metric=reward_metric,
-        show_progress = True 
-               
-         )
+        test_in_train=True,
+        show_progress = True,
+        logger=logger,
+    )
     
-    result = offPolicyTrainer.run()
-    
-    if trainer_params[ 'wandb_log']:
-        writer.close()
-    # return result, policy.policies[agents[1]]
+    result = onPolicyTrainer.run()
+    print(result)
     print(f"\n==========Result==========\n{result}")
     print("\n(the trained policy can be accessed via policy.policies[agents[0]])")

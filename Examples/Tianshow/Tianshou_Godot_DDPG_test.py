@@ -17,24 +17,22 @@ if str(project_root) not in sys.path:
 
 from b_ace_py.B_ACE_GodotPettingZooWrapper import  B_ACE_GodotPettingZooWrapper
 from b_ace_py.utils import load_b_ace_config
+from tianshou.exploration import GaussianNoise
 
 from torch.distributions import Normal, Distribution
-
 from tianshou.data import Collector, VectorReplayBuffer, PrioritizedVectorReplayBuffer
 from tianshou.env import SubprocVectorEnv, DummyVectorEnv
-from tianshou.env import PettingZooEnv
-
 
 from tianshou.policy import PPOPolicy
-from tianshou.trainer import OnpolicyTrainer
+from tianshou.trainer import OffpolicyTrainer
 
 from tianshou.utils.net.common import ActorCritic, DataParallelNet, Net
 from tianshou.utils.net.continuous import Actor, Critic
 
 from tianshou.policy import BasePolicy, DDPGPolicy
-from custom_dqn_policy import  CustomDQNPolicy as DQNPolicy
+#from custom_dqn_policy import  CustomDQNPolicy as DQNPolicy
 from CustomMultiAgentPolicyManager import CustomMultiAgentPolicyManager as MultiAgentPolicyManager
-from tianshou.trainer import OffpolicyTrainer
+#from tianshou.policy import MultiAgentPolicyManager
 
 import wandb
 from tianshou.utils import WandbLogger
@@ -49,20 +47,20 @@ from Task_B_ACE_Env import B_ACE_TaskEnv
 #from CollectorMA import CollectorMA
 #from MAParalellPolicy import MAParalellPolicy
 
-model  =  "Task_MHA"#Task_MHA_B_ACE"#"SISL_Task_MultiHead" #"CNN_ATT_SISL" #"MultiHead_SISL" Task_DNN_B_ACE
+model  =  "DNN_B_ACE"#Task_MHA_B_ACE"#"SISL_Task_MultiHead" #"CNN_ATT_SISL" #"MultiHead_SISL" Task_DNN_B_ACE
 test_num  =  "_B_ACE_Eval"
-policyModel  =  "DQN"
+policyModel  =  "DDPG"
 name = model + "_" + policyModel + "_" + test_num
 
 train_env_num = 2
-test_env_num  = 2
+test_env_num  = 1
 
 now = datetime.datetime.now().strftime("%y%m%d-%H%M%S")
 log_name = name + str(now)
 log_path = os.path.join('./', "Logs", "KTAB", log_name)
 logger = None
 
-load_policy_name = f'2x2_duck2_policy_Task_MHA_DQN__B_ACE_Eval241225-100957_609_BestRew.pth'
+load_policy_name = f'none.pth'
 save_policy_name = f'policy_{log_name}'
 policy_path = model + policyModel
 
@@ -82,7 +80,7 @@ B_ACE_Config = {
                         "task": "b_ace_v1",
                         "env_path": "../../bin/B_ACE_v0.1.exe",
                         "port": 12500,
-                        "renderize": 0,
+                        "renderize": 1,
                         "phy_fps": 20,
                         "speed_up": 50000,
                         "max_cycles": 36000,
@@ -108,7 +106,7 @@ B_ACE_Config = {
                     "AgentsConfig" : 
                     {
                         "blue_agents": { 
-                            "num_agents" : 2,
+                            "num_agents" : 1,
                             "share_states" : 1, 
                             "share_tracks" : 1,
                             "mission"    : "DCA",
@@ -130,7 +128,7 @@ B_ACE_Config = {
                         },	
                         "red_agents":
                         { 
-                            "num_agents" : 2,
+                            "num_agents" : 1,
                             "share_states" : 1, 
                             "share_tracks" : 1,
                             "base_behavior": "baseline1",
@@ -165,17 +163,6 @@ B_ACE_Config = {
                     }	
             }
 
-dqn_params =    {
-                "discount_factor": 0.99, 
-                "estimation_step": 180, 
-                "target_update_freq": 6000 * 3 * 2 ,#max_cycles * n_agents,
-                "reward_normalization" : False,
-                "clip_loss_grad" : True,
-                "optminizer": "Adam",
-                "lr": 0.000005, 
-                "max_tasks" : 30
-                }
-
 PPO_params= {    
                 'action_scaling': False,
                 'discount_factor': 0.98,
@@ -192,15 +179,16 @@ PPO_params= {
                 'recompute_advantage': False,
                 'action_bound_method': "clip",
                 'lr_scheduler': None,
+                'lr' : 0.0005
             }
 
 trainer_params = {"max_epoch": 100,
-                  "step_per_epoch": 18000 * 2,#5 * (150 * n_agents),
-                  "step_per_collect": 6000 * 2,# * (10 * n_agents),                  
+                  "step_per_epoch": 1800 * 2,#5 * (150 * n_agents),
+                  "step_per_collect": 600 * 2,# * (10 * n_agents),                  
                   "batch_size" : 1024 ,                 
                   "update_per_step": 1 / (200), #Off-Policy Only (run after close a Collect (run many times as necessary to meet the value))                  
-                  "repeat_per_collect": 32, #On-Policy Only                 
-                  "episode_per_test": 30,                  
+                  "repeat_per_collect": 10, #On-Policy Only                 
+                  "episode_per_test": 2,                  
                   "tn_eps_max": 0.30,
                   "ts_eps_max": 0.001,
                   "warmup_size" : 1,
@@ -211,136 +199,80 @@ trainer_params = {"max_epoch": 100,
 }
 
 #RunConfig Store data for Logs and comparisons (Recommended Wandb)
-runConfig = dqn_params
+runConfig = PPO_params.copy()
 runConfig["Training"] = policyModel 
 runConfig["Model"] = model 
 runConfig.update(Policy_Config)
 runConfig.update(B_ACE_Config)
 runConfig.update(trainer_params) 
-runConfig.update(dqn_params)
+
 
 def _get_agents(
     agent_learn: Optional[BasePolicy] = None,
     agent_opponent: Optional[BasePolicy] = None,
-    optim: Optional[torch.optim.Optimizer] = None,
     policy_load_path = None,
 ) -> Tuple[BasePolicy, torch.optim.Optimizer, list]:
-    
-    env = _get_env()       
+
+    env = _get_env()
     agent_observation_space = env.observation_space
     action_space = env.action_space
-    device="cuda" if torch.cuda.is_available() else "cpu"  
+    device = "cuda" if torch.cuda.is_available() else "cpu"
 
-    agents = []        
-    
+    agents = []
+
     if Policy_Config["same_policy"]:
         policies_number = 1
     else:
         policies_number = len(env.agents)
 
-    for _ in range(policies_number):      
-        
-        if policyModel == "DQN":
+    # Define the actor and critic networks
+    actor = DNN_B_ACE_ACTOR(
+        obs_shape=agent_observation_space.shape[0],
+        action_shape=4,
+        device=device
+    ).to(device)
+    actor_optim = torch.optim.Adam(actor.parameters(), lr=0.0001)
 
-            if model == "Task_MHA":
-                net = Task_MHA_B_ACE(
-                    #obs_shape=agent_observation_space.shape,                                                  
-                    num_tasks = dqn_params["max_tasks"],
-                    num_features_per_task= 14,                    
-                    nhead = 4,
-                    device="cuda" if torch.cuda.is_available() else "cpu"
-                    
-                ).to(device) 
-            
-            if model == "Task_DNN":
-                net = Task_DNN_B_ACE(
-                    #obs_shape=agent_observation_space.shape,                                                  
-                    num_tasks = dqn_params["max_tasks"],
-                    num_features_per_task= 14,                    
-                    nhead = 4,
-                    device="cuda" if torch.cuda.is_available() else "cpu"
-                    
-                ).to(device) 
-                
-            optim = torch.optim.Adam(net.parameters(), lr=dqn_params["lr"], weight_decay=0.0, amsgrad= True)       
-            
-            agent_learn = DQNPolicy(
-                model=net,
-                optim=optim,
-                action_space = Discrete(dqn_params["max_tasks"]),
-                discount_factor= dqn_params["discount_factor"],
-                estimation_step=dqn_params["estimation_step"],
-                target_update_freq=dqn_params["target_update_freq"],
-                reward_normalization = dqn_params["reward_normalization"],
-                clip_loss_grad = dqn_params["clip_loss_grad"]
-            )                   
-        
-        elif policyModel == "PPO":
-            
-            if model == "Task_DNN":
-                actor = DNN_B_ACE_ACTOR(
-                    obs_shape=agent_observation_space.shape[0],                
-                    action_shape=4,                
-                    device="cuda" if torch.cuda.is_available() else "cpu"                
-                ).to(device)
+    critic = DNN_B_ACE_CRITIC(
+        obs_shape=agent_observation_space.shape[0] + 4,  # Modified to accept both obs and act
+        action_shape=1,
+        device=device
+    ).to(device)
+    critic_optim = torch.optim.Adam(critic.parameters(), lr=0.001)
 
-                critic = DNN_B_ACE_CRITIC(
-                    obs_shape=agent_observation_space.shape[0],                
-                    action_shape=4,                
-                    device="cuda" if torch.cuda.is_available() else "cpu"                
-                ).to(device)
-            
-            
-            if model == "Task_MHA":
-                # PPO-specific setup with MHA architecture
-                actor = Task_MHA_B_ACE(
-                    num_tasks=dqn_params["max_tasks"],
-                    num_features_per_task=14,
-                    nhead=4,
-                    device=device,
-                ).to(device)
+    # Target networks
+    actor_target = DNN_B_ACE_ACTOR(
+        obs_shape=agent_observation_space.shape[0],
+        action_shape=4,
+        device=device
+    ).to(device)
+    actor_target.load_state_dict(actor.state_dict())
 
-                critic = Task_MHA_B_ACE(
-                    num_tasks=dqn_params["max_tasks"],
-                    num_features_per_task=14,
-                    nhead=4,
-                    device=device,
-                ).to(device)
-            
-                                    
-            actor_critic = ActorCritic(actor, critic)
-            
-            def dist(mu, sigma) -> Distribution:
-                return Normal(mu, sigma)        
-                
-            optim = torch.optim.Adam(actor_critic.parameters(), lr=dqn_params["lr"])
-                    
-            agent_learn = PPOPolicy(
-                actor=actor,
-                critic=critic,
-                optim=optim,
-                dist_fn=dist,                
-                action_scaling  =       PPO_params['action_scaling'],
-                discount_factor =       PPO_params['discount_factor'],
-                max_grad_norm   =       PPO_params['max_grad_norm'],
-                eps_clip        =       PPO_params['eps_clip'],
-                vf_coef         =       PPO_params['vf_coef'],
-                ent_coef        =       PPO_params['ent_coef'],
-                gae_lambda      =       PPO_params['gae_lambda'],
-                reward_normalization=   PPO_params['reward_normalization'],
-                action_space    =  action_space,
-                deterministic_eval=     PPO_params['deterministic_eval'],
-                advantage_normalization=PPO_params['advantage_normalization'],
-                recompute_advantage=    PPO_params['recompute_advantage'],
-                action_bound_method=    PPO_params['action_bound_method'],
-                lr_scheduler=None
-            )
-            
+    critic_target = DNN_B_ACE_CRITIC(
+        obs_shape=agent_observation_space.shape[0] + 4,  # Modified to accept both obs and act
+        action_shape=1,
+        device=device
+    ).to(device)
+    critic_target.load_state_dict(critic.state_dict())
+
+    for _ in range(policies_number):
+        agent_learn = DDPGPolicy(
+            actor=actor,
+            critic=critic,
+            actor_optim=actor_optim,
+            critic_optim=critic_optim,
+            tau=0.005,
+            gamma=0.99,
+            exploration_noise=GaussianNoise(sigma=0.1),
+            action_space=action_space,            
+            estimation_step=3
+        )
+
         if Policy_Config["load_model"] is True:
-            # Load the saved checkpoint             
+            # Load the saved checkpoint
             agent_learn.load_state_dict(torch.load(model_load_path))
-            print(f'Loaded-> {model_load_path}')                 
-        
+            print(f'Loaded-> {model_load_path}')
+
         agents.append(agent_learn)
 
     if Policy_Config["same_policy"]:
@@ -348,21 +280,19 @@ def _get_agents(
     else:
         for _ in range(len(env.agents) - policies_number):
             agents.append(agents[0])
-    
-    policy = MultiAgentPolicyManager(policies = agents, env=env)  
-    #policy = MAParalellPolicy(policies = agents, env=env, device="cuda" if torch.cuda.is_available() else "cpu" )  
-        
-    return policy, optim, env.agents
+
+    policy = MultiAgentPolicyManager(policies=agents, env=env)
+
+    return policy, actor_optim, agents
 
 def _get_env():
     """This function is needed to provide callables for DummyVectorEnv."""   
     
     B_ACE_Config["EnvConfig"]["seed"] = random.randint(0, 1000000)
-    
-    env = B_ACE_TaskEnv( convert_action_space = True,
+        
+    env = B_ACE_GodotPettingZooWrapper(convert_action_space = False,
                                     device = "cpu",
-                                    **B_ACE_Config) 
-    #env.action_space = env.action_space()
+                                    **B_ACE_Config)    
     #env = PettingZooEnv(env)  
     return env  
 
@@ -373,74 +303,32 @@ if __name__ == "__main__":
     torch.set_grad_enabled(True) 
 
     # ======== Step 1: Environment setup =========
-    train_envs = SubprocVectorEnv([_get_env for _ in range(train_env_num)], share_memory = False )
-    test_envs = SubprocVectorEnv([_get_env for _ in range(test_env_num)], share_memory = False) 
+    train_envs = DummyVectorEnv([_get_env for _ in range(train_env_num)])#, share_memory = False )
+    test_envs = DummyVectorEnv([_get_env for _ in range(test_env_num)])#, share_memory = False) 
     
-    #train_envs = DummyVectorEnv([_get_env for _ in range(train_env_num)])#, share_memory = True )
-    #test_envs = DummyVectorEnv([_get_env for _ in range(test_env_num)])#, share_memory = True) 
-
     # Seeds Definition
     seed = B_ACE_Config['EnvConfig']['seed']
     np.random.seed(seed)
     torch.manual_seed(seed)
-    train_envs.seed(seed)
-    test_envs.seed(seed)    
+#    train_envs.seed(seed)
+#    test_envs.seed(seed)    
 
     # ======== Step 2: Agent setup =========
     policy, optim, agents = _get_agents()    
 
-    if True:
-        # ======== Step 3: Collector setup =========
-        train_collector = Collector(
-            policy,
-            train_envs,
-            VectorReplayBuffer(300_000, len(train_envs)),
-            #PrioritizedVectorReplayBuffer( 300_000, len(train_envs), alpha=0.6, beta=0.4) , 
-            #ListReplayBuffer(100000)       
-            # buffer = StateMemoryVectorReplayBuffer(
-            #         300_000,
-            #         len(train_envs),  # Assuming train_envs is your vectorized environment
-            #         memory_size=10,                
-            #     ),
-            exploration_noise=True  
-        )
-        
-        test_collector = Collector(policy, test_envs, exploration_noise=True)
-        
-    else:
-        #TODO: Tianshou Priorized Replay Buffer is not working in MARL  
-        agents_buffers_training = {agent : 
-                        PrioritizedVectorReplayBuffer( 300_000, 
-                                                        len(train_envs), 
-                                                        alpha=0.6, 
-                                                        beta=0.4) 
-                                                        for agent in agents
-                        }
-        agents_buffers_test = {agent : 
-                        PrioritizedVectorReplayBuffer( 300_000, 
-                                                        len(train_envs), 
-                                                        alpha=0.6, 
-                                                        beta=0.4) 
-                                                        for agent in agents
-                        }
-    
-        # ======== Step 3: Collector setup =========
-        train_collector = CollectorMA(
-            policy,
-            train_envs,
-            agents_buffers_training, 
-            agents=agents,  # Pass the list of agent IDs                       
-            exploration_noise=True             
-        )
-        test_collector = CollectorMA(policy, test_envs, agents_buffers_test,agents=agents, exploration_noise=True)
+    # ======== Step 3: Collector setup =========
+    train_collector = Collector(
+        policy,
+        train_envs,
+        VectorReplayBuffer(300_000, len(train_envs)),            
+        exploration_noise=True  
+    )     
+    test_collector = Collector(policy, test_envs, exploration_noise=True)
 
-    
-        
     print("Buffer Warming Up ")    
     for i in range(trainer_params["warmup_size"]):
         
-         train_collector.collect(n_episode=train_env_num, reset_before_collect=True)
-         #train_collector.collect(n_step=300 * 10)
+         train_collector.collect(n_episode=train_env_num, reset_before_collect=True)         
          print(".", end="") 
     
     # len_buffer = len(train_collector.buffer) / (B_ACE_Config["max_cycles"] * SISL_Config["n_pursuers"])
@@ -449,28 +337,8 @@ if __name__ == "__main__":
     
     info = { "Buffer"  : "PriorizedReplayBuffer" if trainer_params["priorized_buffer"] else "ReplayBuffer",
             " Warmup_ep" : trainer_params['warmup_size'] * train_env_num}
-    
-    # ======== tensorboard logging setup =========                       
-    if trainer_params["wandb_log"]:
-        logger = WandbLogger(
-            train_interval = runConfig["EnvConfig"]["max_cycles"] / 400 ,
-            test_interval = 1,#runConfig["max_cycles"] * runConfig["n_pursuers"],
-            update_interval = runConfig["EnvConfig"]["max_cycles"] / 400,
-            save_interval = 1,
-            write_flush = True,
-            project = "B_ACE_EVAL",
-            name = log_name,
-            entity = None,
-            run_id = log_name,
-            config = runConfig,
-            monitor_gym = True )
-    
-        writer = SummaryWriter(log_path)    
-        writer.add_text("args", str(runConfig))    
-        logger.load(writer)
 
     global_step_holder = [0] 
-        
     # ======== Step 4: Callback functions setup =========
     def save_best_fn(policy):                
         
@@ -496,7 +364,6 @@ if __name__ == "__main__":
             
             print("Best Saved Length" , str(global_step_holder[0]))
         
-
     def stop_fn(mean_rewards):
         return mean_rewards >= 99999939.0
 
@@ -506,12 +373,7 @@ if __name__ == "__main__":
             policy.policies[agents[0]].set_eps(epsilon)
         else:
             for agent in agents:
-                policy.policies[agent].set_eps(epsilon)
-                
-        
-        # if env_step % 500 == 0:
-            # logger.write("train/env_step", env_step, {"train/eps": eps})
-
+                policy.policies[agent].set_eps(epsilon)       
 
     def test_fn(epoch, env_step):
 
@@ -542,31 +404,6 @@ if __name__ == "__main__":
         #print(rews)
         return rews#np.mean(rews)#np.sum(rews)
 
-    # # # ======== Step 5: Run the trainer =========   
-    # onPolicyTrainer = OnpolicyTrainer(
-    #     policy=policy,
-    #     train_collector=train_collector,
-    #     test_collector=test_collector,
-    #     max_epoch=trainer_params['max_epoch'],
-        
-    #     step_per_epoch=trainer_params['step_per_epoch'],
-                        
-    #     batch_size=trainer_params['batch_size'],
-    #     step_per_collect=trainer_params['step_per_collect'],
-    #     repeat_per_collect=trainer_params['repeat_per_collect'],
-        
-    #     episode_per_test=trainer_params['episode_per_test'],
-    #     stop_fn=stop_fn,
-    #     save_best_fn=save_best_fn,
-    #     reward_metric=reward_metric,
-    #     test_in_train=True,
-    #     show_progress = True,
-    #     logger=logger,
-    # )
-    
-
-    # writer.close()
-    
     # ======== Step 5: Run the trainer =========
     offPolicyTrainer = OffpolicyTrainer(
         policy=policy,
@@ -592,8 +429,6 @@ if __name__ == "__main__":
     
     result = offPolicyTrainer.run()
     
-    if trainer_params[ 'wandb_log']:
-        writer.close()
-    # return result, policy.policies[agents[1]]
+    print(result)
     print(f"\n==========Result==========\n{result}")
     print("\n(the trained policy can be accessed via policy.policies[agents[0]])")

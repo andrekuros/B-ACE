@@ -12,7 +12,7 @@ from typing import Optional
 import numpy as np
 from gymnasium import spaces
 
-from .utils import ActionSpaceProcessor, convert_macos_path
+from b_ace_py.utils import ActionSpaceProcessor, convert_macos_path
 
 
 class GodotEnv:
@@ -31,6 +31,7 @@ class GodotEnv:
         action_repeat: Optional[int] = None,
         speedup: Optional[int] = None,
         convert_action_space: bool = False,
+        **kwargs,
     ):
         """
         Initialize a new instance of GodotEnv
@@ -51,18 +52,45 @@ class GodotEnv:
             env_path = self._set_platform_suffix(env_path)
 
             self.check_platform(env_path)
-            self._launch_env(env_path, port, show_window, framerate, seed, action_repeat, speedup)
+            self._launch_env(
+                env_path,
+                port,
+                show_window,
+                framerate,
+                seed,
+                action_repeat,
+                speedup,
+                **kwargs,
+            )
         else:
             print("No game binary has been provided, please press PLAY in the Godot editor")
 
         self.port = port
+        self.host_binding = kwargs.get("host_binding", False)
         self.connection = self._start_server()
         self.num_envs = None
         self._handshake()
+
+        # Action and observation spaces for each in-game agent/env/AIController (used only for multi-agent case with Rllib for now)
+        self.action_spaces = []
+        self.observation_spaces = []
+
         self._get_env_info()
+
+        # Single-agent observation space
+        self.observation_space = self.observation_spaces[0]
+
         # sf2 requires a tuple action space
-        self._tuple_action_space = spaces.Tuple([v for _, v in self._action_space.items()])
-        self.action_space_processor = ActionSpaceProcessor(self._tuple_action_space, convert_action_space)
+        # Multiple agents' action space(s)
+        self.tuple_action_spaces = [
+            spaces.Tuple([v for _, v in action_space.items()]) for action_space in self.action_spaces
+        ]
+        # Single agent action space processor using the action space(s) of the first agent
+        self.action_space_processor = ActionSpaceProcessor(self.tuple_action_spaces[0], convert_action_space)
+
+        # For multi-policy envs: The name of each agent's policy set in the env itself (any training_mode
+        # AIController instance is treated as an agent)
+        self.agent_policy_names
 
         atexit.register(self._close)
 
@@ -128,13 +156,13 @@ class GodotEnv:
         """
         result = []
 
-        for i in range(self.num_envs):
-            env_action = {}            
-            for j, k in enumerate(self._action_space.keys()):
+        for agent_idx in range(self.num_envs):
+            env_action = {}
+            for j, k in enumerate(self.action_spaces[agent_idx].keys()):
                 if order_ij is True:
-                    v = action[i][j]
+                    v = action[agent_idx][j]
                 else:
-                    v = action[j][i]
+                    v = action[j][agent_idx]
 
                 if isinstance(v, np.ndarray):
                     env_action[k] = v.tolist()
@@ -155,12 +183,8 @@ class GodotEnv:
         Returns:
             tuple: Tuple containing observation, reward, done flag, termination flag, and info.
         """
-        
         self.step_send(action, order_ij=order_ij)
         return self.step_recv()
-        
-        
-        
 
     def step_send(self, action, order_ij=False):
         """
@@ -170,14 +194,15 @@ class GodotEnv:
             action: Action to be sent.
             order_ij (bool): Order flag.
         """
+        
         action = self.action_space_processor.to_original_dist(action)
+
         message = {
             "type": "action",
             "action": self.from_numpy(action, order_ij=order_ij),
-        }        
+        }
+        self._send_as_json(message)
 
-        self._send_as_json(message)        
-        
     def step_recv(self):
         """
         Receive the step response from the Godot environment.
@@ -188,12 +213,15 @@ class GodotEnv:
         response = self._get_json_dict()
         response["obs"] = self._process_obs(response["obs"])
 
+        # Kept for backward compatibility if the plugin doesn't send info.
+        default_info = [{}] * len(response["done"])
+
         return (
             response["obs"],
             response["reward"],
             np.array(response["done"]).tolist(),
             np.array(response["done"]).tolist(),  # TODO update API to term, trunc
-            [{}] * len(response["done"]),
+            response.get("info", default_info),
         )
 
     def _process_obs(self, response_obs: dict):
@@ -205,7 +233,7 @@ class GodotEnv:
 
         Returns:
             dict: The processed observation data.
-        """        
+        """
         for k in response_obs[0].keys():
             if "2d" in k:
                 for sub in response_obs:
@@ -224,7 +252,7 @@ class GodotEnv:
             "type": "reset",
         }
         self._send_as_json(message)
-        response = self._get_json_dict()        
+        response = self._get_json_dict()
         response["obs"] = self._process_obs(response["obs"])
         assert response["type"] == "reset"
         obs = response["obs"]
@@ -253,30 +281,48 @@ class GodotEnv:
         except Exception as e:
             print("exception unregistering close method", e)
 
-    @property
-    def action_space(self):
-        return self.action_space_processor.action_space
+    # @property
+    # def action_space(self):
+    #     """
+    #     Returns a single action space.
+    #     """
+    #     return self.action_space_processor.action_space
 
     def _close(self):
         print("exit was not clean, using atexit to close env")
         self.close()
 
-    def _launch_env(self, env_path, port, show_window, framerate, seed, action_repeat, speedup):
+    def _launch_env(
+        self,
+        env_path,
+        port,
+        show_window,
+        framerate,
+        seed,
+        action_repeat,
+        speedup,
+        **kwargs,
+    ):
         # --fixed-fps {framerate}
         path = convert_macos_path(env_path) if platform == "darwin" else env_path
 
-        launch_cmd = f"{path} --port={port} --env_seed={seed}"
+        launch_cmd = [path]
+        launch_cmd.append(f"--port={port}")
+        launch_cmd.append(f"--env_seed={seed}")
 
         if show_window is False:
-            launch_cmd += " --disable-render-loop --headless"
+            launch_cmd.append("--disable-render-loop")
+            launch_cmd.append("--headless")
         if framerate is not None:
-            launch_cmd += f" --fixed-fps {framerate}"
+            launch_cmd.append(f"--fixed-fps {framerate}")
         if action_repeat is not None:
-            launch_cmd += f" --action_repeat={action_repeat}"
+            launch_cmd.append(f"--action_repeat={action_repeat}")
         if speedup is not None:
-            launch_cmd += f" --speedup={speedup}"
+            launch_cmd.append(f"--speedup={speedup}")
+        if len(kwargs) > 0:
+            for key, value in kwargs.items():
+                launch_cmd.append(f"--{key}={value}")
 
-        launch_cmd = launch_cmd.split(" ")
         self.proc = subprocess.Popen(
             launch_cmd,
             start_new_session=True,
@@ -292,7 +338,8 @@ class GodotEnv:
         sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 
         # Bind the socket to the port, "localhost" was not working on windows VM, had to use the IP
-        server_address = ("127.0.0.1", self.port)
+        address = "0.0.0.0" if self.host_binding else "127.0.0.1"
+        server_address = (address, self.port)
         sock.bind(server_address)
 
         # Listen for incoming connections
@@ -318,48 +365,71 @@ class GodotEnv:
         self._send_as_json(message)
 
         json_dict = self._get_json_dict()
+
         assert json_dict["type"] == "env_info"
+
+        # Number of AIController instances in a single Godot env/process
+        self.num_envs = json_dict["n_agents"]
 
         # actions can be "single" for a single action head
         # or "multi" for several outputeads
-        action_spaces = OrderedDict()
+
         print("action space", json_dict["action_space"])
-        for k, v in json_dict["action_space"].items():
-            if v["action_type"] == "discrete":
-                action_spaces[k] = spaces.Discrete(v["size"])
-            elif v["action_type"] == "continuous":
-                action_spaces[k] = spaces.Box(low=-1.0, high=1.0, shape=(v["size"],))
-            else:
-                print(f"action space {v['action_type']} is not supported")
-                assert 0, f"action space {v['action_type']} is not supported"
-        self._action_space = spaces.Dict(action_spaces)
+        # Compatibility with previous versions of Godot plugin:
+        # A single action space will be received as a dict in previous versions,
+        # A list of dicts will be received from the newer version, defining the action_space for each agent (AIController)
+        if isinstance(json_dict["action_space"], dict):
+            json_dict["action_space"] = [json_dict["action_space"]] * self.num_envs
 
-        observation_spaces = {}
-        print("observation space", json_dict["observation_space"])
-        for k, v in json_dict["observation_space"].items():
-            if v["space"] == "box":
-                if "2d" in k:
-                    observation_spaces[k] = spaces.Box(
-                        low=0,
-                        high=255,
-                        shape=v["size"],
-                        dtype=np.uint8,
-                    )
+        for agent_action_space in json_dict["action_space"]:
+            tmp_action_spaces = OrderedDict()
+            for k, v in agent_action_space.items():
+                if v["action_type"] == "discrete":
+                    tmp_action_spaces[k] = spaces.Discrete(v["size"])
+                elif v["action_type"] == "continuous":
+                    tmp_action_spaces[k] = spaces.Box(low=-1.0, high=1.0, shape=(v["size"],))
                 else:
-                    observation_spaces[k] = spaces.Box(
-                        low=-1.0,
-                        high=1.0,
-                        shape=v["size"],
-                        dtype=np.float32,
-                    )
-            elif v["space"] == "discrete":
-                observation_spaces[k] = spaces.Discrete(v["size"])
-            else:
-                print(f"observation space {v['space']} is not supported")
-                assert 0, f"observation space {v['space']} is not supported"
-        self.observation_space = spaces.Dict(observation_spaces)
+                    print(f"action space {v['action_type']} is not supported")
+                    assert 0, f"action space {v['action_type']} is not supported"
+            # Note: We're using list to avoid the keys getting sorted
+            tmp_action_spaces_list = list(tmp_action_spaces.items())
+            self.action_spaces.append(spaces.Dict(tmp_action_spaces_list))
 
-        self.num_envs = json_dict["n_agents"]
+        print("observation space", json_dict["observation_space"])
+        # Compatibility with older versions of Godot plugin:
+        # A single observation space will be received as a dict in previous versions,
+        # A list of dicts will be received from newer version, defining the observation_space for each agent (AIController)
+        if isinstance(json_dict["observation_space"], dict):
+            json_dict["observation_space"] = [json_dict["observation_space"]] * self.num_envs
+
+        for agent_obs_space in json_dict["observation_space"]:
+            observation_spaces = {}
+            for k, v in agent_obs_space.items():
+                if v["space"] == "box":
+                    if "2d" in k:
+                        observation_spaces[k] = spaces.Box(
+                            low=0,
+                            high=255,
+                            shape=v["size"],
+                            dtype=np.uint8,
+                        )
+                    else:
+                        observation_spaces[k] = spaces.Box(
+                            low=v.get("low", -1.0),
+                            high=v.get("high", 1.0),
+                            shape=v["size"],
+                            dtype=np.float32,
+                        )
+                elif v["space"] == "discrete":
+                    observation_spaces[k] = spaces.Discrete(v["size"])
+                else:
+                    print(f"observation space {v['space']} is not supported")
+                    assert 0, f"observation space {v['space']} is not supported"
+            self.observation_spaces.append(spaces.Dict(observation_spaces))
+
+        # Gets policy names defined in AIControllers in Godot. If an older version of the plugin is used and no policy
+        # names are sent, "shared_policy" will be set for compatibility.
+        self.agent_policy_names = json_dict.get("agent_policy_names", ["shared_policy"] * self.num_envs)
         
         return json_dict
 
@@ -372,14 +442,7 @@ class GodotEnv:
 
     def _send_as_json(self, dictionary):
         message_json = json.dumps(dictionary)
-        
-        #start_time = time.time()
-        
         self._send_string(message_json)
-                
-        #end_time = time.time()
-        #elapsed_time_ms = (end_time - start_time) * 1000
-        #print(f'Elapsed {dictionary} : {elapsed_time_ms:.10f} milliseconds')
 
     def _get_json_dict(self):
         data = self._get_data()

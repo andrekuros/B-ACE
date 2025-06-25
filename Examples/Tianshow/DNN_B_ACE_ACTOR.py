@@ -92,8 +92,8 @@ class DNN_B_ACE_ACTOR(Net):
             obs: Union[np.ndarray, torch.Tensor],
             state: Any = None,
             info: Dict[str, Any] = {},
-        ) -> Tuple[Tuple[torch.Tensor, torch.Tensor], Any]:
-            """Mapping: obs -> logits -> (mu, sigma)."""
+        ) -> Tuple[torch.Tensor, Any]:
+            """Mapping: obs -> logits -> action."""
                                    
             # logits, hidden = self.preprocess(obs, state)
             if isinstance(obs, np.ndarray):
@@ -102,16 +102,9 @@ class DNN_B_ACE_ACTOR(Net):
             # When obs is a Batch from MultiAgentPolicyManager, it's nested under 'obs' key
                 obs_tensor = torch.tensor(np.array(obs["obs"]), dtype=torch.float32).to(self.device)
             
-            
-            #print("MU:", obs)
             mu = self.mu(obs_tensor)
             if not self._unbounded:
                 mu = self.max_action * torch.tanh(mu)
-            if self._c_sigma:
-                sigma = torch.clamp(self.sigma(obs_tensor), min=SIGMA_MIN, max=SIGMA_MAX).exp()
-            else:
-                shape = [1] * len(mu.shape)
-                shape[1] = -1
-                sigma = (self.sigma_param.view(shape) + torch.zeros_like(mu)).exp()
-            #print((mu, sigma))
-            return (mu, sigma), state
+
+            # For DDPG, the actor returns a deterministic action.
+            return mu, state

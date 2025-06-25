@@ -38,6 +38,13 @@ class ActionSpaceProcessor:
     def __init__(self, action_space: gym.spaces.Tuple, convert) -> None:
         self._original_action_space = action_space
         self._convert = convert
+        self._all_actions_discrete: bool = all(isinstance(space, gym.spaces.Discrete) for space in action_space.spaces)
+        self._only_one_action_space: bool = len(action_space) == 1
+
+        # For DQN or other similar algorithms, we need a single discrete action space
+        if self._only_one_action_space and self._all_actions_discrete:
+            self.converted_action_space = action_space[0]
+            return
 
         space_size = 0
 
@@ -45,7 +52,7 @@ class ActionSpaceProcessor:
             use_multi_discrete_spaces = False
             multi_discrete_spaces = np.array([])
             if isinstance(action_space, gym.spaces.Tuple):
-                if all(isinstance(space, gym.spaces.Discrete) for space in action_space.spaces):
+                if self._all_actions_discrete:
                     use_multi_discrete_spaces = True
                     for space in action_space.spaces:
                         multi_discrete_spaces = np.append(multi_discrete_spaces, space.n)
@@ -54,18 +61,20 @@ class ActionSpaceProcessor:
                         if isinstance(space, gym.spaces.Box):
                             assert len(space.shape) == 1
                             space_size += space.shape[0]
-                        elif isinstance(space, gym.spaces.Discrete):                                                        
+                        elif isinstance(space, gym.spaces.Discrete):
                             if space.n > 2:
                                 # for now only binary actions are supported if you mix different spaces
-                                # need to add support for the n>2 case
-                                raise NotImplementedError
+                                raise NotImplementedError(
+                                    "Discrete actions with size larger than 2 "
+                                    "are currently not supported if used together with continuous actions."
+                                )
                             space_size += 1
                         else:
                             raise NotImplementedError
             elif isinstance(action_space, gym.spaces.Dict):
                 raise NotImplementedError
             else:
-                assert isinstance(space, [gym.spaces.Box, gym.spaces.Discrete])
+                assert isinstance(action_space, (gym.spaces.Box, gym.spaces.Discrete))
                 return
 
             if use_multi_discrete_spaces:
@@ -83,9 +92,17 @@ class ActionSpaceProcessor:
     def to_original_dist(self, action):
         if not self._convert:
             return action
+        elif self._only_one_action_space and self._all_actions_discrete:
+            return [action]
 
         original_action = []
         counter = 0
+
+        # If only discrete actions are used in the environment:
+        # - SB3 will send int actions containing the discrete action,
+        # - CleanRL example script (continuous PPO) will only send float actions, which we convert to binary discrete,
+        # - If mixed actions are used, both will send float actions.
+        integer_actions: bool = action.dtype == np.int64
 
         for space in self._original_action_space.spaces:
             if isinstance(space, gym.spaces.Box):
@@ -97,8 +114,20 @@ class ActionSpaceProcessor:
                 counter += space.shape[0]
 
             elif isinstance(space, gym.spaces.Discrete):
-                discrete_actions = np.greater(action[:, counter], 0.0)
-                discrete_actions = discrete_actions.astype(np.float32)
+                discrete_actions = None
+
+                if integer_actions:
+                    discrete_actions = action[:, counter]
+                else:
+                    if space.n > 2:
+                        raise NotImplementedError(
+                            "Discrete actions with size larger than "
+                            "2 are currently not implemented for this algorithm."
+                        )
+                    # If the action is not an integer, convert it to a binary discrete action
+                    discrete_actions = np.greater(action[:, counter], 0.0)
+                    discrete_actions = discrete_actions.astype(np.float32)
+
                 original_action.append(discrete_actions)
                 counter += 1
 
@@ -118,7 +147,6 @@ def cant_import(module_name):
         return False
     except ImportError:
         return True
-
 
 def load_b_ace_config(config_json_file):
 
