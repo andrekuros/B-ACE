@@ -43,34 +43,6 @@ def clamp_HdgD(hdg):
         return (360 + hdg )    
     return hdg
 
-def generate_wez_cases(blue_altitude, red_altitude, angle_off, aspect_angle, wez_file = "res://assets/Default_Wez_params.json", min_dist=50, max_dist=60, dist_step=0.5):
-    
-    cases = []
-    dist_cases = [x / 10 for x in range(min_dist * 10, max_dist * 10, 5)]    
-       
-    for i in range(10):
-        
-        blue_hdg = clamp_HdgD(aspect_angle)
-        red_hdg = clamp_HdgD(blue_hdg + angle_off)                 
-        
-        case = {
-            'AgentsConfig': {
-                'blue_agents': {
-                    'init_position': {'x': 30.0, 'y': blue_altitude, 'z': 0.0},                    
-                    'init_hdg': blue_hdg,
-                    "wez_models" : wez_file                    
-                },    
-                'red_agents': {
-                    'init_position': {'x': -30.0, 'y': red_altitude, 'z': 0.0},                    
-                    'init_hdg': red_hdg, 
-                    "wez_models" : "res://assets//Wez_paramsPR3_MAE_074_046.json"                
-                }                
-            }
-        }
-        cases.append(case)
-
-    return cases
-
 def generate_behavior_case(dShot = 0.85, lCrank = 0.60, lBreak = 0.95 ):
     
     case = { "AgentsConfig" : 
@@ -168,13 +140,14 @@ for case in range(4):
     dict_beh["EnvConfig"] = { "seed" : case}
     cases.append(dict_beh) 
 
-experimentConfig = { 'runs_per_case': 100, 'cases' : cases }
+experimentConfig = { 'runs_per_case': 10, 'cases' : cases }
 
 # Create the GodotExperimentWrapper
 env = B_ACE_ExperimentWrapper(B_ACE_config)
 
 # Run the experiment
 env.send_sim_config(experimentConfig)
+print("\nRunning Experiment...")
 results = env.watch_experiment()
 env.close()
 
@@ -212,5 +185,5 @@ for team_name, stats in team_stats.items():
     })
 
 df_results = pd.DataFrame(analysis_summary)
-print("Experiment Results Summary:")
+print("\nFinished.\nExperiment Results Summary:")
 print(df_results)

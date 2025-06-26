@@ -4,4 +4,5 @@ To simplify the development of additional resources, B-ACE includes an Experimen
 
 Key features include configuring the environment with global engine parameters such as rendering options, seed, and speedup, along with detailed agent and experiment configurations. This mode ensures seamless integration with the Godot engine, enabling efficient base experiments to develop and evaluate models before being integrated into the MARL process. 
 
+Use the Basic_B_ACE_Experiment_Mode.py as reference to build experiemnts.
 

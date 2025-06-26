@@ -193,8 +193,7 @@ class GodotEnv:
         Args:
             action: Action to be sent.
             order_ij (bool): Order flag.
-        """
-        
+        """        
         action = self.action_space_processor.to_original_dist(action)
 
         message = {
@@ -338,7 +337,7 @@ class GodotEnv:
         sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 
         # Bind the socket to the port, "localhost" was not working on windows VM, had to use the IP
-        address = "0.0.0.0" if self.host_binding else "127.0.0.1"
+        address = "127.0.0.1"
         server_address = (address, self.port)
         sock.bind(server_address)
 

@@ -4,7 +4,7 @@
 
 Built on the Godot game engine, B-ACE leverages Multi-Agent Reinforcement Learning (MARL) to explore advanced techniques in autonomous air combat agent development. The environment provides a flexible and accessible platform for the research community, enabling the rapid prototyping and evaluation of AI-based tactics and strategies in complex air combat settings.
 
-The [Godot](https://godotengine.org/) engine’s intuitive interface and flexible scripting language (GDScript) facilitate rapid prototyping and iteration. Its user-friendly design lowers the barrier to entry for new developers and researchers. Additionally, it supports multiple alternative languages, including C#, VisualScript, and C++, which can enhance flexibility and performance. Godot is completely free under the MIT license, allowing unrestricted access, modification, and distribution of its source code. This contrasts with commercial engines, which impose costs and restrictions, especially for military and government applications.
+The [Godot](https://godotengine.org/) engine offers an intuitive interface, flexible scripting (GDScript), and support for multiple languages (C#, VisualScript, C++), facilitating rapid prototyping and iteration. Its user-friendly design lowers the barrier to entry for new developers and researchers. Godot is completely free under the MIT license, allowing unrestricted access, modification, and distribution, contrasting with commercial engines that impose costs and restrictions, especially for military and government applications.
 
 ## Key Features
 
@@ -39,7 +39,7 @@ venv\Scripts\activate
 source venv/bin/activate
 
 # Install the minimum requirements
-pip install -r minimum_requirements.txt
+pip install tianshou==1.2.0 pettingzoo==1.24.3
 ```
 
 **4. Run the Simple Example**
@@ -59,11 +59,11 @@ The typical interaction flow is as follows:
 
 ```mermaid
 graph TD
-    A[Your Python Script] -- 1. reset() --> B(B_ACE_PettingZoo_Wrapper);
+    A[Your Python Script] -- Reset --> B(B_ACE_PettingZoo_Wrapper);
     B -- Launches & Connects --> C[Godot Simulation];
     C -- Initial Observations --> B;
     B -- Initial Observations --> A;
-    A -- 2. step(actions) --> B;
+    A -- Step(actions) --> B;
     B -- Actions --> C;
     C -- Steps Physics --> C;
     C -- New State --> B;
@@ -104,6 +104,7 @@ The simulation's behavior is controlled by a `.json` configuration file (e.g., `
   * `base_behavior`: Default behavior (can be overridden by the RL agent).
   * `init_position`, `init_hdg`, `target_position`: Defines the mission scenario.
 
+
 ## 🖥️ Visualization & Debugging
 
 One of the key advantages of using the Godot Engine is the ability to visualize the simulation in real-time. This is invaluable for debugging agent behavior and validating trained policies.
@@ -124,7 +125,7 @@ R: Reset Simulation
 Speed Btn: Change Time Scale Target
 H: Show/Hide Help
 
-For training process you can use config "renderize = 0" to a headless run, avoiding unnecessary resources consumption. 
+For training, you can set `renderize` to `false` for a headless run, which avoids unnecessary resource consumption.
 
 ### Activating the Interface
 
@@ -190,7 +191,7 @@ The action space defines how agents interact with the simulation. The policy mus
 
 ## Finite State Machine (FSM) Baseline Agent
 
-One of the primary goals of B-ACE is to establish a reasonable baseline behavior for evaluating multiple alternative solutions. To achieve this, we developed a Finite State Machine (FSM) based solution that enables agents to make general expected decisions during BVR air combat. The primary decisions of the B-ACE baseline agent include initial defense, last-minute defense, and missile firing moments. By varying these conditions, it is possible to create agents with different combat characteristics, balancing offensiveness and defensiveness [Kuroswiski et al., 2023](https://doi.org/10.1177/15485129231211915). The agent takes into consideration Weapon Engagement Zone{kuroswiski2025WEZ} predictions of missile effectiveness to base its decisions, allowing for more conservative or aggressive actions depending on their proximity to critical points. Additionally, we created a steady baseline agent, referred to as "Duck". This agent maintains a steady flight until it reaches its target position or is neutralized. The Duck provides an alternative baseline that offers a simpler engagement scenario for initial algorithm evaluations. 
+One of the primary goals of B-ACE is to establish a reasonable baseline behavior for evaluating multiple alternative solutions. To achieve this, we developed a Finite State Machine (FSM) based solution that enables agents to make general expected decisions during BVR air combat. The primary decisions of the B-ACE baseline agent include initial defense, last-minute defense, and missile firing moments. By varying these conditions, it is possible to create agents with different combat characteristics, balancing offensiveness and defensiveness [Kuroswiski et al., 2023](https://doi.org/10.1177/15485129231211915). The agent takes into consideration Weapon Engagement Zone predictions of missile effectiveness (see citation below) to base its decisions, allowing for more conservative or aggressive actions depending on their proximity to critical points. Additionally, we created a steady baseline agent, referred to as "Duck". This agent maintains a steady flight until it reaches its target position or is neutralized. The Duck provides an alternative baseline that offers a simpler engagement scenario for initial algorithm evaluations. 
 
 Example of the FSM  agent behavior configuration:  
 
@@ -204,6 +205,10 @@ Example of the FSM  agent behavior configuration:
 ```
 The `base_behavior` can be `baseline1` for the FSM agent, `duck` for a simple agent, or `external` for the blue agent being trained or evaluated. Each index in the lists `dShot`, `lCrank`, and `lBreak` corresponds to a different agent, allowing for individual parameter settings. These agents are randomly selected during the simulation reset. Using a single item list will result in the same FSM enemy every time.
 
+
+## Personalizing the Simulation
+
+The Godot simulation binaries are in the ./bin folder, however you can change the project (./Godot_Air_Combat) and recompile with your desired changes. To do it use the Godot native IDE, VSCode integration or command line following [Godot Docs page](https://docs.godotengine.org/en/stable/getting_started/editor/command_line_tutorial.html).
 
 ## 🎮 Examples
 
@@ -288,8 +293,7 @@ env.close()
 print("Environment closed.")
 ```
 
-The `Examples/` directory contains scripts and explanations to demonstrate how to use B-ACE with some MARL frameworks.
-
+The `Examples/` directory contains scripts and explanations to demonstrate how to use B-ACE with some MARL frameworks. They are ongoing work and still have limitations, but demonstrate possibilities of using the Gymnasium/PettingZoo integration.
 
 ## 📄 Citation
 
@@ -344,8 +348,6 @@ For the concepts behind the FSM agents definition and experimentation:
   doi       = {https://doi.org/10.1177/15485129231211915},  
 }
 ```
-
-
 
 ## Acknowledgements
 
