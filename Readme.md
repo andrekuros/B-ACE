@@ -2,6 +2,8 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT) [![Python 3.8+](https://img.shields.io/badge/python-3.8+-blue.svg)](https://www.python.org/downloads/) [![PettingZoo Compatible](https://img.shields.io/badge/PettingZoo-Compatible-green.svg)](https://pettingzoo.farama.org/)
 
+![B-ACE](/images/b_ace.jpg)
+
 Built on the Godot game engine, B-ACE leverages Multi-Agent Reinforcement Learning (MARL) to explore advanced techniques in autonomous air combat agent development. The environment provides a flexible and accessible platform for the research community, enabling the rapid prototyping and evaluation of AI-based tactics and strategies in complex air combat settings.
 
 The [Godot](https://godotengine.org/) engine offers an intuitive interface, flexible scripting (GDScript), and support for multiple languages (C#, VisualScript, C++), facilitating rapid prototyping and iteration. Its user-friendly design lowers the barrier to entry for new developers and researchers. Godot is completely free under the MIT license, allowing unrestricted access, modification, and distribution, contrasting with commercial engines that impose costs and restrictions, especially for military and government applications.
