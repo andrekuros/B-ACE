@@ -136,15 +136,17 @@ class B_ACE_GodotPettingZooWrapper(GodotEnv, ParallelEnv):
                 
         # Assuming the environment's step function can handle a dictionary of actions for each agent                                      
         if self.action_type == "Low_Level_Continuous":            
-            godot_actions = [np.array([action]) for agent, action in actions.items()]        
-            #godot_actions = [np.array(action) for agent, action in actions.items()]        
+            godot_actions = np.array([np.array([action]) for agent, action in actions.items()])  
+                   
         elif self.action_type == "Low_Level_Discrete": 
-            godot_actions = [ self.decode_action(action) for agent, action in actions.items()]
+            godot_actions = [ self.decode_action(action) for agent, action in actions.items()]            
         else:
-            print("GododtPZWrapper::Error:: Unknow Actions Type -> ", self.actions_type)         
-        self.rewards = 0                       
-
+            print("GododtPZWrapper::Error:: Unknow Actions Type -> ", self.actions_type) 
+               
+        self.rewards = 0                               
         obs, reward, dones, truncs, info = super().step(godot_actions, order_ij=order_ij)
+        
+      
                 
         self.observations = {agent_name : {"obs": _obs["obs"], "mask": [True for _ in range(4)]} for agent_name, _obs in obs.items()}
         
@@ -181,6 +183,3 @@ class B_ACE_GodotPettingZooWrapper(GodotEnv, ParallelEnv):
         level_input = (encoded_action // 5.0) % 5
         fire_input = (encoded_action // 25.0) % 2
         return np.array([fire_input, level_input, turn_input])
-
-
-    

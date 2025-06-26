@@ -1,9 +1,0 @@
-,eval_enemy,training_beh,team,metric,mean,ci_lower,ci_upper
-0,Duck,FSM_B1,Blue,killed,0.0,0.0,0.0
-1,Duck,FSM_B1,Red,killed,1.0,1.0,1.0
-2,Duck,FSM_B1,Blue,missile,1.0,1.0,1.0
-3,Duck,FSM_B1,Red,missile,0.0,0.0,0.0
-4,Duck,FSM_B1,Blue,mission,0.0,0.0,0.0
-5,Duck,FSM_B1,Red,mission,0.0,0.0,0.0
-6,Duck,FSM_B1,Blue,reward,16.233064143896595,16.180711907936065,16.291522426906944
-7,Duck,FSM_B1,Red,reward,0.0,0.0,0.0

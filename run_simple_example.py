@@ -52,8 +52,6 @@ for step in range(num_steps):
     actions = {}
     turn_side = 1
     for agent in env.possible_agents:
-        # Get the action space for the current agent
-        agent_action_space = env.action_space(agent)
         
         # For continuous action space (Box), sample a random value within the bounds
         # Action [hdg, level, g_force, fire] 
@@ -64,13 +62,11 @@ for step in range(num_steps):
    
         actions[agent] = [0.1 * turn_side, 0.5, 2.0, 0.0] 
         turn_side *= -1
-
-
     # Take a step in the environment
-    observations, rewards, terminations, truncations, info = env.step(actions)
+    observations, rewards, termination, truncation, info = env.step(actions)
 
     # Check if any agent has terminated or truncated
-    if all(terminations.values()) or all(truncations.values()):
+    if termination or truncation:
         print("\nEpisode finished.")
         # In a real RL scenario, you would reset the environment here
         # observations, info = env.reset()
@@ -78,9 +74,7 @@ for step in range(num_steps):
 
     if step % 100 == 0:
         print(f'\rRunning {step} / {num_steps} steps', end = "", flush=True)
-        
-
-print()
+               
 # Close the environment
 env.close()
 print("\nSimple example script finished.")
