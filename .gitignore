@@ -21,3 +21,6 @@ Examples/Tianshou/Task_MHADQN/policy_Task_MHA_DQN__B_ACE_Eval250625-235836_1_Bes
 .venv/Lib/site-packages/pip/_vendor/distlib/w32.exe
 .venv/Lib/site-packages/pip/_vendor/distlib/w64-arm.exe
 .venv
+Examples/Tianshow
+venv-bace
+Examples/Tianshou/Task_MHADQN
