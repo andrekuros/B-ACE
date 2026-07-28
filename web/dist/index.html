@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>B-ACE 2.0 Dashboard</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/styles.css" />
+</head>
+<body>
+  <div class="app">
+    <header class="top">
+      <div class="brand">
+        <span class="mark">B-ACE</span>
+        <span class="ver">2.0</span>
+      </div>
+      <nav>
+        <button data-view="live" class="active">Live</button>
+        <button data-view="replay">Replay</button>
+        <button data-view="experiment">Experiment</button>
+      </nav>
+      <div id="health" class="health">…</div>
+    </header>
+
+    <main>
+      <section id="view-live" class="view">
+        <aside class="panel">
+          <h2>Parallel jobs</h2>
+          <label>Envs <input id="num-envs" type="number" min="1" max="32" value="4" /></label>
+          <label>Max cycles <input id="max-cycles" type="number" min="10" value="200" /></label>
+          <button id="start-job" class="cta">Start simulation</button>
+          <ul id="job-list"></ul>
+        </aside>
+        <div class="stage">
+          <canvas id="live-canvas" width="900" height="560"></canvas>
+          <div id="live-meta" class="meta"></div>
+        </div>
+      </section>
+
+      <section id="view-replay" class="view hidden">
+        <aside class="panel">
+          <h2>Past runs</h2>
+          <button id="refresh-runs">Refresh</button>
+          <ul id="run-list"></ul>
+          <div class="scrub">
+            <input id="scrubber" type="range" min="0" max="0" value="0" />
+            <div class="row">
+              <button id="play-replay">Play</button>
+              <label>Speed <input id="replay-speed" type="number" min="0.25" max="20" step="0.25" value="2" /></label>
+            </div>
+          </div>
+        </aside>
+        <div class="stage">
+          <canvas id="replay-canvas" width="900" height="560"></canvas>
+          <pre id="replay-inspect" class="inspect"></pre>
+        </div>
+      </section>
+
+      <section id="view-experiment" class="view hidden">
+        <aside class="panel">
+          <h2>Batch experiment</h2>
+          <label>Cases <input id="exp-cases" type="number" min="1" max="128" value="16" /></label>
+          <label>Max cycles <input id="exp-cycles" type="number" min="20" value="150" /></label>
+          <button id="run-exp" class="cta">Run experiment</button>
+        </aside>
+        <div class="stage">
+          <pre id="exp-out" class="inspect"></pre>
+        </div>
+      </section>
+    </main>
+  </div>
+  <script src="/app.js"></script>
+</body>
+</html>
