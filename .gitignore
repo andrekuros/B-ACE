@@ -29,6 +29,6 @@ target/
 .venv/
 runs/
 *.egg-info/
-dist/
+/dist/
 *.so
 python/bace/_native*.so
