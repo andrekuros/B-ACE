@@ -1,0 +1,28 @@
+[package]
+name = "bace-server"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "HTTP/WebSocket dashboard API for B-ACE 2.0"
+
+[[bin]]
+name = "bace-server"
+path = "src/main.rs"
+
+[dependencies]
+bace-core = { path = "../bace-core" }
+bace-vec = { path = "../bace-vec" }
+bace-record = { path = "../bace-record" }
+serde = { workspace = true }
+serde_json = { workspace = true }
+uuid = { workspace = true }
+chrono = { workspace = true }
+tokio = { version = "1", features = ["full"] }
+axum = { version = "0.7", features = ["ws"] }
+tower-http = { version = "0.5", features = ["cors", "fs", "trace"] }
+tracing = { workspace = true }
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+anyhow = { workspace = true }
+clap = { version = "=4.5.23", features = ["derive"] }
+futures-util = "0.3"
+dashmap = "6"

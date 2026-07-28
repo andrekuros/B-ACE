@@ -1,0 +1,14 @@
+[package]
+name = "bace-vec"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "Batched parallel B-ACE environments"
+
+[dependencies]
+bace-core = { path = "../bace-core" }
+bace-record = { path = "../bace-record" }
+serde = { workspace = true }
+serde_json = { workspace = true }
+rayon = { workspace = true }
+uuid = { workspace = true }

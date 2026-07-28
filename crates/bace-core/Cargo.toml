@@ -1,0 +1,16 @@
+[package]
+name = "bace-core"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "B-ACE 2.0 BVR air-combat simulation core"
+
+[dependencies]
+serde = { workspace = true }
+serde_json = { workspace = true }
+rand = { workspace = true }
+thiserror = { workspace = true }
+uuid = { workspace = true }
+
+[dev-dependencies]
+approx = "0.5"

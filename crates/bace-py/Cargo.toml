@@ -1,0 +1,20 @@
+[package]
+name = "bace-py"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "Python bindings for B-ACE 2.0"
+
+[lib]
+name = "_native"
+crate-type = ["cdylib"]
+
+[dependencies]
+bace-core = { path = "../bace-core" }
+bace-vec = { path = "../bace-vec" }
+bace-record = { path = "../bace-record" }
+pyo3 = { version = "0.22", features = ["extension-module"] }
+numpy = "0.22"
+serde = { workspace = true }
+serde_json = { workspace = true }
+rand = { workspace = true }

@@ -1,0 +1,34 @@
+[build-system]
+requires = ["maturin>=1.7,<2.0"]
+build-backend = "maturin"
+
+[project]
+name = "bace"
+version = "2.0.0"
+description = "B-ACE 2.0 Beyond Visual Range Air Combat Environment"
+readme = "Readme.md"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+authors = [{ name = "B-ACE Contributors" }]
+dependencies = [
+  "numpy>=1.24",
+  "gymnasium>=0.29",
+  "pettingzoo>=1.24",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=7.4", "pytest-timeout>=2.2"]
+train = ["tianshou>=1.1", "torch>=2.0"]
+benchmarl = ["benchmarl>=1.3", "torchrl>=0.4"]
+
+[project.scripts]
+bace-random = "bace.examples.random_policy:main"
+
+[tool.maturin]
+manifest-path = "crates/bace-py/Cargo.toml"
+python-source = "python"
+module-name = "bace._native"
+
+[tool.pytest.ini_options]
+testpaths = ["tests/python"]
+pythonpath = ["python"]

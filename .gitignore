@@ -24,3 +24,9 @@ Examples/Tianshou/Task_MHADQN/policy_Task_MHA_DQN__B_ACE_Eval250625-235836_1_Bes
 Examples/Tianshow
 venv-bace
 Examples/Tianshou/Task_MHADQN
+# B-ACE 2.0
+target/
+.venv/
+runs/
+*.egg-info/
+dist/

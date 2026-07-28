@@ -1,0 +1,33 @@
+[workspace]
+resolver = "2"
+members = [
+    "crates/bace-core",
+    "crates/bace-vec",
+    "crates/bace-record",
+    "crates/bace-py",
+    "crates/bace-server",
+]
+default-members = [
+    "crates/bace-core",
+    "crates/bace-vec",
+    "crates/bace-record",
+    "crates/bace-server",
+]
+
+[workspace.package]
+version = "2.0.0"
+edition = "2021"
+license = "MIT"
+authors = ["B-ACE Contributors"]
+
+[workspace.dependencies]
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+rand = "0.8"
+thiserror = "2"
+anyhow = "1"
+uuid = { version = "=1.11.0", features = ["v4", "serde"] }
+chrono = { version = "0.4", features = ["serde"] }
+rayon = "1.10"
+tracing = "0.1"
+indexmap = { version = "2", features = ["serde"] }
