@@ -30,3 +30,5 @@ target/
 runs/
 *.egg-info/
 dist/
+*.so
+python/bace/_native*.so
